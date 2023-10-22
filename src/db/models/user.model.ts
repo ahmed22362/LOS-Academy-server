@@ -1,0 +1,135 @@
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  BeforeSave,
+  HasOne,
+  BeforeUpdate,
+  HasMany,
+} from "sequelize-typescript"
+import { ulid } from "ulid"
+import bcrypt from "bcrypt"
+import crypto from "crypto"
+
+import FreeSession from "./sessionFreeReq.model"
+
+export interface IUserInput extends User {
+  fName: string
+  lName: string
+  email: string
+  password: string
+  phone: string
+}
+
+@Table({
+  tableName: "user",
+  freezeTableName: true,
+  timestamps: true,
+})
+export default class User extends Model<User> {
+  @Column({
+    type: DataType.STRING,
+    defaultValue: () => ulid(),
+    primaryKey: true,
+  })
+  id!: string
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  fName!: string
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  lName!: string
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  phone?: string
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  customerId?: string
+
+  @Column({
+    type: DataType.INTEGER,
+    defaultValue: 2,
+    validate: {
+      min: 0, // Minimum value is 0
+      max: 2, // Maximum value is 2
+    },
+  })
+  availableFreeSession!: number
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    validate: {
+      isEmail: { msg: "Please provide a valid email" },
+    },
+    unique: true,
+  })
+  email!: string
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  password!: string
+
+  @Column(DataType.DATE)
+  passwordChangedAt?: Date
+  @Column(DataType.STRING)
+  passwordResetCode?: string | null
+
+  @Column(DataType.DATE)
+  passwordResetExpire?: Date | null
+
+  @Column(DataType.STRING)
+  imageUrl?: string | null
+
+  @HasMany(() => FreeSession)
+  sessions!: FreeSession[]
+
+  @BeforeSave
+  static async hashPassword(instance: User) {
+    if (instance.changed("password")) {
+      const salt = await bcrypt.genSalt(12)
+      instance.password = await bcrypt.hash(instance.password, salt)
+      instance.passwordChangedAt = new Date(Date.now())
+    }
+  }
+
+  async correctPassword(candidatePassword: string, userPassword: string) {
+    return await bcrypt.compare(candidatePassword, userPassword)
+  }
+
+  changedPasswordAfter(JWTTimestamp: number) {
+    if (this.passwordChangedAt) {
+      const changedPasswordSec = parseInt(
+        String(this.passwordChangedAt.getTime() / 1000),
+        10
+      )
+      return JWTTimestamp < changedPasswordSec
+    }
+    return false
+  }
+
+  createPasswordResetCode() {
+    const resetToken = crypto.randomBytes(32).toString("hex")
+    const hashedCode: string = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex")
+    this.passwordResetCode = hashedCode
+    this.passwordResetExpire = new Date(Date.now() + 20 * 60 * 1000) // 10 minutes
+    return resetToken
+  }
+}

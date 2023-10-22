@@ -1,0 +1,107 @@
+import { NextFunction, Request, Response } from "express"
+import User, { IUserInput } from "../db/models/user.model"
+import catchAsync from "../utils/catchAsync"
+import {
+  createUserService,
+  deleteUserService,
+  getUserByIdService,
+  getUsersService,
+  updateUserService,
+} from "../service/user.service"
+import AppError from "../utils/AppError"
+import { IRequestWithUser, login, protect, restrictTo } from "./auth.controller"
+export const setUserOrTeacherId = (
+  req: IRequestWithUser,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.body.user) req.body.userId = req.user?.id
+  if (!req.body.teacher) req.body.teacherId = req.teacher?.id
+  next()
+}
+export const setUserIdToParams = (
+  req: IRequestWithUser,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.params.id) req.params.id = req.user?.id as string
+  if (!req.params.id) req.params.id = req.teacher?.id as string
+  next()
+}
+const getUserAttr = [
+  "id",
+  "fName",
+  "lName",
+  "phone",
+  "email",
+  "availableFreeSession",
+]
+
+export const loginUser = login(User)
+export const protectUser = protect(User)
+export const createUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { fName, lName, email, password, phone } = req.body
+    const body = { fName, lName, email, password, phone } as IUserInput
+    const newUser = await createUserService({ userData: body })
+    if (!newUser) {
+      return next(new AppError(400, "Can't create new User!"))
+    }
+    res.status(200).json({ status: "success", data: newUser })
+  }
+)
+export const getAllUsers = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const users = await getUsersService({
+      findOptions: { attributes: getUserAttr },
+    })
+    if (!users) {
+      return next(new AppError(400, "Error getting all users!"))
+    }
+    res
+      .status(200)
+      .json({ status: "success", length: users.length, data: users })
+  }
+)
+export const deleteUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id
+
+    const deleteState = await deleteUserService({ userId: id })
+    if (!deleteState) {
+      return next(new AppError(400, "Error Deleting User!"))
+    }
+    res
+      .status(200)
+      .json({ status: "success", message: "user Deleted successfully" })
+  }
+)
+export const updateUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id
+    const { fName, lName, email, phone } = req.body
+    const body = { fName, lName, email, phone } as IUserInput
+    const user = await updateUserService({ userId: id, updatedData: body })
+    if (!user) {
+      return next(new AppError(404, "Can't find user to update!"))
+    }
+    res.status(200).json({
+      status: "success",
+      message: "user updated successfully",
+      data: user,
+    })
+  }
+)
+export const getUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id
+    const user = await getUserByIdService({
+      userId: id,
+      findOptions: { attributes: getUserAttr },
+    })
+    if (!user) {
+      return next(new AppError(404, "Can't find user with this id!"))
+    }
+    res.status(200).json({ status: "success", data: user })
+  }
+)

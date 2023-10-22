@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Error</title>
+    <style>
+      /* styles.css */
+
+      body {
+        background: #f1f1f1;
+        color: #333;
+        font-family: Arial;
+        margin: 0;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 80px auto;
+      }
+
+      h1 {
+        font-size: 48px;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      p {
+        font-size: 18px;
+        line-height: 1.5;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .button {
+        display: inline-block;
+        padding: 10px 18px;
+        background: #007bff;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+        position: absolute;
+        top: 70%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .button:hover {
+        background: #0062cc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Whoops!</h1>
+      <p><%= message %></p>
+      <a class="button" href="/">Go Back</a>
+    </div>
+  </body>
+</html>

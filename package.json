@@ -1,0 +1,48 @@
+{
+  "name": "quraan-system",
+  "version": "1.0.0",
+  "description": "The Quran Academy System is an online platform designed to facilitate Quranic education and learning. This comprehensive system provides a user-friendly and efficient way for students to connect with experienced teachers for Quranic instruction. Whether you're a student seeking to deepen your understanding of the Quran or a teacher looking to share your knowledge, the Quran Academy System offers a range of features to meet your needs.",
+  "main": "app.ts",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "production": "SET NODE_ENV=production& ts-node-dev --respawn --transpile-only src/app.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "CodeGate",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.5.1",
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.6",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "googleapis": "^105.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.29.4",
+    "morgan": "^1.10.0",
+    "nodemailer": "^6.9.6",
+    "pg": "^8.11.3",
+    "pino": "^8.15.7",
+    "pino-pretty": "^10.2.3",
+    "sequelize": "^6.33.0",
+    "sequelize-typescript": "^2.1.5",
+    "stripe": "^14.1.0",
+    "strong-error-handler": "^5.0.1",
+    "ulid": "^2.3.0",
+    "zod": "^3.22.4",
+    "zoomus": "^0.1.4"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.0",
+    "@types/cookie-parser": "^1.4.4",
+    "@types/express": "^4.17.18",
+    "@types/jsonwebtoken": "^9.0.3",
+    "@types/morgan": "^1.9.6",
+    "@types/node": "^20.8.2",
+    "@types/nodemailer": "^6.4.11",
+    "@types/validator": "^13.11.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
+  }
+}
