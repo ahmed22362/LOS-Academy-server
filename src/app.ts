@@ -12,6 +12,7 @@ export const app = express()
 // middleware for parsing application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
+app.use(express.raw({ type: "application/json" }))
 
 // middleware for json body parsing
 app.use(bodyParser.json({ limit: "5mb" }))

@@ -1,33 +1,11 @@
-import { createServer } from "http"
 import { app } from "./app"
-import { sequelize } from "./db/index"
 import routes from "./routes"
 import logger from "./utils/logger"
+import connectDB from "./connect/connectDB"
+const PORT = process.env.PORT || 3000
 
-const port = process.env.PORT || 3000
-let force = false
-console.log(process.argv)
-if (process.argv[2] === "force") {
-  console.log("database force deleted successfully!")
-  force = true
-}
-
-;(async () => {
-  await sequelize
-    .sync({
-      force,
-      logging: (sql) => {
-        // console.log(sql)
-      },
-    })
-    .then(() => {
-      logger.info("database connected SUCCESSFULLY!")
-    })
-    .catch((err) => {
-      logger.error("Database connection failed:", err)
-    })
-  app.listen(port, () => {
-    routes(app)
-    logger.info(`Server running on port ${port} => http://localhost:${port}/`)
-  })
-})()
+app.listen(PORT, async () => {
+  logger.info(`Server running on port ${PORT} => http://localhost:${PORT}/`)
+  await connectDB()
+  routes(app)
+})

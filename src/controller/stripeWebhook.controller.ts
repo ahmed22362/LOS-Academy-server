@@ -1,74 +1,47 @@
 import { NextFunction, Request, Response } from "express"
 import catchAsync from "../utils/catchAsync"
-import { createWebhook, stripe } from "../service/stripe.service"
+import { stripe } from "../service/stripe.service"
 import Stripe from "stripe"
 
-const webhookController = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    let event: Stripe.Event | undefined
+import dotenv from "dotenv"
 
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      req.header("Stripe-Signature") || "",
-      process.env.STRIPE_WEBHOOK_SECRET || ""
-    )
-
-    // Extract the object from the event.
-    const dataObject: any = event.data.object
-
-    switch (event.type) {
-      case "invoice.payment_succeeded":
-        if (dataObject["billing_reason"] === "subscription_create") {
-          // The subscription automatically activates after successful payment
-          // Set the payment method used to pay the first invoice
-          // as the default payment method for that subscription
-          const subscription_id = dataObject["subscription"]
-          const payment_intent_id = dataObject["payment_intent"]
-
-          // Retrieve the payment intent used to pay the subscription
-          const payment_intent = await stripe.paymentIntents.retrieve(
-            payment_intent_id
-          )
-        }
-        break
-      case "invoice.payment_failed":
-        // If the payment fails or the customer does not have a valid payment method,
-        // an invoice.payment_failed event is sent, and the subscription becomes past_due.
-        // Use this webhook to notify your user that their payment has failed and to retrieve new card details.
-        break
-      case "invoice.finalized":
-        // If you want to manually send out invoices to your customers
-        // or store them locally to reference to avoid hitting Stripe rate limits.
-        break
-      case "customer.subscription.deleted":
-        if (event.request != null) {
-          // handle a subscription canceled by your request from above.
-        } else {
-          // handle subscription canceled automatically based upon your subscription settings.
-        }
-        break
-      case "customer.subscription.trial_will_end":
-        // Send a notification to your user that the trial will end
-        break
-      default:
-      // Unexpected event type
-    }
-    res.sendStatus(200)
-  }
-)
+dotenv.config()
 
 export const webhook = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    let event
+  async (req: Request, res: Response): Promise<void> => {
+    // Retrieve the event by verifying the signature using the raw body and secret.
+    let event: Stripe.Event
+    const rawBody = req.body as Buffer
+
     try {
-      event = createWebhook(req.body, req.header("Stripe-Signature") || "")
+      event = stripe.webhooks.constructEvent(
+        rawBody,
+        req.headers["stripe-signature"] || "",
+        process.env.STRIPE_WEBHOOK_SECRET || ""
+      )
     } catch (err) {
-      console.log(err)
-      return res.sendStatus(400)
+      console.log(`⚠️  Webhook signature verification failed. ${err}`)
+      res.sendStatus(400)
+      return
     }
 
-    const data = event.data.object
-    console.log(event.type, data)
+    const data: Stripe.Event.Data = event.data
+    const eventType: string = event.type
+
+    if (eventType === "payment_intent.succeeded") {
+      // Cast the event into a PaymentIntent to make use of the types.
+      const pi: Stripe.PaymentIntent = data.object as Stripe.PaymentIntent
+      // Funds have been captured
+      // Fulfill any orders, e-mail receipts, etc
+      // To cancel the payment after capture you will need to issue a Refund (https://stripe.com/docs/api/refunds).
+      console.log(`🔔  Webhook received: ${pi.object} ${pi.status}!`)
+      console.log("💰 Payment captured!")
+    } else if (eventType === "payment_intent.payment_failed") {
+      // Cast the event into a PaymentIntent to make use of the types.
+      const pi: Stripe.PaymentIntent = data.object as Stripe.PaymentIntent
+      console.log(`🔔  Webhook received: ${pi.object} ${pi.status}!`)
+      console.log("❌ Payment failed.")
+    }
 
     res.sendStatus(200)
   }
