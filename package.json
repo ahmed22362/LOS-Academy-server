@@ -4,9 +4,9 @@
   "description": "The Quran Academy System is an online platform designed to facilitate Quranic education and learning. This comprehensive system provides a user-friendly and efficient way for students to connect with experienced teachers for Quranic instruction. Whether you're a student seeking to deepen your understanding of the Quran or a teacher looking to share your knowledge, the Quran Academy System offers a range of features to meet your needs.",
   "main": "app.ts",
   "scripts": {
+    "start": "ts-node-dev src/server.ts",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "production": "SET NODE_ENV=production& ts-node-dev --respawn --transpile-only src/app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "production": "SET NODE_ENV=production& ts-node-dev --respawn --transpile-only src/app.ts"
   },
   "engines": {
     "node": "18"

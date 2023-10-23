@@ -7,7 +7,7 @@ import path from "path"
 import cookieParser from "cookie-parser"
 
 dotenv.config()
-export const app = express()
+const app = express()
 
 // middleware for parsing application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -46,3 +46,5 @@ app.use(
     log: true,
   })
 )
+
+export default app
