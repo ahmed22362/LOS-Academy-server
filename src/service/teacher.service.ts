@@ -9,7 +9,7 @@ import {
   getModelsService,
   updateModelService,
 } from "./factory.services"
-import { createStripeCustomer } from "../connect/stripe"
+import { createStripeCustomer } from "./stripe.service"
 
 export async function createTeacherService(body: ITeacherInput) {
   const stripeCustomer = await createStripeCustomer({

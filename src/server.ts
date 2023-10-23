@@ -26,7 +26,7 @@ if (process.argv[2] === "force") {
     .catch((err) => {
       logger.error("Database connection failed:", err)
     })
-  createServer(app).listen(port, () => {
+  app.listen(port, () => {
     routes(app)
     logger.info(`Server running on port ${port} => http://localhost:${port}/`)
   })

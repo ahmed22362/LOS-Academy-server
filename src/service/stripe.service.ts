@@ -7,6 +7,8 @@ export const stripe = new Stripe(sk_key, {
   apiVersion: "2023-10-16",
 })
 
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET as string
+
 export async function createStripeCustomer({
   email,
   name,
@@ -124,21 +126,25 @@ export async function createCheckOutSession({
 export async function createStripeSession({
   priceId,
   customerId,
+  success_url,
+  cancel_url,
 }: {
   priceId: string
   customerId: string
+  success_url: string
+  cancel_url: string
 }) {
-  //   const successLink: string = `${req.protocol}://${req.get("host")}/success`
   const successLink: string = `http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}`
   //   const failLink: string = `${req.protocol}://${req.get("host")}/success`
   const failLink: string = `http://localhost:3000/cancel`
+  //   const successLink: string = `${req.protocol}://${req.get("host")}/success`
 
   const params: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
     customer: customerId,
-    success_url: successLink,
-    cancel_url: failLink,
+    success_url,
+    cancel_url,
   }
   try {
     const session = await stripe.checkout.sessions.create(params)
@@ -149,4 +155,13 @@ export async function createStripeSession({
       `Error While Creating subscriptions!: ${error.message}`
     )
   }
+}
+
+export const createWebhook = (rawBody: any, sig: string) => {
+  const event = stripe.webhooks.constructEvent(
+    rawBody,
+    sig,
+    STRIPE_WEBHOOK_SECRET
+  )
+  return event
 }

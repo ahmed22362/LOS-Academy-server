@@ -8,6 +8,9 @@
     "production": "SET NODE_ENV=production& ts-node-dev --respawn --transpile-only src/app.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "engines": {
+    "node": "18"
+  },
   "author": "CodeGate",
   "license": "ISC",
   "dependencies": {

@@ -8,7 +8,7 @@ import {
   updateModelService,
 } from "./factory.services"
 import { getCourseService } from "./course.service"
-import { createStripePrice } from "../connect/stripe"
+import { createStripePrice } from "./stripe.service"
 import Stripe from "stripe"
 import { planCreateInput } from "../controller/plan.controller"
 

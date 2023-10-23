@@ -7,7 +7,10 @@ import {
   getCourseService,
   updateCourseService,
 } from "../service/course.service"
-import { deleteStripeProduct, updateStripeProduct } from "../connect/stripe"
+import {
+  deleteStripeProduct,
+  updateStripeProduct,
+} from "../service/stripe.service"
 
 export const createCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

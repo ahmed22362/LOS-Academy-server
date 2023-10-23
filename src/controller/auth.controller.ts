@@ -25,7 +25,7 @@ import {
   getModelByService,
 } from "../service/factory.services"
 import Teacher from "../db/models/teacher.model"
-import { createStripeCustomer } from "../connect/stripe"
+import { createStripeCustomer } from "../service/stripe.service"
 dotenv.config()
 
 export interface IRequestWithUser extends Request {
