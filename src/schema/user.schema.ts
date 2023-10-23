@@ -3,11 +3,11 @@ import { z } from "zod"
 const payload = {
   body: z
     .object({
-      fName: z.string({
+      name: z.string({
         required_error: "First name is required",
       }),
-      lName: z.string({
-        required_error: "Last name is required",
+      age: z.number({
+        required_error: "age is required",
       }),
       password: z
         .string({

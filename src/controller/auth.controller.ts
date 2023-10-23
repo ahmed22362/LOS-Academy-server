@@ -80,11 +80,10 @@ export const signup = catchAsync(async function (
   res: Response,
   next: NextFunction
 ) {
-  const { fName, lName, email, password, phone }: IUserInput = req.body
+  const { name, email, password, phone }: IUserInput = req.body
 
   const userData = {
-    fName,
-    lName,
+    name,
     email,
     password,
     phone,
@@ -95,7 +94,7 @@ export const signup = catchAsync(async function (
   }
   const stripeCustomer = await createStripeCustomer({
     email,
-    name: `${fName} ${lName}`,
+    name: name,
     phone,
   })
   newUser.customerId = stripeCustomer.id
@@ -209,7 +208,7 @@ export const forgetPassword = catchAsync(
       "host"
     )}/api/v1/user/auth/resetPassword/${resetToken}`
     try {
-      const mail = new Mail(user.email, `${user.fName} ${user.lName}`, resetURL)
+      const mail = new Mail(user.email, `${user.name}`, resetURL)
       await mail.sendForgetPassword()
       res.status(200).json({ status: "success", message: "token sent to mail" })
     } catch (error: any) {
@@ -317,8 +316,7 @@ export const googleOauthController = catchAsync(
         where: { email: googleUser.email },
         defaults: {
           email: googleUser.email,
-          fName: googleUser.name.split(" ")[0],
-          lName: googleUser.name.split(" ")[1],
+          name: googleUser.name,
         } as User,
       })
       logger.info({ user })

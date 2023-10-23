@@ -39,12 +39,13 @@ export default class User extends Model<User> {
     type: DataType.STRING,
     allowNull: false,
   })
-  fName!: string
+  name!: string
+
   @Column({
-    type: DataType.STRING,
+    type: DataType.INTEGER,
     allowNull: false,
   })
-  lName!: string
+  age!: number
 
   @Column({
     type: DataType.STRING,
