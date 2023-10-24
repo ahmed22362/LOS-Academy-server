@@ -41,8 +41,8 @@ export const loginUser = login(User)
 export const protectUser = protect(User)
 export const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { fName, lName, email, password, phone } = req.body
-    const body = { fName, lName, email, password, phone } as IUserInput
+    const { name, age, email, password, phone } = req.body
+    const body = { name, age, email, password, phone } as IUserInput
     const newUser = await createUserService({ userData: body })
     if (!newUser) {
       return next(new AppError(400, "Can't create new User!"))
@@ -79,8 +79,8 @@ export const deleteUser = catchAsync(
 export const updateUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const { fName, lName, email, phone } = req.body
-    const body = { fName, lName, email, phone } as IUserInput
+    const { name, email, phone, age } = req.body
+    const body = { name, email, phone, age } as IUserInput
     const user = await updateUserService({ userId: id, updatedData: body })
     if (!user) {
       return next(new AppError(404, "Can't find user to update!"))

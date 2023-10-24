@@ -4,7 +4,7 @@ const payload = {
   body: z
     .object({
       name: z.string({
-        required_error: "First name is required",
+        required_error: "name is required",
       }),
       age: z.number({
         required_error: "age is required",

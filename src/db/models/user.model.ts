@@ -15,11 +15,11 @@ import crypto from "crypto"
 import FreeSession from "./sessionFreeReq.model"
 
 export interface IUserInput extends User {
-  fName: string
-  lName: string
+  name: string
   email: string
   password: string
   phone: string
+  age: number
 }
 
 @Table({

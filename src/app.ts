@@ -1,21 +1,25 @@
-import express from "express"
+import express, { NextFunction, Request, Response } from "express"
 import bodyParser from "body-parser"
 import errorhandler from "strong-error-handler"
 import morgan from "morgan"
 import dotenv from "dotenv"
 import path from "path"
 import cookieParser from "cookie-parser"
+import logger from "./utils/logger"
 
 dotenv.config()
 const app = express()
 
 // middleware for parsing application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: true }))
-app.use(cookieParser())
-app.use(express.raw({ type: "application/json" }))
 
+app.use("/stripe/webhook", bodyParser.raw({ type: "application/json" }))
+
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
+
+app.use(cookieParser())
 // middleware for json body parsing
-app.use(bodyParser.json({ limit: "5mb" }))
+
 //logging
 if (process.env.NODE_ENV?.trim() === "development") {
   app.use(morgan("dev"))

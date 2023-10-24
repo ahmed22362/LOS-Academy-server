@@ -80,13 +80,14 @@ export const signup = catchAsync(async function (
   res: Response,
   next: NextFunction
 ) {
-  const { name, email, password, phone }: IUserInput = req.body
+  const { name, email, password, phone, age }: IUserInput = req.body
 
   const userData = {
     name,
     email,
     password,
     phone,
+    age,
   } as IUserInput
   const newUser = await createUserService({ userData })
   if (!newUser) {
