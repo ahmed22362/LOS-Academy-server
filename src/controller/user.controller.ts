@@ -5,11 +5,13 @@ import {
   createUserService,
   deleteUserService,
   getUserByIdService,
+  getUserSubscriptionPlan,
   getUsersService,
   updateUserService,
 } from "../service/user.service"
 import AppError from "../utils/AppError"
 import { IRequestWithUser, login, protect, restrictTo } from "./auth.controller"
+import { createStripeBillingPortal } from "../service/stripe.service"
 export const setUserOrTeacherId = (
   req: IRequestWithUser,
   res: Response,
@@ -28,13 +30,13 @@ export const setUserIdToParams = (
   if (!req.params.id) req.params.id = req.teacher?.id as string
   next()
 }
-const getUserAttr = [
+export const getUserAttr = [
   "id",
-  "fName",
-  "lName",
+  "name",
   "phone",
   "email",
   "availableFreeSession",
+  "age",
 ]
 
 export const loginUser = login(User)
@@ -103,5 +105,35 @@ export const getUser = catchAsync(
       return next(new AppError(404, "Can't find user with this id!"))
     }
     res.status(200).json({ status: "success", data: user })
+  }
+)
+export const getMySubscription = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    console.log(req.body.userId)
+    const user = await getUserSubscriptionPlan({ userId: req.body.userId })
+    res.status(200).json({ status: "success", data: user })
+  }
+)
+export const updateUserPlan = catchAsync(
+  async (req: IRequestWithUser, res: Response, next: NextFunction) => {
+    const customerId = req.user?.customerId
+    if (!customerId) {
+      throw new AppError(404, "Can't ind customer Id to update it's plan!")
+    }
+    const subscription = await getUserSubscriptionPlan({
+      userId: req.user?.id as string,
+    })
+
+    if (!subscription) {
+      return next(
+        new AppError(404, "The user is not subscribed to plan to upgrade it !")
+      )
+    }
+    const portal = await createStripeBillingPortal(customerId)
+    res.status(200).json({
+      status: "success",
+      data: portal,
+      message: "redirect to the portal to change the plan from it!",
+    })
   }
 )

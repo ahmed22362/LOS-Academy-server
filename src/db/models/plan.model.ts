@@ -1,14 +1,11 @@
 import {
   AutoIncrement,
-  BelongsTo,
   Column,
   DataType,
-  ForeignKey,
   Model,
   PrimaryKey,
   Table,
 } from "sequelize-typescript"
-import Course from "./course.model"
 
 @Table({ tableName: "plan", timestamps: true, freezeTableName: true })
 export default class Plan extends Model {
@@ -49,16 +46,6 @@ export default class Plan extends Model {
     defaultValue: true,
   })
   active!: boolean
-
-  @ForeignKey(() => Course)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  courseId!: number
-
-  @BelongsTo(() => Course)
-  course!: Course
 
   @Column({
     type: DataType.STRING,

@@ -1,5 +1,7 @@
 import { FindOptions } from "sequelize"
-import Session, { SessionType } from "../db/models/session.model"
+import SessionInfo from "../db/models/sessionInfo.model"
+import Session from "../db/models/session.model"
+import { SessionType } from "../db/models/session.model"
 import AppError from "../utils/AppError"
 import {
   createModelService,
@@ -8,15 +10,22 @@ import {
   getModelsService,
   updateModelService,
 } from "./factory.services"
-import { DATE_PATTERN } from "./freeSession.service"
+import { DATE_PATTERN } from "./sessionReq.service"
 import ZoomService from "../connect/zoom"
-interface sessionBody {
-  teamId: number
+
+export interface IInfoBody {
+  userId: string
+  teacherId: string
+  sessionReqId: number
+}
+
+export interface ISessionBody {
   sessionDate: Date
   sessionDuration: number
-  meetingLink: string
   type: string
+  sessionInfoId: number
 }
+
 export async function createSessionService({
   userId,
   teacherId,
@@ -24,6 +33,8 @@ export async function createSessionService({
   type,
   topic,
   duration,
+  sessionReqId,
+  sessionsCount,
 }: {
   userId: string
   teacherId: string
@@ -31,6 +42,8 @@ export async function createSessionService({
   type: SessionType
   topic: string
   duration: number
+  sessionReqId: number
+  sessionsCount: number
 }) {
   if (!DATE_PATTERN.test(date)) {
     const errorMessage =
@@ -47,15 +60,28 @@ export async function createSessionService({
     start_time,
   })
 
-  const body = {
+  const infoBody: IInfoBody = {
     userId,
     teacherId,
+    sessionReqId,
+  }
+  const sessionInfo = await createModelService({
+    ModelClass: SessionInfo,
+    data: infoBody,
+  })
+  if (!sessionInfo) {
+    throw new AppError(400, "Can't create session info!")
+  }
+  const sessionBody: ISessionBody = {
     sessionDate,
     sessionDuration: duration,
-    meetingLink,
     type,
+    sessionInfoId: sessionInfo.id,
   }
-  const session = await createModelService({ ModelClass: Session, data: body })
+  const session = await createModelService({
+    ModelClass: Session,
+    data: sessionBody,
+  })
   if (!session) {
     throw new AppError(400, "Can't create session!")
   }
@@ -79,12 +105,47 @@ export async function updateSessionService({
   }
   return updatedSession
 }
+export async function updateSessionInfoService({
+  id,
+  updatedData,
+}: {
+  id: number | string
+  updatedData: any
+}) {
+  const updatedSession = await updateModelService({
+    ModelClass: Session,
+    id: id,
+    updatedData,
+  })
+  if (!updateModelService) {
+    throw new AppError(400, "Can't update service!")
+  }
+  return updatedSession
+}
 
 export async function deleteSessionService({ id }: { id: string | number }) {
   await deleteModelService({ ModelClass: Session, id })
 }
+export async function deleteSessionInfoService({
+  id,
+}: {
+  id: string | number
+}) {
+  await deleteModelService({ ModelClass: Session, id })
+}
 
-export async function getAllSessions({
+export async function getAllSessionsService({
+  findOptions,
+}: {
+  findOptions?: FindOptions
+}) {
+  const sessions = await getModelsService({ ModelClass: Session, findOptions })
+  if (!sessions) {
+    throw new AppError(400, "Can't get sessions!")
+  }
+  return sessions
+}
+export async function getAllSessionsInfoService({
   findOptions,
 }: {
   findOptions?: FindOptions
@@ -96,7 +157,7 @@ export async function getAllSessions({
   return sessions
 }
 
-export async function getSession({
+export async function getSessionService({
   id,
   findOptions,
 }: {
@@ -105,6 +166,23 @@ export async function getSession({
 }) {
   const session = await getModelByIdService({
     ModelClass: Session,
+    Id: id,
+    findOptions,
+  })
+  if (!session) {
+    throw new AppError(404, "can't find session with this id!")
+  }
+  return session
+}
+export async function getSessionInfoService({
+  id,
+  findOptions,
+}: {
+  id: string | number
+  findOptions?: FindOptions
+}) {
+  const session = await getModelByIdService({
+    ModelClass: SessionInfo,
     Id: id,
     findOptions,
   })

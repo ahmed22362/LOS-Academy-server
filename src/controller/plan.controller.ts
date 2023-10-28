@@ -14,7 +14,6 @@ export interface planCreateInput {
   sessionsCount: number
   title: string
   price: number
-  courseId: number
   currency: string
   stripePriceId?: string
 }
@@ -22,13 +21,12 @@ const STANDARD_CURRENCY_USD = "usd"
 
 export const createPlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionsCount, sessionDuration, title, price, courseId } = req.body
+    const { sessionsCount, sessionDuration, title, price } = req.body
     const body: planCreateInput = {
       sessionDuration,
       sessionsCount,
       title,
       price,
-      courseId,
       currency: STANDARD_CURRENCY_USD,
     }
     const plan = await createPlanService({ data: body })

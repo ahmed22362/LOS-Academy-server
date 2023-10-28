@@ -23,11 +23,12 @@ export default class Subscription extends Model {
 
   @Column({
     type: DataType.STRING,
+    defaultValue: "pending",
   })
   status!: string
 
-  @Column
-  stripe_subscription_id!: string
+  @Column({ type: DataType.STRING, allowNull: true })
+  stripe_subscription_id!: string | null | undefined
 
   @Column
   stripe_checkout_session_id!: string
@@ -36,7 +37,7 @@ export default class Subscription extends Model {
   @Column({
     type: DataType.STRING,
     allowNull: false,
-    unique: "user_plan",
+    unique: true,
   })
   userId!: String
 
@@ -47,7 +48,6 @@ export default class Subscription extends Model {
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    unique: "user_plan",
   })
   planId!: number
 

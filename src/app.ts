@@ -1,11 +1,10 @@
-import express, { NextFunction, Request, Response } from "express"
+import express from "express"
 import bodyParser from "body-parser"
 import errorhandler from "strong-error-handler"
 import morgan from "morgan"
 import dotenv from "dotenv"
 import path from "path"
 import cookieParser from "cookie-parser"
-import logger from "./utils/logger"
 
 dotenv.config()
 const app = express()

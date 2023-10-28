@@ -3,10 +3,13 @@ import {
   createUser,
   deleteUser,
   getAllUsers,
+  getMySubscription,
   getUser,
   protectUser,
   setUserIdToParams,
+  setUserOrTeacherId,
   updateUser,
+  updateUserPlan,
 } from "../controller/user.controller"
 import authRouter from "./auth.router"
 
@@ -16,6 +19,13 @@ userRouter.use("/auth", authRouter)
 
 userRouter.route("/").post(createUser).get(getAllUsers)
 userRouter.get("/me", protectUser, setUserIdToParams, getUser)
+userRouter.get(
+  "/mySubscription",
+  protectUser,
+  setUserOrTeacherId,
+  getMySubscription
+)
+userRouter.get("/updateMyPlan", protectUser, updateUserPlan)
 userRouter.route("/:id").patch(updateUser).delete(deleteUser).get(getUser)
 
 export default userRouter

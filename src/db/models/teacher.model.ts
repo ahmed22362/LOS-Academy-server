@@ -3,7 +3,6 @@ import {
   Column,
   Model,
   DataType,
-  HasMany,
   BeforeSave,
 } from "sequelize-typescript"
 import { ulid } from "ulid"

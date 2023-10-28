@@ -157,6 +157,28 @@ export async function createStripeSession({
   }
 }
 
+export async function createStripeBillingPortal(customerId: string) {
+  try {
+    const portal = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+    })
+    return portal
+  } catch (error: any) {
+    throw new AppError(
+      400,
+      `Error While Creating subscriptions!: ${error.message}`
+    )
+  }
+}
+
+export async function getStripeSubscription(id: string) {
+  try {
+    const subscribe = await stripe.subscriptions.retrieve(id)
+    return subscribe
+  } catch (err: any) {
+    throw new AppError(400, `Error While retrieve subscription: ${err.message}`)
+  }
+}
 export const createWebhook = (rawBody: any, sig: string) => {
   const event = stripe.webhooks.constructEvent(
     rawBody,

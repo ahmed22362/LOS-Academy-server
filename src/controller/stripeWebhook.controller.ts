@@ -1,9 +1,13 @@
-import { NextFunction, Request, Response, raw } from "express"
+import { Request, Response } from "express"
 import catchAsync from "../utils/catchAsync"
 import { stripe } from "../service/stripe.service"
 import Stripe from "stripe"
 
 import dotenv from "dotenv"
+import {
+  handelSubscriptionCompleted,
+  handelSubscriptionUpdated,
+} from "../service/subscription.service"
 
 dotenv.config()
 
@@ -12,6 +16,7 @@ export const webhook = catchAsync(
     // Retrieve the event by verifying the signature using the raw body and secret.
     let event: Stripe.Event
     const rawBody = req.body as Buffer
+    console.log(rawBody)
     try {
       event = stripe.webhooks.constructEvent(
         rawBody,
@@ -28,10 +33,10 @@ export const webhook = catchAsync(
     const eventType: string = event.type
     switch (eventType) {
       case "customer.created":
-        console.log(JSON.stringify(data))
+        console.log("in suctomer subscription")
         break
       case "payment_intent.succeeded":
-        console.log(JSON.stringify(data))
+        console.log("in suctomer subscription")
         const pi: Stripe.PaymentIntent = data.object as Stripe.PaymentIntent
         // Funds have been captured
         // Fulfill any orders, e-mail receipts, etc
@@ -40,31 +45,34 @@ export const webhook = catchAsync(
         console.log("💰 Payment captured!")
         break
       case "payment_intent.payment_failed": {
-        console.log(JSON.stringify(data))
+        console.log("in suctomer subscription")
+        const pi: Stripe.PaymentIntent = data.object as Stripe.PaymentIntent
+        console.log(`🔔  Webhook received: ${pi.object} ${pi.status}!`)
+        console.log("❌ Payment failed.")
       }
-      case "customer.subscription.created": {
-        console.log(JSON.stringify(data))
-      }
-      case "customer.subscription.updated": {
-        console.log("customer changed", JSON.stringify(data))
+      case "checkout.session.completed":
+        {
+          const checkoutSession = event.data.object as Stripe.Checkout.Session
+          await handelSubscriptionCompleted(checkoutSession)
+          console.log(`in session completed: ${checkoutSession}`)
+        }
+        break
+      // the same as completed
+      // case "customer.subscription.created": {
+      //   console.log("in customer.subscription.created")
+      // }
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted": {
+        console.log(
+          "in customer subscription updated and deleted",
+          "subscription.updated"
+        )
+        await handelSubscriptionUpdated(
+          event.data.object as Stripe.Checkout.Session
+        )
         break
       }
     }
-    if (eventType === "payment_intent.succeeded") {
-      // Cast the event into a PaymentIntent to make use of the types.
-      const pi: Stripe.PaymentIntent = data.object as Stripe.PaymentIntent
-      // Funds have been captured
-      // Fulfill any orders, e-mail receipts, etc
-      // To cancel the payment after capture you will need to issue a Refund (https://stripe.com/docs/api/refunds).
-      console.log(`🔔  Webhook received: ${pi.object} ${pi.status}!`)
-      console.log("💰 Payment captured!")
-    } else if (eventType === "payment_intent.payment_failed") {
-      // Cast the event into a PaymentIntent to make use of the types.
-      const pi: Stripe.PaymentIntent = data.object as Stripe.PaymentIntent
-      console.log(`🔔  Webhook received: ${pi.object} ${pi.status}!`)
-      console.log("❌ Payment failed.")
-    }
-
     res.sendStatus(200)
   }
 )

@@ -5,8 +5,8 @@ import {
   createModelService,
   deleteModelService,
   getModelByIdService,
-  getModelByService,
   getModelsService,
+  getOneModelByService,
   updateModelService,
 } from "./factory.services"
 import { createStripeCustomer } from "./stripe.service"
@@ -59,5 +59,5 @@ export async function getTeacherByService({
 }: {
   findOptions: FindOptions
 }): Promise<Teacher | null> {
-  return await getModelByService({ Model: Teacher, findOptions })
+  return await getOneModelByService({ Model: Teacher, findOptions })
 }

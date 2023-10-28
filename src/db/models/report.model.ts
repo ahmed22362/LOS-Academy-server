@@ -9,15 +9,9 @@ import {
   Table,
 } from "sequelize-typescript"
 import Session from "./session.model"
-import User from "./user.model"
-import Teacher from "./teacher.model"
 
-@Table({
-  tableName: "paidSession",
-  timestamps: true,
-  freezeTableName: true,
-})
-export default class PaidSession extends Model<PaidSession> {
+@Table({ tableName: "report", timestamps: true, freezeTableName: true })
+export default class Report extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column({
@@ -27,16 +21,16 @@ export default class PaidSession extends Model<PaidSession> {
   id!: number
   @Column({
     type: DataType.STRING,
-    defaultValue: "pending",
+    allowNull: false,
   })
-  status!: string
+  title!: string
 
-  @BelongsTo(() => Session)
-  session!: Session
   @ForeignKey(() => Session)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
   sessionId!: number
+  @BelongsTo(() => Session)
+  plan!: Session
 }

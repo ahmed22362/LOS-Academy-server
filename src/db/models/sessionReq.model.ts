@@ -9,20 +9,14 @@ import {
   Table,
 } from "sequelize-typescript"
 import User from "./user.model"
-import Session from "./session.model"
-
-export enum FreeSessionStatus {
-  PENDING = "pending",
-  DONE = "done",
-  ABSENT = "absent",
-}
+import { SessionStatus, SessionType } from "./session.model"
 
 @Table({
-  tableName: "freeSessionRequest",
+  tableName: "session_request",
   timestamps: true,
   freezeTableName: true,
 })
-export default class FreeSessionReq extends Model<FreeSessionReq> {
+export default class SessionReq extends Model<SessionReq> {
   @PrimaryKey
   @AutoIncrement
   @Column({
@@ -45,8 +39,14 @@ export default class FreeSessionReq extends Model<FreeSessionReq> {
   date!: Date
 
   @Column({
-    type: DataType.ENUM({ values: Object.values(FreeSessionStatus) }),
-    defaultValue: FreeSessionStatus.PENDING,
+    type: DataType.ENUM({ values: Object.values(SessionStatus) }),
+    defaultValue: SessionStatus.PENDING,
   })
-  status!: FreeSessionStatus
+  status!: SessionStatus
+
+  @Column({
+    type: DataType.ENUM({ values: Object.values(SessionType) }),
+    defaultValue: SessionType.NOT_ASSIGN,
+  })
+  type!: SessionType
 }

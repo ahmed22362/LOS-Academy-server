@@ -22,7 +22,6 @@ import {
   ModelClass,
   getModelByEmailService,
   getModelByIdService,
-  getModelByService,
 } from "../service/factory.services"
 import Teacher from "../db/models/teacher.model"
 import { createStripeCustomer } from "../service/stripe.service"
@@ -180,6 +179,7 @@ export const protect = (Model: ModelClass) =>
       } else {
         throw new AppError(400, "Can't identify the object identity!")
       }
+      console.log("done protect")
       next()
     }
   )

@@ -7,16 +7,14 @@ import {
   getModelsService,
   updateModelService,
 } from "./factory.services"
-import { getCourseService } from "./course.service"
 import { createStripePrice } from "./stripe.service"
-import Stripe from "stripe"
 import { planCreateInput } from "../controller/plan.controller"
 
 export async function createPlanService({ data }: { data: planCreateInput }) {
-  const course = await getCourseService({ id: data.courseId })
+  const STRIPE_PRODUCT_ID = "prod_OsxQ3q3vRj8fhT"
   const body = {
     amount: data.price,
-    product: course.stripeProductId,
+    product: STRIPE_PRODUCT_ID,
     currency: data.currency,
   }
   const stripePlan = await createStripePrice(body)

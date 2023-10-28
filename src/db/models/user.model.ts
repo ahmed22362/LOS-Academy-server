@@ -4,15 +4,13 @@ import {
   Model,
   DataType,
   BeforeSave,
-  HasOne,
-  BeforeUpdate,
   HasMany,
 } from "sequelize-typescript"
 import { ulid } from "ulid"
 import bcrypt from "bcrypt"
 import crypto from "crypto"
 
-import FreeSession from "./sessionFreeReq.model"
+import FreeSession from "./sessionReq.model"
 
 export interface IUserInput extends User {
   name: string
@@ -95,6 +93,9 @@ export default class User extends Model<User> {
 
   @Column(DataType.STRING)
   imageUrl?: string | null
+
+  @Column({ type: DataType.INTEGER, defaultValue: 0, allowNull: false })
+  remainSessions!: number
 
   @HasMany(() => FreeSession)
   sessions!: FreeSession[]

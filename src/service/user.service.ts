@@ -1,6 +1,8 @@
 import { FindOptions } from "sequelize"
 import User, { IUserInput } from "../db/models/user.model"
 import AppError from "../utils/AppError"
+import { getSubscriptionByUserId } from "./subscription.service"
+import Plan from "../db/models/plan.model"
 const { Op } = require("sequelize")
 
 async function createUserService({
@@ -37,6 +39,7 @@ async function getUserByIdService({
   findOptions?: FindOptions
 }): Promise<User | null> {
   try {
+    console.log(userId, findOptions)
     const user = await User.findByPk(userId, findOptions)
     if (!user) {
       throw new AppError(404, "Can't find user with this id!")
@@ -47,7 +50,6 @@ async function getUserByIdService({
     throw new AppError(400, `"Error retrieving user by ID:", ${error.message}`)
   }
 }
-
 async function getUserByService({
   findOptions,
 }: {
@@ -81,7 +83,6 @@ async function getUserByResetTokenService({
     return null
   }
 }
-
 async function updateUserService({
   userId,
   updatedData,
@@ -129,6 +130,13 @@ async function deleteUserService({
   }
 }
 
+async function getUserSubscriptionPlan({ userId }: { userId: string }) {
+  const userSubscription = getSubscriptionByUserId({
+    userId,
+    findOptions: { where: { userId, status: "active" }, include: Plan },
+  })
+  return userSubscription
+}
 export {
   createUserService,
   updateUserService,
@@ -137,4 +145,5 @@ export {
   getUserByIdService,
   getUsersService,
   getUserByResetTokenService,
+  getUserSubscriptionPlan,
 }

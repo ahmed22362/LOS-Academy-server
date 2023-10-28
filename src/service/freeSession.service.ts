@@ -2,25 +2,26 @@ import { FindOptions } from "sequelize"
 import { sequelize } from "../db"
 import moment from "moment"
 import Session, { SessionType } from "../db/models/session.model"
-import FreeSession, { FreeSessionStatus } from "../db/models/sessionFree.model"
+import { SessionStatus } from "../db/models/session.model"
 import AppError from "../utils/AppError"
 import {
   createModelService,
+  getAllModelsByService,
   getModelByIdService,
-  getModelByService,
   getModelsService,
+  getOneModelByService,
   updateModelService,
 } from "./factory.services"
 import { createSessionService } from "./session.service"
 import User from "../db/models/user.model"
-import FreeSessionReq from "../db/models/sessionFreeReq.model"
+import FreeSessionReq from "../db/models/sessionReq.model"
 import { getUserByIdService, updateUserService } from "./user.service"
-
-const FREE_SESSION_TOPIC = "User Free Session"
-const FREE_SESSION_DURATION = 20 // 20 min
-export const DATE_PATTERN: RegExp = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
-
-export async function requestFreeSessionService({
+import {
+  FREE_SESSION_DURATION,
+  FREE_SESSION_TOPIC,
+  checkPreviousFreeReq,
+} from "./sessionReq.service"
+async function requestFreeSessionService({
   userId,
   date,
 }: {
@@ -42,7 +43,7 @@ export async function requestFreeSessionService({
   await user?.decrement("availableFreeSession")
   return newFreeSessionReq
 }
-export async function getOneFreeSessionReqService({
+async function getOneFreeSessionReqService({
   id,
   findOptions,
 }: {
@@ -59,11 +60,11 @@ export async function getOneFreeSessionReqService({
   }
   return session
 }
-export async function getAvailableFreeSessionsReq() {
-  const sessions = await getModelByService({
+async function getAvailableFreeSessionsReq() {
+  const sessions = await getAllModelsByService({
     Model: FreeSessionReq,
     findOptions: {
-      where: { status: FreeSessionStatus.PENDING },
+      where: { status: SessionStatus.PENDING },
       include: { model: User, attributes: ["fName", "lName"] },
     },
   })
@@ -72,8 +73,8 @@ export async function getAvailableFreeSessionsReq() {
   }
   return sessions
 }
-export async function getAllFreeSessionsReqService() {
-  const sessions = await getModelByService({
+async function getAllFreeSessionsReqService() {
+  const sessions = await getAllModelsByService({
     Model: FreeSessionReq,
     findOptions: {
       include: { model: User, attributes: ["fName", "lName"] },
@@ -84,12 +85,12 @@ export async function getAllFreeSessionsReqService() {
   }
   return sessions
 }
-export async function updateFreeSessionReqStatusService({
+async function updateFreeSessionReqStatusService({
   id,
   status,
 }: {
   id: number
-  status: FreeSessionStatus
+  status: SessionStatus
 }) {
   const freeSession = await updateModelService({
     ModelClass: FreeSessionReq,
@@ -104,15 +105,15 @@ export async function updateFreeSessionReqStatusService({
   }
   return freeSession
 }
-export async function updateFreeSessionStatusService({
+async function updateSessionStatusService({
   id,
   status,
 }: {
   id: number
-  status: FreeSessionStatus
+  status: SessionStatus
 }) {
   const freeSession = await updateModelService({
-    ModelClass: FreeSession,
+    ModelClass: Session,
     id,
     updatedData: { status },
   })
@@ -124,7 +125,7 @@ export async function updateFreeSessionStatusService({
   }
   return freeSession
 }
-export async function getAllFreeSessionsService({
+async function getAllFreeSessionsService({
   findOptions,
 }: {
   findOptions?: FindOptions
@@ -142,7 +143,7 @@ export async function getAllFreeSessionsService({
   return sessions
 }
 // this function called after the teacher accepted request and made team!
-export async function createFreeSessionService({
+async function createFreeSessionService({
   userId,
   teacherId,
   reqId,
@@ -153,25 +154,25 @@ export async function createFreeSessionService({
   reqId: number
   date: string
 }) {
-  const session = await createSessionService({
-    userId,
-    teacherId,
-    date,
-    duration: FREE_SESSION_DURATION,
-    type: SessionType.FREE,
-    topic: FREE_SESSION_TOPIC,
-  })
-  if (!session) {
-    throw new AppError(400, "Can't create the free session!")
-  }
-  const freeSession = await createModelService({
-    ModelClass: FreeSession,
-    data: { sessionReqId: reqId, sessionId: session.id },
-  })
-  return { freeSession, session }
+  // const session = await createSessionService({
+  //   userId,
+  //   teacherId,
+  //   date,
+  //   duration: FREE_SESSION_DURATION,
+  //   type: SessionType.FREE,
+  //   topic: FREE_SESSION_TOPIC,
+  // })
+  // if (!session) {
+  //   throw new AppError(400, "Can't create the free session!")
+  // }
+  // const freeSession = await createModelService({
+  //   ModelClass: Session,
+  //   data: { sessionReqId: reqId, sessionId: session.id },
+  // })
+  // return { freeSession, session }
 }
 
-export async function acceptAndCreateFreeSessionService({
+async function acceptAndCreateFreeSessionService({
   freeSessionReqId,
   teacherId,
 }: {
@@ -182,60 +183,21 @@ export async function acceptAndCreateFreeSessionService({
     id: freeSessionReqId,
   })) as FreeSessionReq
 
-  await checkUniqueUserAndTeacher({ teacherId, userId: freeSessionReq.userId })
+  // await checkUniqueUserAndTeacher({ teacherId, userId: freeSessionReq.userId })
 
   const date = moment(freeSessionReq.date)
     .format("YYYY-MM-DD HH:MM:SS")
     .toString()
 
-  const { session, freeSession } = await createFreeSessionService({
-    userId: freeSessionReq.userId,
-    teacherId: teacherId,
-    reqId: freeSessionReq.id,
-    date: date,
-  })
-  await updateFreeSessionReqStatusService({
-    id: freeSessionReq.id,
-    status: FreeSessionStatus.TAKEN,
-  })
-  return { session, freeSession }
-}
-
-async function checkUniqueUserAndTeacher({
-  teacherId,
-  userId,
-}: {
-  teacherId: string
-  userId: string
-}) {
-  const session = await getModelByService({
-    Model: Session,
-    findOptions: { where: { userId, teacherId } },
-  })
-  if (session.length > 0) {
-    throw new AppError(
-      400,
-      "The User and Teacher together had free session before"
-    )
-  }
-}
-
-async function checkPreviousFreeReq({ userId }: { userId: string }) {
-  const sessionFreeReq = await getModelByService({
-    Model: FreeSessionReq,
-    findOptions: { where: { userId, status: FreeSessionStatus.PENDING } },
-  })
-  if (sessionFreeReq.length > 0) {
-    throw new AppError(
-      400,
-      "Can't request new session, finish the previous one first "
-    )
-  }
-  const user = await getUserByIdService({ userId })
-  if (user!.availableFreeSession == 0) {
-    throw new AppError(
-      400,
-      "you finished your available free session subscribe to get more!"
-    )
-  }
+  // const { session, freeSession } = await createFreeSessionService({
+  //   userId: freeSessionReq.userId,
+  //   teacherId: teacherId,
+  //   reqId: freeSessionReq.id,
+  //   date: date,
+  // })
+  // await updateFreeSessionReqStatusService({
+  //   id: freeSessionReq.id,
+  //   status: SessionStatus.TAKEN,
+  // })
+  // return { session, freeSession }
 }

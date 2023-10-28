@@ -46,7 +46,7 @@ async function getModelsService({
     throw new AppError(400, `"Error getting all models:" ${error.message}`)
   }
 }
-async function getModelByService({
+async function getAllModelsByService({
   Model,
   findOptions,
 }: {
@@ -56,6 +56,24 @@ async function getModelByService({
   try {
     console.log(findOptions)
     const model = await Model.findAll(findOptions)
+    return model
+  } catch (error: any) {
+    console.error("Error retrieving model by what you want:", error.message)
+    throw new AppError(
+      400,
+      `"Error retrieving model by what you want:", ${error.message}`
+    )
+  }
+}
+async function getOneModelByService({
+  Model,
+  findOptions,
+}: {
+  Model: ModelClass
+  findOptions?: FindOptions
+}): Promise<any | null> {
+  try {
+    const model = await Model.findOne(findOptions)
     return model
   } catch (error: any) {
     console.error("Error retrieving model by what you want:", error.message)
@@ -166,7 +184,8 @@ export {
   createModelService,
   updateModelService,
   deleteModelService,
-  getModelByService,
+  getAllModelsByService,
+  getOneModelByService,
   getModelByEmailService,
   getModelByIdService,
   getModelsService,
