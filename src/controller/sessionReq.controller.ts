@@ -4,27 +4,50 @@ import AppError from "../utils/AppError"
 import {
   IUpdateReq,
   acceptSessionRequestService,
-  checkPreviousFreeReq,
+  checkPreviousReq,
   createSessionRequestService,
   getAllSessionsRequestService,
   getOneSessionRequestService,
   updateSessionRequestService,
 } from "../service/sessionReq.service"
-import { SessionStatus, SessionType } from "../db/models/session.model"
-import { getUserByIdService } from "../service/user.service"
+import Session, { SessionStatus, SessionType } from "../db/models/session.model"
+import {
+  checkUserSubscription,
+  getUserByIdService,
+  sessionPerWeekEqualDates,
+} from "../service/user.service"
 import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
+import { checkDateFormat } from "../service/session.service"
 
 export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, date } = req.body
-    if (type === SessionType.FREE) {
-      await checkPreviousFreeReq({ userId })
+    const { userId, sessionDates } = req.body
+    if (!Array.isArray(sessionDates)) {
+      throw new AppError(400, "Please provide dateList as list or array!")
     }
-    const requestFreeSession = await createSessionRequestService({
-      body: { userId, date, type },
+    if (type === SessionType.FREE) {
+      await checkPreviousReq({ userId, type: SessionType.FREE })
+    } else if (type === SessionType.PAID) {
+      await checkPreviousReq({ userId, type: SessionType.PAID })
+      await checkUserSubscription({ userId })
+      await sessionPerWeekEqualDates({
+        userId,
+        sessionDatesLength: sessionDates.length,
+      })
+    }
+    const newSessionDates: Date[] = []
+
+    for (let date of sessionDates) {
+      checkDateFormat(date)
+      console.log(date)
+      newSessionDates.push(new Date(date))
+    }
+
+    const requestSession = await createSessionRequestService({
+      body: { userId, sessionDates: newSessionDates, type },
     })
-    if (!requestFreeSession) {
+    if (!requestSession) {
       return next(
         new AppError(
           400,
@@ -32,9 +55,11 @@ export const requestSession = (type: SessionType) =>
         )
       )
     }
-    const user = await getUserByIdService({ userId })
-    await user?.decrement("availableFreeSession")
-    res.status(201).json({ status: "success", data: requestFreeSession })
+    if (type === SessionType.FREE) {
+      const user = await getUserByIdService({ userId })
+      await user?.decrement("availableFreeSession")
+    }
+    res.status(201).json({ status: "success", data: requestSession })
   })
 export const getAllAvailableSessionsReq = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -66,10 +91,19 @@ export const getOneSessionReq = catchAsync(
 )
 export const updateSessionReq = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionReqId, date, status } = req.body
-    const body: IUpdateReq = { date, status }
+    const { sessionDates, status } = req.body
+    const body: IUpdateReq = { sessionDates, status }
+    const newSessionDates: Date[] = []
+    if (!Array.isArray(sessionDates)) {
+      throw new AppError(400, "Please provide dateList as list or array!")
+    }
+    for (let date of sessionDates) {
+      checkDateFormat(date)
+      console.log(date)
+      newSessionDates.push(new Date(date))
+    }
     const sessionReq = await updateSessionRequestService({
-      id: sessionReqId,
+      id: +req.params.id,
       updateBody: body,
     })
     res.status(200).json({
@@ -79,9 +113,18 @@ export const updateSessionReq = catchAsync(
     })
   }
 )
-export const acceptSessionReq = (type: SessionType) =>
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const acceptSessionReq = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId, sessionReqId } = req.body
-
-    // const session = await acceptSessionRequestService({sessionReqId,teacherId,})
-  })
+    const sessions = await acceptSessionRequestService({
+      sessionReqId: +sessionReqId,
+      teacherId: teacherId as string,
+    })
+    res.status(201).json({
+      status: "success",
+      message: "request accepted and the session are placed!",
+      length: (sessions as Session[]).length,
+      sessions,
+    })
+  }
+)

@@ -1,14 +1,33 @@
 import { NextFunction, Request, Response } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
+  checkPreviousUserSubreption,
   createStripeSubscriptionService,
   createSubscriptionService,
+  getAllSubscriptionsService,
+  updateSubscriptionService,
 } from "../service/subscription.service"
+import { createPlanService } from "../service/plan.service"
 
 export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
-    const planId = req.body.planId
+    let planId = req.body.planId
+    await checkPreviousUserSubreption({ userId })
+    if (!planId) {
+      const sessionDuration = req.body.sessionDuration
+      const sessionsCount = req.body.sessionsCount
+      const sessionsPerWeek = req.body.sessionsPerWeek
+      const plan = await createPlanService({
+        data: {
+          sessionDuration,
+          sessionsCount,
+          sessionsPerWeek,
+          title: "custom plan",
+        },
+      })
+      planId = plan.id
+    }
     const successLink: string = `${req.protocol}://${req.get(
       "host"
     )}/?session_id={CHECKOUT_SESSION_ID}`
@@ -29,5 +48,31 @@ export const createSubscription = catchAsync(
     res
       .status(200)
       .json({ status: "success", data: { stripeCheckSession, subscription } })
+  }
+)
+
+export const updateSubscription = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id
+    const updatedSubscription = await updateSubscriptionService({
+      id: +id,
+      updatedData: { status: "active" },
+    })
+    res.status(200).json({
+      status: "success",
+      message: "subscription updated successfully",
+      data: updatedSubscription,
+    })
+  }
+)
+
+export const getAllUsersSubscriptions = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const subscriptions = await getAllSubscriptionsService({})
+    res.status(200).json({
+      status: "success",
+      length: subscriptions.length,
+      data: subscriptions,
+    })
   }
 )

@@ -32,5 +32,5 @@ export default class Report extends Model {
   })
   sessionId!: number
   @BelongsTo(() => Session)
-  plan!: Session
+  session!: Session
 }

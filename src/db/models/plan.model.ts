@@ -1,11 +1,14 @@
 import {
   AutoIncrement,
+  BeforeCreate,
+  BeforeSave,
   Column,
   DataType,
   Model,
   PrimaryKey,
   Table,
 } from "sequelize-typescript"
+import { createStripePrice } from "../../service/stripe.service"
 
 @Table({ tableName: "plan", timestamps: true, freezeTableName: true })
 export default class Plan extends Model {
@@ -34,6 +37,12 @@ export default class Plan extends Model {
     allowNull: false,
   })
   sessionsCount!: number
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  sessionsPerWeek!: number
 
   @Column({
     type: DataType.INTEGER,

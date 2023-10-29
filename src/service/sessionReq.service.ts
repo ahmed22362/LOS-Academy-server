@@ -1,5 +1,5 @@
 import { FindOptions } from "sequelize"
-import Session, { SessionStatus, SessionType } from "../db/models/session.model"
+import { SessionStatus, SessionType } from "../db/models/session.model"
 import SessionReq from "../db/models/sessionReq.model"
 import AppError from "../utils/AppError"
 import {
@@ -10,32 +10,34 @@ import {
   getOneModelByService,
   updateModelService,
 } from "./factory.services"
-import { getUserByIdService } from "./user.service"
-import { createSessionService } from "./session.service"
+import { getUserByIdService, getUserSubscriptionPlan } from "./user.service"
 import moment from "moment"
+import {
+  checkDateFormat,
+  createFreeSessionService,
+  createPaidSessionsService,
+} from "./session.service"
+import { checkUniqueUserAndTeacher } from "./sessionInfo.service"
 export const DATE_PATTERN: RegExp = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
 export const FREE_SESSION_TOPIC = "User Free Session"
 export const FREE_SESSION_DURATION = 20 // 20 min
 export interface ICreateReq {
   userId: string
-  date: string
+  sessionDates: Date[]
   type: SessionType
+  sessionStartTime?: string
 }
 
 export interface IUpdateReq {
-  date: string
-  status: SessionType
+  sessionDates: Date[]
+  status: SessionStatus
 }
 export async function createSessionRequestService({
   body,
 }: {
   body: ICreateReq
 }) {
-  if (!DATE_PATTERN.test(body.date)) {
-    const errorMessage =
-      "Input does not match the pattern. Please use the format 'YYYY-MM-DD HH:MM:SS'"
-    throw new AppError(400, errorMessage)
-  }
+  body.sessionStartTime = body.sessionDates[0].toISOString().split("T")[1] // select only the time
   const sessionReq = await createModelService({
     ModelClass: SessionReq,
     data: body,
@@ -52,12 +54,15 @@ export async function getOneSessionRequestService({
   id: number
   findOptions?: FindOptions
 }) {
-  const req = (await getModelByIdService({
+  const req = await getModelByIdService({
     ModelClass: SessionReq,
     Id: id,
     findOptions,
-  })) as SessionReq
-  return req
+  })
+  if (!req) {
+    throw new AppError(404, "there is no request with this id!")
+  }
+  return req as SessionReq
 }
 export async function getAllSessionsRequestService({
   findOptions,
@@ -74,39 +79,56 @@ export async function getAllSessionsRequestService({
 export async function acceptSessionRequestService({
   sessionReqId,
   teacherId,
-  duration,
-  topic,
 }: {
   sessionReqId: number
   teacherId: string
-  duration: number
-  topic: string
 }) {
-  const sessionReq = (await getOneSessionRequestService({
+  const sessionReq = await getOneSessionRequestService({
     id: sessionReqId,
-  })) as SessionReq
-  await checkUniqueUserAndTeacher({ teacherId, userId: sessionReq.userId })
-  const date = moment(sessionReq.date).format("YYYY-MM-DD HH:MM:SS").toString()
-  const session = await createSessionService({
-    userId: sessionReq.userId,
-    teacherId,
-    date,
-    duration,
-    type: sessionReq.type,
-    topic,
-    sessionReqId: sessionReq.id,
   })
-  if (!session) {
-    throw new AppError(400, "Can't create the free session!")
+  const userId = sessionReq.userId
+  await checkUniqueUserAndTeacher({ teacherId, userId })
+  if (sessionReq.type === SessionType.FREE) {
+    const firstDate = sessionReq.sessionDates[0]
+    const freeSession = await createFreeSessionService({
+      userId,
+      teacherId,
+      sessionDate: firstDate,
+      sessionReqId,
+    })
+    await updateSessionRequestService({
+      id: sessionReqId,
+      updateBody: { status: SessionStatus.TAKEN },
+    })
+    return freeSession
+  } else if (sessionReq.type === SessionType.PAID) {
+    const subscribePlan = await getUserSubscriptionPlan({
+      userId: sessionReq.userId,
+    })
+    const paidSessions = await createPaidSessionsService({
+      userId,
+      teacherId,
+      sessionDates: sessionReq.sessionDates,
+      sessionReqId,
+      sessionCount: subscribePlan.plan.sessionsCount,
+      sessionDuration: subscribePlan.plan.sessionDuration,
+      sessionsPerWeek: subscribePlan.plan.sessionsPerWeek,
+    })
+    await updateSessionRequestService({
+      id: sessionReqId,
+      updateBody: { status: SessionStatus.TAKEN },
+    })
+    return paidSessions
+  } else {
+    throw new AppError(400, "Can't define the type of the session!")
   }
-  return session
 }
 export async function updateSessionRequestService({
   id,
   updateBody,
 }: {
   id: number
-  updateBody: IUpdateReq
+  updateBody: Partial<IUpdateReq>
 }) {
   const updatedReq = await updateModelService({
     ModelClass: SessionReq,
@@ -118,17 +140,23 @@ export async function updateSessionRequestService({
 export async function deleteSessionRequestService({ id }: { id: number }) {
   await deleteModelService({ ModelClass: SessionReq, id })
 }
-export async function checkPreviousFreeReq({ userId }: { userId: string }) {
-  const sessionFreeReq = await getOneModelByService({
+export async function checkPreviousReq({
+  userId,
+  type,
+}: {
+  userId: string
+  type: SessionType
+}) {
+  const sessionReq = await getOneModelByService({
     Model: SessionReq,
     findOptions: {
-      where: { userId, status: SessionStatus.PENDING, type: SessionType.FREE },
+      where: { userId, status: SessionStatus.PENDING, type },
     },
   })
-  if (sessionFreeReq) {
+  if (sessionReq) {
     throw new AppError(
       400,
-      "Can't request new session, finish the previous one first "
+      "Can't request new session, finish the previous one first or update the date if there is no teacher accept it! "
     )
   }
   const user = await getUserByIdService({ userId })
@@ -136,24 +164,6 @@ export async function checkPreviousFreeReq({ userId }: { userId: string }) {
     throw new AppError(
       400,
       "you finished your available free session subscribe to get more!"
-    )
-  }
-}
-async function checkUniqueUserAndTeacher({
-  teacherId,
-  userId,
-}: {
-  teacherId: string
-  userId: string
-}) {
-  const session = await getOneModelByService({
-    Model: Session,
-    findOptions: { where: { userId, teacherId } },
-  })
-  if (session) {
-    throw new AppError(
-      400,
-      "The User and Teacher together had free session before"
     )
   }
 }

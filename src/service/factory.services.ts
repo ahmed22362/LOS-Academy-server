@@ -10,10 +10,6 @@ export interface ModelClass {
   findAll(options?: FindOptions): Promise<Model[]>
   findByPk(id: number | string, options?: FindOptions): Promise<Model | null>
   destroy(options?: FindOptions): Promise<number>
-  // correctPassword(
-  //   candidatePassword: string,
-  //   modelPassword: string
-  // ): Promise<boolean>
 }
 
 async function createModelService({
@@ -73,7 +69,13 @@ async function getOneModelByService({
   findOptions?: FindOptions
 }): Promise<any | null> {
   try {
-    const model = await Model.findOne(findOptions)
+    let myFindOptions = findOptions
+    myFindOptions ? myFindOptions : {}
+    // to always get the most recent record
+    myFindOptions!.order = [["createdAt", "DESC"]]
+    myFindOptions!.limit = 1
+    console.log({ "here in getOneModel": myFindOptions })
+    const model = await Model.findOne(myFindOptions)
     return model
   } catch (error: any) {
     console.error("Error retrieving model by what you want:", error.message)
@@ -94,12 +96,6 @@ async function getModelByIdService({
 }): Promise<Model | null> {
   try {
     const model = await ModelClass.findByPk(Id, findOptions)
-    if (!model) {
-      throw new AppError(
-        404,
-        "Error getting model: There is no model with this id! "
-      )
-    }
     return model
   } catch (error: any) {
     console.error("Error retrieving model by ID:", error.message)

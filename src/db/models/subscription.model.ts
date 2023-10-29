@@ -37,7 +37,6 @@ export default class Subscription extends Model {
   @Column({
     type: DataType.STRING,
     allowNull: false,
-    unique: true,
   })
   userId!: String
 

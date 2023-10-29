@@ -12,22 +12,18 @@ import AppError from "../utils/AppError"
 export interface planCreateInput {
   sessionDuration: number
   sessionsCount: number
+  sessionsPerWeek: number
   title: string
-  price: number
-  currency: string
-  stripePriceId?: string
 }
-const STANDARD_CURRENCY_USD = "usd"
 
 export const createPlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionsCount, sessionDuration, title, price } = req.body
+    const { sessionsCount, sessionDuration, title, sessionsPerWeek } = req.body
     const body: planCreateInput = {
       sessionDuration,
       sessionsCount,
+      sessionsPerWeek,
       title,
-      price,
-      currency: STANDARD_CURRENCY_USD,
     }
     const plan = await createPlanService({ data: body })
     if (!plan) {

@@ -61,7 +61,7 @@ export default class Teacher extends Model<Teacher> {
     type: DataType.STRING,
     allowNull: true,
   })
-  phone: string | undefined | null
+  phone?: string
 
   @Column({
     type: DataType.STRING,
@@ -85,7 +85,7 @@ export default class Teacher extends Model<Teacher> {
   password!: string
 
   @Column(DataType.DATE)
-  passwordChangedAt: Date | null | undefined
+  passwordChangedAt?: Date
 
   @Column({
     type: DataType.ENUM({ values: Object.values(RoleType) }),

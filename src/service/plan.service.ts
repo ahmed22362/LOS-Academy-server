@@ -5,28 +5,68 @@ import {
   deleteModelService,
   getModelByIdService,
   getModelsService,
+  getOneModelByService,
   updateModelService,
 } from "./factory.services"
 import { createStripePrice } from "./stripe.service"
 import { planCreateInput } from "../controller/plan.controller"
+import AppError from "../utils/AppError"
+const STANDARD_CURRENCY_USD = "usd"
+const STANDARD_SESSION_MIN_PRICE = 0.5 // minute price is .5$
+const STRIPE_PRODUCT_ID = "prod_OsxQ3q3vRj8fhT"
 
+interface IPlanCreateData {
+  currency: string
+  sessionDuration: number
+  sessionsCount: number
+  sessionsPerWeek: number
+  title: string
+  stripePriceId?: string
+  price: number
+}
 export async function createPlanService({ data }: { data: planCreateInput }) {
-  const STRIPE_PRODUCT_ID = "prod_OsxQ3q3vRj8fhT"
-  const body = {
-    amount: data.price,
-    product: STRIPE_PRODUCT_ID,
-    currency: data.currency,
+  const plan = await getPlanBy({
+    findOptions: {
+      where: {
+        sessionsCount: data.sessionsCount,
+        sessionDuration: data.sessionDuration,
+        sessionsPerWeek: data.sessionsPerWeek,
+      },
+    },
+  })
+  if (plan) {
+    console.log("There is plan with this spec ")
+    return plan
   }
-  const stripePlan = await createStripePrice(body)
-  data.stripePriceId = stripePlan.id
-  return await createModelService({ ModelClass: Plan, data })
+  const price =
+    data.sessionDuration * data.sessionsCount * STANDARD_SESSION_MIN_PRICE
+  const stripeBody = {
+    amount: price,
+    product: STRIPE_PRODUCT_ID,
+    currency: STANDARD_CURRENCY_USD,
+  }
+  const planBody: IPlanCreateData = {
+    currency: STANDARD_CURRENCY_USD,
+    sessionDuration: data.sessionDuration,
+    sessionsCount: data.sessionsCount,
+    sessionsPerWeek: data.sessionsPerWeek,
+    title: data.title,
+    price,
+  }
+  const stripePlan = await createStripePrice(stripeBody)
+  planBody.stripePriceId = stripePlan.id
+  return await createModelService({ ModelClass: Plan, data: planBody })
 }
 export async function getPlansService({
   findOptions,
 }: {
   findOptions?: FindOptions
 }) {
-  return await getModelsService({ ModelClass: Plan, findOptions })
+  const plan = await getModelsService({ ModelClass: Plan, findOptions })
+  if (!plan) {
+    throw new AppError(404, "Can't find plan with this id!")
+  }
+  return plan
 }
 
 export async function updatePlanService({
@@ -42,5 +82,14 @@ export async function deletePlanService({ id }: { id: string | number }) {
   return await deleteModelService({ ModelClass: Plan, id: id })
 }
 export async function getPlanService({ id }: { id: string | number }) {
-  return (await getModelByIdService({ ModelClass: Plan, Id: id })) as Plan
+  const plan = (await getModelByIdService({ ModelClass: Plan, Id: id })) as Plan
+  if (!plan) {
+    throw new AppError(404, "Can't find plan with this id!")
+  }
+  return plan
+}
+
+export async function getPlanBy({ findOptions }: { findOptions: FindOptions }) {
+  const plan = await getOneModelByService({ Model: Plan, findOptions })
+  return plan
 }

@@ -1,8 +1,12 @@
 import { FindOptions } from "sequelize"
 import User, { IUserInput } from "../db/models/user.model"
 import AppError from "../utils/AppError"
-import { getSubscriptionByUserId } from "./subscription.service"
+import {
+  getSubscriptionBy,
+  getSubscriptionByUserId,
+} from "./subscription.service"
 import Plan from "../db/models/plan.model"
+import Subscription from "../db/models/subscription.model"
 const { Op } = require("sequelize")
 
 async function createUserService({
@@ -39,7 +43,6 @@ async function getUserByIdService({
   findOptions?: FindOptions
 }): Promise<User | null> {
   try {
-    console.log(userId, findOptions)
     const user = await User.findByPk(userId, findOptions)
     if (!user) {
       throw new AppError(404, "Can't find user with this id!")
@@ -131,11 +134,34 @@ async function deleteUserService({
 }
 
 async function getUserSubscriptionPlan({ userId }: { userId: string }) {
-  const userSubscription = getSubscriptionByUserId({
-    userId,
+  const userSubscription = getSubscriptionBy({
     findOptions: { where: { userId, status: "active" }, include: Plan },
   })
   return userSubscription
+}
+async function checkUserSubscription({ userId }: { userId: string }) {
+  const subscription = await getSubscriptionByUserId({ userId })
+  if (!subscription) {
+    throw new AppError(
+      400,
+      "user must subscribe to plan first to request paid session!"
+    )
+  }
+}
+export async function sessionPerWeekEqualDates({
+  userId,
+  sessionDatesLength,
+}: {
+  userId: string
+  sessionDatesLength: number
+}) {
+  const subscribe = await getUserSubscriptionPlan({ userId })
+  if (subscribe.plan.sessionsPerWeek !== sessionDatesLength) {
+    throw new AppError(
+      400,
+      `must provide date for all sessions per week the sessions per week are: ${subscribe.plan.sessionsPerWeek} `
+    )
+  }
 }
 export {
   createUserService,
@@ -146,4 +172,5 @@ export {
   getUsersService,
   getUserByResetTokenService,
   getUserSubscriptionPlan,
+  checkUserSubscription,
 }

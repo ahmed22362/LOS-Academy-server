@@ -2,6 +2,7 @@ import Stripe from "stripe"
 import Subscription from "../db/models/subscription.model"
 import {
   createModelService,
+  getAllModelsByService,
   getModelByIdService,
   getOneModelByService,
   updateModelService,
@@ -11,6 +12,7 @@ import { createStripeSession, getStripeSubscription } from "./stripe.service"
 import { getUserByIdService } from "./user.service"
 import AppError from "../utils/AppError"
 import { FindOptions } from "sequelize"
+import { createSessionRequestService } from "./sessionReq.service"
 
 interface stripeCreateSubscription {
   userId: string
@@ -42,7 +44,6 @@ export async function createStripeSubscriptionService({
   })
   return stripeSession
 }
-
 export async function createSubscriptionService({
   body,
 }: {
@@ -79,18 +80,26 @@ export async function getSubscriptionByID({
   return subscription
 }
 
-export async function getSubscriptionByUserId({
-  userId,
+export async function getSubscriptionByUserId({ userId }: { userId: string }) {
+  const subscription = await getOneModelByService({
+    Model: Subscription,
+    findOptions: { where: { userId } },
+  })
+  return subscription
+}
+export async function getSubscriptionBy({
   findOptions,
 }: {
-  userId: string
   findOptions?: FindOptions
 }) {
   const subscription = await getOneModelByService({
     Model: Subscription,
     findOptions,
   })
-  return subscription
+  if (!subscription) {
+    throw new AppError(404, "can't find subscription!")
+  }
+  return subscription as Subscription
 }
 
 export async function getSubscriptionBySessionID(
@@ -109,6 +118,39 @@ export async function getSubscriptionBySessionID(
   return membership
 }
 
+export async function getAllUserSubscriptions({ userId }: { userId: string }) {
+  const subscriptions = await getAllModelsByService({
+    Model: Subscription,
+    findOptions: { where: { userId } },
+  })
+  return subscriptions
+}
+export async function getAllSubscriptionsService({
+  findOptions,
+}: {
+  findOptions?: FindOptions
+}) {
+  const subscriptions = await getAllModelsByService({
+    Model: Subscription,
+    findOptions,
+  })
+  return subscriptions
+}
+export async function checkPreviousUserSubreption({
+  userId,
+}: {
+  userId: string
+}) {
+  const previousSubscription = await getSubscriptionByUserId({
+    userId,
+  })
+  if (previousSubscription && previousSubscription.status === "pending") {
+    throw new AppError(
+      400,
+      "you can't subscribe to another when there is pending one!"
+    )
+  }
+}
 export async function handelSubscriptionCompleted(
   checkoutSession: Stripe.Checkout.Session
 ) {
@@ -116,7 +158,7 @@ export async function handelSubscriptionCompleted(
   const stripeSubscription = await getStripeSubscription(
     checkoutSession.subscription as string
   )
-  // console.log(membership, stripeSubscription, checkoutSession)
+  console.log(membership, stripeSubscription, checkoutSession)
 
   await updateSubscriptionService({
     id: membership.id,

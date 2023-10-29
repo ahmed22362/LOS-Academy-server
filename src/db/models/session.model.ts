@@ -57,6 +57,12 @@ export default class Session extends Model<Session> {
   sessionDuration!: number
 
   @Column({
+    type: DataType.TIME,
+    allowNull: false,
+  })
+  sessionStartTime!: string
+
+  @Column({
     type: DataType.ENUM({ values: Object.values(SessionStatus) }),
     defaultValue: SessionStatus.PENDING,
   })

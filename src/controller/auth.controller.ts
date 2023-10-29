@@ -128,16 +128,15 @@ export const protect = (Model: ModelClass) =>
       if (!Model) {
         return next(new AppError(404, "Please provide model to search with!"))
       }
+      console.log("in protect", Model)
       // 1) Getting token and check if it's there
       let token: string | undefined
       if (
         req.headers.authorization &&
         req.headers.authorization.startsWith("Bearer")
       ) {
-        console.log("inside first if")
         token = req.headers.authorization.split(" ")[1]
       } else if (req.cookies.token !== undefined) {
-        logger.info(`yes in cookies`)
         token = req.cookies.token
       }
       if (!token) {
@@ -150,7 +149,7 @@ export const protect = (Model: ModelClass) =>
       }
       // 2) Verification token
       const decoded = (await verifyToken(token)) as decodedToken
-
+      console.log(decoded)
       // 3) Check if user still exists
       const currentUser = (await getModelByIdService({
         ModelClass: Model,

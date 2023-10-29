@@ -19,6 +19,9 @@ export const setUserOrTeacherId = (
 ) => {
   if (!req.body.user) req.body.userId = req.user?.id
   if (!req.body.teacher) req.body.teacherId = req.teacher?.id
+  console.log(
+    `done setting this is user: ${req.body.UserId} teacher: ${req.body.teacherId}`
+  )
   next()
 }
 export const setUserIdToParams = (
@@ -109,9 +112,13 @@ export const getUser = catchAsync(
 )
 export const getMySubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    console.log(req.body.userId)
-    const user = await getUserSubscriptionPlan({ userId: req.body.userId })
-    res.status(200).json({ status: "success", data: user })
+    const userSubscription = await getUserSubscriptionPlan({
+      userId: req.body.userId,
+    })
+    if (!userSubscription) {
+      return next(new AppError(404, "there is no subscripting for this user!"))
+    }
+    res.status(200).json({ status: "success", data: userSubscription })
   }
 )
 export const updateUserPlan = catchAsync(
