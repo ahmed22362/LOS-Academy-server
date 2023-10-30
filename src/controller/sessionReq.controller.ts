@@ -19,6 +19,7 @@ import {
 import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
 import { checkDateFormat } from "../service/session.service"
+import { sequelize } from "../db/sequalize"
 
 export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -44,22 +45,35 @@ export const requestSession = (type: SessionType) =>
       newSessionDates.push(new Date(date))
     }
 
-    const requestSession = await createSessionRequestService({
-      body: { userId, sessionDates: newSessionDates, type },
-    })
-    if (!requestSession) {
-      return next(
-        new AppError(
-          400,
-          "Can't create the request free session some thing wrong happened!"
+    const t = await sequelize.transaction()
+    try {
+      const requestSession = await createSessionRequestService({
+        body: { userId, sessionDates: newSessionDates, type },
+        transaction: t,
+      })
+      if (!requestSession) {
+        return next(
+          new AppError(
+            400,
+            "Can't create the request free session some thing wrong happened!"
+          )
         )
-      )
+      }
+      if (type === SessionType.FREE) {
+        await User.decrement(
+          { availableFreeSession: 1 },
+          {
+            where: { id: userId },
+            transaction: t, // Pass the transaction
+          }
+        )
+      }
+      await t.commit()
+      res.status(201).json({ status: "success", data: requestSession })
+    } catch (error: any) {
+      await t.rollback()
+      throw new AppError(400, `Error Request Session! ${error.message}`)
     }
-    if (type === SessionType.FREE) {
-      const user = await getUserByIdService({ userId })
-      await user?.decrement("availableFreeSession")
-    }
-    res.status(201).json({ status: "success", data: requestSession })
   })
 export const getAllAvailableSessionsReq = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {

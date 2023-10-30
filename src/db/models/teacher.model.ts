@@ -9,13 +9,13 @@ import { ulid } from "ulid"
 import bcrypt from "bcrypt"
 
 export interface ITeacherInput extends Teacher {
-  fName: string
-  lName: string
+  name: string
   nationalId: string
   email: string
   password: string
   phone: string
   customerId?: string
+  sessionCost: number
 }
 export enum RoleType {
   TEACHER = "teacher",
@@ -38,18 +38,7 @@ export default class Teacher extends Model<Teacher> {
     type: DataType.STRING,
     allowNull: false,
   })
-  fName!: string
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
-  lName!: string
-
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
-  biography?: string
+  name!: string
 
   @Column({
     type: DataType.TEXT,
@@ -83,6 +72,12 @@ export default class Teacher extends Model<Teacher> {
     allowNull: false,
   })
   password!: string
+
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  sessionCost!: number
+
+  @Column({ type: DataType.INTEGER, defaultValue: 0 })
+  committedSessions!: number
 
   @Column(DataType.DATE)
   passwordChangedAt?: Date

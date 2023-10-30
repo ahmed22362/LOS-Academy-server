@@ -12,19 +12,20 @@ import Teacher, { ITeacherInput } from "../db/models/teacher.model"
 import { login, protect } from "./auth.controller"
 import { getTeacherUpcomingSessionsService } from "../service/session.service"
 
-const getTeacherAtt = ["id", "fName", "lName", "phone", "email", "role"]
+const getTeacherAtt = ["id", "name", "phone", "email", "role"]
 
 export const createTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { fName, lName, email, password, phone, nationalId, role } = req.body
+    const { name, email, password, phone, nationalId, role, sessionCost } =
+      req.body
     const body = {
-      fName,
-      lName,
+      name,
       email,
       password,
       phone,
       nationalId,
       role,
+      sessionCost,
     } as ITeacherInput
     const newTeacher = await createTeacherService(body)
     if (!newTeacher) {
@@ -62,14 +63,14 @@ export const deleteTeacher = catchAsync(
 export const updateTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const { fName, lName, email, phone, nationalId, role } = req.body
+    const { name, sessionCost, email, phone, nationalId, role } = req.body
     const body = {
-      fName,
-      lName,
+      name,
       email,
       phone,
       nationalId,
       role,
+      sessionCost,
     } as ITeacherInput
     const teacher = await updateTeacherService({
       teacherId: id,

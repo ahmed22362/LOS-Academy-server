@@ -1,5 +1,4 @@
-import { FindOptions, Op } from "sequelize"
-import SessionInfo from "../db/models/sessionInfo.model"
+import { FindOptions, Transaction } from "sequelize"
 import Session, { SessionStatus } from "../db/models/session.model"
 import { SessionType } from "../db/models/session.model"
 import AppError from "../utils/AppError"
@@ -12,12 +11,12 @@ import {
   updateModelService,
 } from "./factory.services"
 import { DATE_PATTERN, FREE_SESSION_DURATION } from "./sessionReq.service"
-import ZoomService from "../connect/zoom"
 import {
   createSessionInfoService,
   getTeacherSessionInfoService,
   getUserSessionInfoService,
 } from "./sessionInfo.service"
+import { sequelize } from "../db/sequalize"
 
 export interface IInfoBody {
   userId: string
@@ -33,40 +32,45 @@ export interface ISessionBody {
   sessionStartTime: string
 }
 
+export interface ISessionUpdateUser {
+  sessionDate: Date
+  sessionStartTime: number
+}
+export interface ISessionUpdateTeacher extends ISessionUpdateUser {
+  status: SessionStatus
+}
 export async function createFreeSessionService({
   userId,
   teacherId,
   sessionDate,
   sessionReqId,
+  transaction,
 }: {
   userId: string
   teacherId: string
   sessionDate: Date
   sessionReqId: number
+  transaction?: Transaction
 }) {
   const start_time = sessionDate.toISOString().split("T")[1]
-  console.log(userId, teacherId, sessionDate, sessionReqId, "in create session")
   const sessionInfo = await createSessionInfoService({
     userId,
     teacherId,
     sessionReqId,
+    transaction,
   })
 
-  const sessionBody: ISessionBody = {
+  const sessionBody: any = {
     sessionDate,
     sessionDuration: FREE_SESSION_DURATION,
     sessionInfoId: sessionInfo.id,
     type: SessionType.FREE,
     sessionStartTime: start_time,
   }
-  const session = await createModelService({
-    ModelClass: Session,
-    data: sessionBody,
-  })
+  const session = await Session.create(sessionBody, { transaction })
   if (!session) {
     throw new AppError(400, "Can't create free session!")
   }
-  return session
 }
 export async function createPaidSessionsService({
   userId,
@@ -76,6 +80,7 @@ export async function createPaidSessionsService({
   sessionDuration,
   sessionCount,
   sessionsPerWeek,
+  transaction,
 }: {
   userId: string
   teacherId: string
@@ -84,20 +89,15 @@ export async function createPaidSessionsService({
   sessionDuration: number
   sessionCount: number
   sessionsPerWeek: number
+  transaction?: Transaction
 }): Promise<Session[]> {
   const sessionInfo = await createSessionInfoService({
     userId,
     teacherId,
     sessionReqId,
+    transaction,
   })
   let sessions: Session[] = []
-  console.log("before genereate", {
-    sessionCount,
-    sessionDuration,
-    sessionInfoId: sessionInfo.id,
-    sessionDates,
-    sessionsPerWeek,
-  })
   const sessionsBody = generateSessions({
     sessionCount,
     sessionDuration,
@@ -105,12 +105,8 @@ export async function createPaidSessionsService({
     sessionDates,
     sessionsPerWeek,
   })
-  console.log(sessionsBody)
   for (let s of sessionsBody) {
-    const session = await createModelService({
-      ModelClass: Session,
-      data: { ...s },
-    })
+    const session = await Session.create({ ...(s as any) }, { transaction })
     if (!session) {
       throw new AppError(400, "Can't create paid session!")
     }
@@ -119,12 +115,12 @@ export async function createPaidSessionsService({
 
   return sessions
 }
-export async function updateSessionService({
+export async function rescheduleSessionService({
   id,
   updatedData,
 }: {
   id: number | string
-  updatedData: any
+  updatedData: Partial<ISessionUpdateUser>
 }) {
   const updatedSession = await updateModelService({
     ModelClass: Session,
@@ -136,12 +132,12 @@ export async function updateSessionService({
   }
   return updatedSession
 }
-export async function updateSessionInfoService({
+export async function updateSessionStatusService({
   id,
   updatedData,
 }: {
   id: number | string
-  updatedData: any
+  updatedData: Partial<ISessionUpdateTeacher>
 }) {
   const updatedSession = await updateModelService({
     ModelClass: Session,
@@ -153,6 +149,7 @@ export async function updateSessionInfoService({
   }
   return updatedSession
 }
+
 export async function deleteSessionService({ id }: { id: string | number }) {
   await deleteModelService({ ModelClass: Session, id })
 }
@@ -174,19 +171,8 @@ export async function getAllSessionsService({
   }
   return sessions
 }
-export async function getAllSessionsInfoService({
-  findOptions,
-}: {
-  findOptions?: FindOptions
-}) {
-  const sessions = await getModelsService({ ModelClass: Session, findOptions })
-  if (!sessions) {
-    throw new AppError(400, "Can't get sessions!")
-  }
-  return sessions
-}
 
-export async function getSessionService({
+export async function getOneSessionService({
   id,
   findOptions,
 }: {
@@ -201,10 +187,14 @@ export async function getSessionService({
   if (!session) {
     throw new AppError(404, "can't find session with this id!")
   }
-  return session
+  return session as Session
 }
 
-export async function getUserSessionsService({ userId }: { userId: string }) {
+export async function getUserAllSessionsService({
+  userId,
+}: {
+  userId: string
+}) {
   const sessionInfo = await getUserSessionInfoService({ userId })
   const sessions = await getAllModelsByService({
     Model: Session,
@@ -240,6 +230,30 @@ export async function getUserUpcomingSessionsService({
 interface UserSessions {
   [userName: string]: Session[]
 }
+export async function getTeacherAllSessionsService({
+  teacherId,
+}: {
+  teacherId: string
+}) {
+  const sessionInfo = await getTeacherSessionInfoService({ teacherId })
+  const userSessions: UserSessions = {}
+  for (let info of sessionInfo) {
+    const sessions = await getAllModelsByService({
+      Model: Session,
+      findOptions: {
+        where: {
+          sessionInfoId: info.id,
+        },
+      },
+    })
+    if (!sessions) {
+      throw new AppError(404, "there is no sessions with this session info!")
+    }
+    userSessions[`${info.user!.name} - ${info.user!.email}`] = sessions
+  }
+
+  return userSessions
+}
 export async function getTeacherUpcomingSessionsService({
   teacherId,
 }: {
@@ -265,6 +279,46 @@ export async function getTeacherUpcomingSessionsService({
 
   return userSessions
 }
+
+export async function updateSessionTeacherAttendance({
+  sessionId,
+  teacherId,
+  attend,
+}: {
+  sessionId: number
+  teacherId: string
+  attend: boolean
+}) {
+  // to check if the teacher has this session in the session info
+  const sessionsInfo = await getTeacherSessionInfoService({ teacherId })
+  const session = await getOneSessionService({ id: sessionId })
+  const exist = sessionsInfo.some((info) => info.id === session.sessionInfoId)
+  if (!exist) {
+    throw new AppError(404, "The Teacher is not assign to this session")
+  }
+  session.teacherAttended = attend
+  await session.save()
+}
+export async function updateSessionStudentAttendance({
+  sessionId,
+  userId,
+  attend,
+}: {
+  sessionId: number
+  userId: string
+  attend: boolean
+}) {
+  // to check if the user has this session in the session info
+  const sessionsInfo = await getUserSessionInfoService({ userId })
+  const session = await getOneSessionService({ id: sessionId })
+  const exist = sessionsInfo.id === session.sessionInfoId
+  if (!exist) {
+    throw new AppError(404, "The student is not assign to this session")
+  }
+  session.studentAttended = attend
+  await session.save()
+}
+
 export function checkDateFormat(date: string) {
   if (!DATE_PATTERN.test(date)) {
     const errorMessage =

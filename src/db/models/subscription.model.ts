@@ -38,7 +38,7 @@ export default class Subscription extends Model {
     type: DataType.STRING,
     allowNull: false,
   })
-  userId!: String
+  userId!: string
 
   @BelongsTo(() => User)
   user!: User
