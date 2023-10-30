@@ -1,18 +1,23 @@
-import { FindOptions } from "sequelize"
+import { FindOptions, Op } from "sequelize"
 import SessionInfo from "../db/models/sessionInfo.model"
-import Session from "../db/models/session.model"
+import Session, { SessionStatus } from "../db/models/session.model"
 import { SessionType } from "../db/models/session.model"
 import AppError from "../utils/AppError"
 import {
   createModelService,
   deleteModelService,
+  getAllModelsByService,
   getModelByIdService,
   getModelsService,
   updateModelService,
 } from "./factory.services"
 import { DATE_PATTERN, FREE_SESSION_DURATION } from "./sessionReq.service"
 import ZoomService from "../connect/zoom"
-import { createSessionInfoService } from "./sessionInfo.service"
+import {
+  createSessionInfoService,
+  getTeacherSessionInfoService,
+  getUserSessionInfoService,
+} from "./sessionInfo.service"
 
 export interface IInfoBody {
   userId: string
@@ -63,7 +68,6 @@ export async function createFreeSessionService({
   }
   return session
 }
-
 export async function createPaidSessionsService({
   userId,
   teacherId,
@@ -115,7 +119,6 @@ export async function createPaidSessionsService({
 
   return sessions
 }
-
 export async function updateSessionService({
   id,
   updatedData,
@@ -160,7 +163,6 @@ export async function deleteSessionInfoService({
 }) {
   await deleteModelService({ ModelClass: Session, id })
 }
-
 export async function getAllSessionsService({
   findOptions,
 }: {
@@ -201,22 +203,67 @@ export async function getSessionService({
   }
   return session
 }
-export async function getSessionInfoService({
-  id,
-  findOptions,
-}: {
-  id: string | number
-  findOptions?: FindOptions
-}) {
-  const session = await getModelByIdService({
-    ModelClass: SessionInfo,
-    Id: id,
-    findOptions,
+
+export async function getUserSessionsService({ userId }: { userId: string }) {
+  const sessionInfo = await getUserSessionInfoService({ userId })
+  const sessions = await getAllModelsByService({
+    Model: Session,
+    findOptions: { where: { sessionInfoId: sessionInfo.id } },
   })
-  if (!session) {
-    throw new AppError(404, "can't find session with this id!")
+  if (!sessions) {
+    throw new AppError(404, "there is no sessions with this session info!")
   }
-  return session
+  return sessions as Session[]
+}
+
+export async function getUserUpcomingSessionsService({
+  userId,
+}: {
+  userId: string
+}) {
+  const sessionInfo = await getUserSessionInfoService({ userId })
+  const sessions = await getAllModelsByService({
+    Model: Session,
+    findOptions: {
+      where: {
+        sessionInfoId: sessionInfo.id,
+        status: SessionStatus.PENDING,
+      },
+    },
+  })
+  if (!sessions) {
+    throw new AppError(404, "there is no sessions with this session info!")
+  }
+  return sessions as Session[]
+}
+
+interface UserSessions {
+  [userName: string]: Session[]
+}
+export async function getTeacherUpcomingSessionsService({
+  teacherId,
+}: {
+  teacherId: string
+}) {
+  const sessionInfo = await getTeacherSessionInfoService({ teacherId })
+  const userSessions: UserSessions = {}
+  for (let info of sessionInfo) {
+    const sessions = await getAllModelsByService({
+      Model: Session,
+      findOptions: {
+        where: {
+          sessionInfoId: info.id,
+          status: SessionStatus.PENDING,
+        },
+      },
+    })
+    if (!sessions) {
+      throw new AppError(404, "there is no sessions with this session info!")
+    }
+    userSessions[`${info.user!.name} - ${info.user!.email}`] = sessions
+  }
+
+  return userSessions
 }
 export function checkDateFormat(date: string) {
   if (!DATE_PATTERN.test(date)) {

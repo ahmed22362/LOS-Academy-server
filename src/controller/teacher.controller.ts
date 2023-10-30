@@ -10,6 +10,7 @@ import {
 import AppError from "../utils/AppError"
 import Teacher, { ITeacherInput } from "../db/models/teacher.model"
 import { login, protect } from "./auth.controller"
+import { getTeacherUpcomingSessionsService } from "../service/session.service"
 
 const getTeacherAtt = ["id", "fName", "lName", "phone", "email", "role"]
 
@@ -102,6 +103,15 @@ export const getTeacher = catchAsync(
       return next(new AppError(404, "Can't find teacher with this id!"))
     }
     res.status(200).json({ status: "success", data: teacher })
+  }
+)
+export const getTeacherSessions = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    const sessions = await getTeacherUpcomingSessionsService({ teacherId })
+    res
+      .status(200)
+      .json({ status: "success", length: sessions.length, data: sessions })
   }
 )
 export const loginTeacher = login(Teacher)

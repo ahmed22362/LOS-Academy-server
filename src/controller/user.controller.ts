@@ -12,6 +12,10 @@ import {
 import AppError from "../utils/AppError"
 import { IRequestWithUser, login, protect, restrictTo } from "./auth.controller"
 import { createStripeBillingPortal } from "../service/stripe.service"
+import {
+  getUserSessionsService,
+  getUserUpcomingSessionsService,
+} from "../service/session.service"
 export const setUserOrTeacherId = (
   req: IRequestWithUser,
   res: Response,
@@ -142,5 +146,23 @@ export const updateUserPlan = catchAsync(
       data: portal,
       message: "redirect to the portal to change the plan from it!",
     })
+  }
+)
+export const getMySessions = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const sessions = await getUserSessionsService({ userId: req.body.userId })
+    res
+      .status(200)
+      .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+export const getUpcomingSessions = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const sessions = await getUserUpcomingSessionsService({
+      userId: req.body.userId,
+    })
+    res
+      .status(200)
+      .json({ status: "success", length: sessions.length, data: sessions })
   }
 )

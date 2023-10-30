@@ -7,6 +7,7 @@ import {
 } from "./subscription.service"
 import Plan from "../db/models/plan.model"
 import Subscription from "../db/models/subscription.model"
+import { getModelByIdService } from "./factory.services"
 const { Op } = require("sequelize")
 
 async function createUserService({
