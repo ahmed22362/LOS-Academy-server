@@ -1,57 +1,48 @@
 import { Router } from "express"
-import { getAllFreeSessions } from "../controller/session.controller"
-import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
 import { protectTeacher } from "../controller/teacher.controller"
 import {
-  acceptSessionReq,
-  getAllAvailableSessionsReq,
   getAllSessionsReq,
   getOneSessionReq,
-  requestSession,
   updateSessionReq,
 } from "../controller/sessionReq.controller"
-import { SessionType } from "../db/models/session.model"
+import freeSessionRouter from "./session.free.router"
+import paidSessionRouter from "./session.paid.router"
+import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
+import {
+  getAllSessions,
+  getOneSessionInfo,
+  regenerateSessionLink,
+  updateSessionAttendance,
+  updateSessionStatus,
+} from "../controller/session.controller"
 const sessionRouter = Router()
-const freeSessionRouter = Router()
-const paidSessionRouter = Router()
-freeSessionRouter
-  .route("/request")
-  .post(protectUser, setUserOrTeacherId, requestSession(SessionType.FREE))
-freeSessionRouter
-  .route("/available")
-  .get(
-    protectTeacher,
-    setUserOrTeacherId,
-    getAllAvailableSessionsReq(SessionType.FREE)
-  )
-freeSessionRouter
-  .route("/accept")
-  .post(protectTeacher, setUserOrTeacherId, acceptSessionReq)
-freeSessionRouter
+
+sessionRouter.route("/session-requests").get(protectTeacher, getAllSessionsReq)
+sessionRouter
   .route("/request/:id")
   .get(protectTeacher, setUserOrTeacherId, getOneSessionReq)
-
-freeSessionRouter.route("/").get(protectTeacher, getAllFreeSessions)
-
-paidSessionRouter
-  .route("/request")
-  .post(protectUser, setUserOrTeacherId, requestSession(SessionType.PAID))
-paidSessionRouter
-  .route("/available")
-  .get(
-    protectTeacher,
-    setUserOrTeacherId,
-    getAllAvailableSessionsReq(SessionType.PAID)
-  )
-paidSessionRouter
-  .route("/accept")
-  .post(protectTeacher, setUserOrTeacherId, acceptSessionReq)
-paidSessionRouter
-  .route("/request/:id")
-  .get(protectTeacher, setUserOrTeacherId, getOneSessionReq)
-
 sessionRouter.use("/free", freeSessionRouter)
 sessionRouter.use("/paid", paidSessionRouter)
-sessionRouter.patch("/:id", updateSessionReq)
-sessionRouter.route("/session-requests").get(protectTeacher, getAllSessionsReq)
+sessionRouter.patch(
+  "/request/:id",
+  protectTeacher,
+  setUserOrTeacherId,
+  updateSessionReq
+)
+sessionRouter
+  .route("/updateUserAttendance")
+  .post(protectUser, setUserOrTeacherId, updateSessionAttendance)
+sessionRouter
+  .route("/updateTeacherAttendance")
+  .post(protectTeacher, setUserOrTeacherId, updateSessionAttendance)
+sessionRouter
+  .route("/regenerateLink")
+  .post(protectTeacher, setUserOrTeacherId, regenerateSessionLink)
+sessionRouter
+  .route("/status")
+  .post(protectTeacher, setUserOrTeacherId, updateSessionStatus)
+sessionRouter
+  .route("/:id")
+  .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo)
+sessionRouter.route("/").get(protectTeacher, setUserOrTeacherId, getAllSessions)
 export default sessionRouter

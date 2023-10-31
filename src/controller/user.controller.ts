@@ -13,9 +13,11 @@ import AppError from "../utils/AppError"
 import { IRequestWithUser, login, protect, restrictTo } from "./auth.controller"
 import { createStripeBillingPortal } from "../service/stripe.service"
 import {
-  getUserSessionsService,
+  getUserAllDoneSessionsService,
+  getUserAllSessionsService,
   getUserUpcomingSessionsService,
 } from "../service/session.service"
+import { SessionStatus } from "../db/models/session.model"
 export const setUserOrTeacherId = (
   req: IRequestWithUser,
   res: Response,
@@ -148,9 +150,12 @@ export const updateUserPlan = catchAsync(
     })
   }
 )
-export const getMySessions = catchAsync(
+export const getMyHistorySessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sessions = await getUserSessionsService({ userId: req.body.userId })
+    const sessions = await getUserAllDoneSessionsService({
+      userId: req.body.userId,
+      status: SessionStatus.DONE,
+    })
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
@@ -159,6 +164,16 @@ export const getMySessions = catchAsync(
 export const getUpcomingSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const sessions = await getUserUpcomingSessionsService({
+      userId: req.body.userId,
+    })
+    res
+      .status(200)
+      .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+export const getUserSessions = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const sessions = await getUserAllSessionsService({
       userId: req.body.userId,
     })
     res

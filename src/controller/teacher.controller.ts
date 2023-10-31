@@ -12,7 +12,7 @@ import Teacher, { ITeacherInput } from "../db/models/teacher.model"
 import { login, protect } from "./auth.controller"
 import { getTeacherUpcomingSessionsService } from "../service/session.service"
 
-const getTeacherAtt = ["id", "name", "phone", "email", "role"]
+export const getTeacherAtt = ["id", "name", "phone", "email", "role"]
 
 export const createTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

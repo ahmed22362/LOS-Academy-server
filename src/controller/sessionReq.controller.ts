@@ -105,16 +105,18 @@ export const getOneSessionReq = catchAsync(
 )
 export const updateSessionReq = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionDates, status } = req.body
-    const body: IUpdateReq = { sessionDates, status }
+    const { sessionDates, status, sessionStartTime } = req.body
+    const body: IUpdateReq = { sessionDates, status, sessionStartTime }
     const newSessionDates: Date[] = []
-    if (!Array.isArray(sessionDates)) {
+    if (sessionDates && !Array.isArray(sessionDates)) {
       throw new AppError(400, "Please provide dateList as list or array!")
     }
-    for (let date of sessionDates) {
-      checkDateFormat(date)
-      console.log(date)
-      newSessionDates.push(new Date(date))
+    if (sessionDates) {
+      for (let date of sessionDates) {
+        checkDateFormat(date)
+        console.log(date)
+        newSessionDates.push(new Date(date))
+      }
     }
     const sessionReq = await updateSessionRequestService({
       id: +req.params.id,
@@ -137,7 +139,7 @@ export const acceptSessionReq = catchAsync(
     res.status(201).json({
       status: "success",
       message: "request accepted and the session are placed!",
-      length: (sessions as Session[]).length,
+      length: Array.isArray(sessions) ? sessions.length : 1,
       sessions,
     })
   }

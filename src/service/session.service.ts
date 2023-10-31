@@ -1,9 +1,8 @@
-import { FindOptions, Transaction } from "sequelize"
+import { FindOptions, Transaction, where } from "sequelize"
 import Session, { SessionStatus } from "../db/models/session.model"
 import { SessionType } from "../db/models/session.model"
 import AppError from "../utils/AppError"
 import {
-  createModelService,
   deleteModelService,
   getAllModelsByService,
   getModelByIdService,
@@ -16,7 +15,9 @@ import {
   getTeacherSessionInfoService,
   getUserSessionInfoService,
 } from "./sessionInfo.service"
+import SessionInfo from "../db/models/sessionInfo.model"
 import { sequelize } from "../db/sequalize"
+import ZoomService from "../connect/zoom"
 
 export interface IInfoBody {
   userId: string
@@ -38,7 +39,27 @@ export interface ISessionUpdateUser {
 }
 export interface ISessionUpdateTeacher extends ISessionUpdateUser {
   status: SessionStatus
+  meetingLink: string
 }
+
+export interface ISessionDetails {
+  id: number
+  sessionDuration: number
+  sessionDate: Date
+  status: string
+  type: string
+  teacherAttended: boolean
+  studentAttended: boolean
+  userName: string
+  userEmail: string
+  teacherName: string
+  teacherEmail: string
+  meetingLink: string
+}
+interface UserSessions {
+  [userName: string]: Session[]
+}
+
 export async function createFreeSessionService({
   userId,
   teacherId,
@@ -71,6 +92,7 @@ export async function createFreeSessionService({
   if (!session) {
     throw new AppError(400, "Can't create free session!")
   }
+  return session
 }
 export async function createPaidSessionsService({
   userId,
@@ -135,10 +157,25 @@ export async function rescheduleSessionService({
 export async function updateSessionStatusService({
   id,
   updatedData,
+  teacherId,
 }: {
   id: number | string
   updatedData: Partial<ISessionUpdateTeacher>
+  teacherId: string
 }) {
+  // to check if the teacher has this session in the session info
+  const sessionsInfo = await getTeacherSessionInfoService({ teacherId })
+  const session = await getOneSessionService({ id })
+  const exist = sessionsInfo.some((info) => info.id === session.sessionInfoId)
+  if (!exist) {
+    throw new AppError(404, "The Teacher is not assign to this session")
+  }
+  if (!session.teacherAttended) {
+    throw new AppError(
+      401,
+      "can't update status the session of absent teacher!"
+    )
+  }
   const updatedSession = await updateModelService({
     ModelClass: Session,
     id: id,
@@ -149,7 +186,26 @@ export async function updateSessionStatusService({
   }
   return updatedSession
 }
-
+export async function updateSessionService({
+  sessionId,
+  updatedData,
+  transaction,
+}: {
+  sessionId: number
+  updatedData: Partial<ISessionUpdateTeacher>
+  transaction?: Transaction
+}) {
+  const session = await updateModelService({
+    ModelClass: Session,
+    id: sessionId,
+    updatedData,
+    transaction,
+  })
+  if (!session) {
+    throw new AppError(400, "can't update session!")
+  }
+  return session as Session
+}
 export async function deleteSessionService({ id }: { id: string | number }) {
   await deleteModelService({ ModelClass: Session, id })
 }
@@ -165,13 +221,43 @@ export async function getAllSessionsService({
 }: {
   findOptions?: FindOptions
 }) {
-  const sessions = await getModelsService({ ModelClass: Session, findOptions })
+  const sessions = await getModelsService({
+    ModelClass: Session,
+    findOptions: {
+      include: [SessionInfo],
+    },
+  })
   if (!sessions) {
     throw new AppError(400, "Can't get sessions!")
   }
   return sessions
 }
-
+export async function getOneSessionDetailsService({
+  sessionId,
+}: {
+  sessionId: number
+}) {
+  const [results, metadata] = await sequelize.query(`select 
+    s.id, 
+    s."sessionDuration", 
+    s."sessionDate", 
+    s.status, 
+    s.type, 
+    s."teacherAttended", 
+    s."studentAttended", 
+    u.name as userName, 
+    u.email as userEmail, 
+    t.name as teacherName, 
+    t.email as teacherEmail, 
+    s."meetingLink" 
+  from 
+    session_info as si 
+    join session as s on si.id = s."sessionInfoId" 
+    join "user" as u on si."userId" = u.id 
+    join teacher as t on si."teacherId" = t.id
+  where s.id = ${sessionId}`)
+  return results[0] as ISessionDetails
+}
 export async function getOneSessionService({
   id,
   findOptions,
@@ -190,20 +276,28 @@ export async function getOneSessionService({
   return session as Session
 }
 
+export async function getUserAllDoneSessionsService({
+  userId,
+  status,
+}: {
+  userId: string
+  status: SessionStatus
+}) {
+  const sessions = await generateGetterUserSessions({
+    userId,
+    status: SessionStatus.DONE,
+  })
+  return sessions
+}
 export async function getUserAllSessionsService({
   userId,
 }: {
   userId: string
 }) {
-  const sessionInfo = await getUserSessionInfoService({ userId })
-  const sessions = await getAllModelsByService({
-    Model: Session,
-    findOptions: { where: { sessionInfoId: sessionInfo.id } },
+  const sessions = await generateGetterUserSessions({
+    userId,
   })
-  if (!sessions) {
-    throw new AppError(404, "there is no sessions with this session info!")
-  }
-  return sessions as Session[]
+  return sessions
 }
 
 export async function getUserUpcomingSessionsService({
@@ -211,83 +305,71 @@ export async function getUserUpcomingSessionsService({
 }: {
   userId: string
 }) {
-  const sessionInfo = await getUserSessionInfoService({ userId })
-  const sessions = await getAllModelsByService({
-    Model: Session,
-    findOptions: {
-      where: {
-        sessionInfoId: sessionInfo.id,
-        status: SessionStatus.PENDING,
-      },
-    },
+  const sessions = await generateGetterUserSessions({
+    userId,
+    status: SessionStatus.PENDING,
   })
-  if (!sessions) {
-    throw new AppError(404, "there is no sessions with this session info!")
-  }
-  return sessions as Session[]
+  return sessions
 }
 
-interface UserSessions {
-  [userName: string]: Session[]
+export async function getAllSessionWithDetailsService() {
+  const [results, metadata] = await sequelize.query(`select 
+  s.id, 
+  s."sessionDuration", 
+  s."sessionDate", 
+  s.status, 
+  s.type, 
+  s."teacherAttended", 
+  s."studentAttended", 
+  u.name as userName, 
+  u.email as userEmail, 
+  t.name as teacherName, 
+  t.email as teacherEmail, 
+  s."meetingLink" 
+from 
+  session_info as si 
+  join session as s on si.id = s."sessionInfoId" 
+  join "user" as u on si."userId" = u.id 
+  join teacher as t on si."teacherId" = t.id
+
+  `)
+
+  if (!results) {
+    throw new AppError(400, `Error Getting sessions`)
+  }
+  return results
 }
+
 export async function getTeacherAllSessionsService({
   teacherId,
 }: {
   teacherId: string
 }) {
-  const sessionInfo = await getTeacherSessionInfoService({ teacherId })
-  const userSessions: UserSessions = {}
-  for (let info of sessionInfo) {
-    const sessions = await getAllModelsByService({
-      Model: Session,
-      findOptions: {
-        where: {
-          sessionInfoId: info.id,
-        },
-      },
-    })
-    if (!sessions) {
-      throw new AppError(404, "there is no sessions with this session info!")
-    }
-    userSessions[`${info.user!.name} - ${info.user!.email}`] = sessions
-  }
-
-  return userSessions
+  const session = await generateGetterTeacherSessions({ teacherId })
+  return session
 }
 export async function getTeacherUpcomingSessionsService({
   teacherId,
 }: {
   teacherId: string
 }) {
-  const sessionInfo = await getTeacherSessionInfoService({ teacherId })
-  const userSessions: UserSessions = {}
-  for (let info of sessionInfo) {
-    const sessions = await getAllModelsByService({
-      Model: Session,
-      findOptions: {
-        where: {
-          sessionInfoId: info.id,
-          status: SessionStatus.PENDING,
-        },
-      },
-    })
-    if (!sessions) {
-      throw new AppError(404, "there is no sessions with this session info!")
-    }
-    userSessions[`${info.user!.name} - ${info.user!.email}`] = sessions
-  }
-
-  return userSessions
+  const sessions = await generateGetterTeacherSessions({
+    teacherId,
+    status: SessionStatus.PENDING,
+  })
+  return sessions
 }
 
-export async function updateSessionTeacherAttendance({
+export async function updateSessionTeacherAttendanceService({
   sessionId,
   teacherId,
   attend,
+  transaction,
 }: {
   sessionId: number
   teacherId: string
   attend: boolean
+  transaction?: Transaction
 }) {
   // to check if the teacher has this session in the session info
   const sessionsInfo = await getTeacherSessionInfoService({ teacherId })
@@ -297,28 +379,49 @@ export async function updateSessionTeacherAttendance({
     throw new AppError(404, "The Teacher is not assign to this session")
   }
   session.teacherAttended = attend
-  await session.save()
+  await session.save({ transaction })
 }
-export async function updateSessionStudentAttendance({
+export async function updateSessionStudentAttendanceService({
   sessionId,
   userId,
   attend,
+  transaction,
 }: {
   sessionId: number
   userId: string
   attend: boolean
+  transaction?: Transaction
 }) {
   // to check if the user has this session in the session info
   const sessionsInfo = await getUserSessionInfoService({ userId })
   const session = await getOneSessionService({ id: sessionId })
-  const exist = sessionsInfo.id === session.sessionInfoId
+  const exist = sessionsInfo.some((info) => info.id === session.sessionInfoId)
   if (!exist) {
     throw new AppError(404, "The student is not assign to this session")
   }
   session.studentAttended = attend
-  await session.save()
+  await session.save({ transaction })
 }
-
+export async function generateMeetingLinkAndUpdateSession({
+  sessionId,
+  transaction,
+}: {
+  sessionId: number
+  transaction?: Transaction
+}) {
+  const session = await getOneSessionDetailsService({ sessionId })
+  const meetingLink = await new ZoomService().createMeeting({
+    topic: "Session",
+    duration: session.sessionDuration,
+    startDateTime: session.sessionDate,
+  })
+  const updatedSession = await updateSessionService({
+    sessionId,
+    updatedData: { meetingLink },
+    transaction,
+  })
+  return updatedSession
+}
 export function checkDateFormat(date: string) {
   if (!DATE_PATTERN.test(date)) {
     const errorMessage =
@@ -371,4 +474,62 @@ function generateSessions({
   }
   console.log(sessions)
   return sessions
+}
+async function generateGetterUserSessions({
+  userId,
+  status,
+}: {
+  userId: string
+  status?: SessionStatus
+}) {
+  const sessionInfo = await getUserSessionInfoService({ userId })
+  const userSessions: UserSessions = {}
+
+  for (let info of sessionInfo) {
+    const where: any = { sessionInfoId: info.id }
+
+    if (status) {
+      where.status = status
+    }
+    const sessions = await getAllModelsByService({
+      Model: Session,
+      findOptions: {
+        where,
+      },
+    })
+    if (!sessions) {
+      throw new AppError(404, "there is no sessions with this session info!")
+    }
+    userSessions[`${info.teacher!.name} - ${info.teacher!.email}`] = sessions
+  }
+  return userSessions
+}
+async function generateGetterTeacherSessions({
+  teacherId,
+  status,
+}: {
+  teacherId: string
+  status?: SessionStatus
+}) {
+  const sessionInfo = await getTeacherSessionInfoService({ teacherId })
+  const userSessions: UserSessions = {}
+  for (let info of sessionInfo) {
+    const where: any = { sessionInfoId: info.id }
+
+    if (status) {
+      where.status = status
+    }
+    const sessions = await getAllModelsByService({
+      Model: Session,
+      findOptions: {
+        where,
+      },
+    })
+    if (!sessions) {
+      throw new AppError(404, "there is no sessions with this session info!")
+    }
+    userSessions[`${info.user!.name} - ${info.user!.email}`] = sessions
+  }
+
+  return userSessions
 }

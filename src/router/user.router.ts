@@ -3,10 +3,11 @@ import {
   createUser,
   deleteUser,
   getAllUsers,
-  getMySessions,
+  getMyHistorySessions,
   getMySubscription,
   getUpcomingSessions,
   getUser,
+  getUserSessions,
   protectUser,
   setUserIdToParams,
   setUserOrTeacherId,
@@ -27,13 +28,19 @@ userRouter.get(
   setUserOrTeacherId,
   getMySubscription
 )
-userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getMySessions)
+userRouter.get(
+  "/myHistorySessions",
+  protectUser,
+  setUserOrTeacherId,
+  getMyHistorySessions
+)
 userRouter.get(
   "/upcomingSessions",
   protectUser,
   setUserOrTeacherId,
   getUpcomingSessions
 )
+userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
 userRouter.get("/updateMyPlan", protectUser, updateUserPlan)
 userRouter.route("/:id").patch(updateUser).delete(deleteUser).get(getUser)
 

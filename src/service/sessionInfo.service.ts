@@ -11,6 +11,7 @@ import {
 } from "./factory.services"
 import { IInfoBody } from "./session.service"
 import User from "../db/models/user.model"
+import Teacher from "../db/models/teacher.model"
 
 export async function createSessionInfoService({
   userId,
@@ -88,14 +89,15 @@ export async function getUserSessionInfoService({
 }: {
   userId: string
 }) {
-  const sessionInfo = await getOneModelByService({
+  const sessionInfo = await getAllModelsByService({
     Model: SessionInfo,
-    findOptions: { where: { userId } },
+    findOptions: { where: { userId }, include: Teacher },
   })
+
   if (!sessionInfo) {
     throw new AppError(404, "there is no session info with this userId !")
   }
-  return sessionInfo as SessionInfo
+  return sessionInfo as SessionInfo[]
 }
 export async function getAllSessionsInfoService({
   findOptions,

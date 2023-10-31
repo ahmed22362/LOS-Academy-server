@@ -8,8 +8,9 @@ interface MeetingOptions {
   userId?: string
   topic: string
   duration: number
-  start_date: string
-  start_time: string
+  start_date?: string
+  start_time?: string
+  startDateTime: Date
 }
 const clientId = process.env.ZOOM_CLIENT_ID as string
 const accountId = process.env.ZOOM_ACCOUNT_ID as string
@@ -57,21 +58,20 @@ export default class ZoomService {
   async createMeeting({
     topic,
     duration,
-    start_date,
-    start_time,
+    startDateTime,
   }: MeetingOptions): Promise<string> {
     const access_token = await this.getAuthToken()
     const headers = {
       Authorization: `Bearer ${access_token}`,
       "Content-Type": "application/json",
     }
-    console.log(start_time, start_date)
-    const startTime = `${start_date}T10:${start_time}`
-    console.log({ "in create link method": startTime })
+    // console.log(start_time, start_date)
+    // const startTime = `${start_date}T${start_time}`
+    console.log({ "in create link method": startDateTime })
     const payload = {
       topic: topic,
       duration: duration,
-      start_time: startTime,
+      start_time: startDateTime,
       type: 2,
       settings: {
         join_before_host: true,

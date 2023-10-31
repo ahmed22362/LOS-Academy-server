@@ -1,4 +1,4 @@
-import { FindOptions } from "sequelize"
+import { FindOptions, Transaction } from "sequelize"
 import AppError from "../utils/AppError"
 import { Model, Sequelize } from "sequelize-typescript"
 
@@ -129,16 +129,19 @@ async function updateModelService({
   ModelClass,
   id,
   updatedData,
+  transaction,
 }: {
   ModelClass: ModelClass
   id: string | number
   updatedData: any
+  transaction?: Transaction
 }): Promise<Model | null> {
   try {
     const [affectedCount, affectedRows] = await ModelClass.update(updatedData, {
       where: { id },
       returning: true,
       individualHooks: true,
+      transaction,
     })
     if (affectedRows.length === 0) {
       // No row found to update

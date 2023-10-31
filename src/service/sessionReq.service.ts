@@ -29,6 +29,7 @@ export interface ICreateReq {
 export interface IUpdateReq {
   sessionDates: Date[]
   status: SessionStatus
+  sessionStartTime: string
 }
 export async function createSessionRequestService({
   body,
@@ -153,8 +154,9 @@ export async function updateSessionRequestService({
   const updatedReq = await SessionReq.update(updateBody, {
     where: { id },
     transaction,
+    returning: true,
   })
-  return updatedReq
+  return updatedReq[1]
 }
 export async function deleteSessionRequestService({ id }: { id: number }) {
   await deleteModelService({ ModelClass: SessionReq, id })
