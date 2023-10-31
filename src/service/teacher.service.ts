@@ -14,7 +14,7 @@ import { createStripeCustomer } from "./stripe.service"
 export async function createTeacherService(body: ITeacherInput) {
   const stripeCustomer = await createStripeCustomer({
     email: body.email,
-    name: `${body.fName} ${body.lName}`,
+    name: body.name,
     phone: body.phone,
   })
   body.customerId = stripeCustomer.id
