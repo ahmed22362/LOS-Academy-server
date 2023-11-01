@@ -5,6 +5,7 @@ import {
   generateMeetingLinkAndUpdateSession,
   getAllSessionWithDetailsService,
   getOneSessionDetailsService,
+  getTeacherAllSessionsService,
   updateSessionStatusService,
   updateSessionStudentAttendanceService,
   updateSessionTeacherAttendanceService,
@@ -84,20 +85,6 @@ export const updateSessionAttendance = async (
         transaction: t,
       })
     }
-    const session = await getOneSessionDetailsService({ sessionId })
-    if (session.teacherAttended && session.studentAttended) {
-      const updatedSession = await generateMeetingLinkAndUpdateSession({
-        sessionId,
-        transaction: t,
-      })
-      await t.commit()
-      return res.status(200).json({
-        status: "success",
-        message:
-          "attendance updated successfully and the meeting link generated successfully",
-        data: updatedSession,
-      })
-    }
     await t.commit()
     res
       .status(200)
@@ -109,9 +96,22 @@ export const updateSessionAttendance = async (
     )
   }
 }
-export const regenerateSessionLink = catchAsync(
+export const generateSessionLink = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const sessionId = req.body.sessionId
+    const teacherId = req.body.teacherId
+    const sessions = await getTeacherAllSessionsService({ teacherId })
+    const allSessionsId = Object.values(sessions)
+      .flatMap((sessions) => sessions)
+      .map((s) => s.id)
+    if (!allSessionsId.includes(sessionId)) {
+      return next(
+        new AppError(
+          401,
+          "You cant generate meeting link to a session is not yours"
+        )
+      )
+    }
     const updatedSession = await generateMeetingLinkAndUpdateSession({
       sessionId,
     })

@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { protectTeacher } from "../controller/teacher.controller"
 import {
+  acceptSessionReq,
   getAllSessionsReq,
   getOneSessionReq,
   updateSessionReq,
@@ -9,12 +10,13 @@ import freeSessionRouter from "./session.free.router"
 import paidSessionRouter from "./session.paid.router"
 import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
 import {
+  generateSessionLink,
   getAllSessions,
   getOneSessionInfo,
-  regenerateSessionLink,
   updateSessionAttendance,
   updateSessionStatus,
 } from "../controller/session.controller"
+import { restrictTo } from "../controller/auth.controller"
 const sessionRouter = Router()
 
 sessionRouter.route("/session-requests").get(protectTeacher, getAllSessionsReq)
@@ -36,11 +38,14 @@ sessionRouter
   .route("/updateTeacherAttendance")
   .post(protectTeacher, setUserOrTeacherId, updateSessionAttendance)
 sessionRouter
-  .route("/regenerateLink")
-  .post(protectTeacher, setUserOrTeacherId, regenerateSessionLink)
+  .route("/generateLink")
+  .post(protectTeacher, setUserOrTeacherId, generateSessionLink)
 sessionRouter
   .route("/status")
   .post(protectTeacher, setUserOrTeacherId, updateSessionStatus)
+sessionRouter
+  .route("/assignTeacher")
+  .post(protectTeacher, restrictTo("admin"), acceptSessionReq)
 sessionRouter
   .route("/:id")
   .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo)

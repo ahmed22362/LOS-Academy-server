@@ -15,6 +15,7 @@ import {
   updateUserPlan,
 } from "../controller/user.controller"
 import authRouter from "./auth.router"
+import { getUserReports } from "../controller/report.controller"
 
 const userRouter = Router()
 
@@ -41,6 +42,7 @@ userRouter.get(
   getUpcomingSessions
 )
 userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
+userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports)
 userRouter.get("/updateMyPlan", protectUser, updateUserPlan)
 userRouter.route("/:id").patch(updateUser).delete(deleteUser).get(getUser)
 

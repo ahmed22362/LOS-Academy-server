@@ -1,4 +1,4 @@
-import { FindOptions, Transaction } from "sequelize"
+import { FindOptions, IncludeOptions, Transaction } from "sequelize"
 import SessionInfo from "../db/models/sessionInfo.model"
 import AppError from "../utils/AppError"
 import {
@@ -9,9 +9,6 @@ import {
   getOneModelByService,
   updateModelService,
 } from "./factory.services"
-import { IInfoBody } from "./session.service"
-import User from "../db/models/user.model"
-import Teacher from "../db/models/teacher.model"
 
 export async function createSessionInfoService({
   userId,
@@ -72,12 +69,14 @@ export async function getSessionInfoService({
 }
 export async function getTeacherSessionInfoService({
   teacherId,
+  include,
 }: {
   teacherId: string
+  include?: IncludeOptions
 }) {
   const sessionInfo = await getAllModelsByService({
     Model: SessionInfo,
-    findOptions: { where: { teacherId }, include: User },
+    findOptions: { where: { teacherId }, include },
   })
   if (!sessionInfo) {
     throw new AppError(404, "there is no session info with this teacherId !")
@@ -86,12 +85,14 @@ export async function getTeacherSessionInfoService({
 }
 export async function getUserSessionInfoService({
   userId,
+  include,
 }: {
   userId: string
+  include?: IncludeOptions
 }) {
   const sessionInfo = await getAllModelsByService({
     Model: SessionInfo,
-    findOptions: { where: { userId }, include: Teacher },
+    findOptions: { where: { userId }, include },
   })
 
   if (!sessionInfo) {
