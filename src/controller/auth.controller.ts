@@ -122,7 +122,7 @@ export const login = (Model: ModelClass) =>
     createSendToken({ user: model, statusCode: 202, res })
   })
 
-export const protect = (Model: ModelClass, inputToken?: string) =>
+export const protect = (Model: ModelClass) =>
   catchAsync(
     async (req: IRequestWithUser, res: Response, next: NextFunction) => {
       if (!Model) {
@@ -138,8 +138,6 @@ export const protect = (Model: ModelClass, inputToken?: string) =>
         token = req.headers.authorization.split(" ")[1]
       } else if (req.cookies.token !== undefined) {
         token = req.cookies.token
-      } else if (inputToken) {
-        token = inputToken
       }
       if (!token) {
         return next(
