@@ -187,3 +187,7 @@ export const createWebhook = (rawBody: any, sig: string) => {
   )
   return event
 }
+export async function getStripeBalance() {
+  const balance = await stripe.balance.retrieve()
+  return balance
+}

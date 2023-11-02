@@ -15,6 +15,7 @@ import {
   getTeacherUpcomingSessionsService,
 } from "../service/session.service"
 import { verifyToken } from "../utils/jwt"
+import { getStripeBalance } from "../service/stripe.service"
 
 export const getTeacherAtt = ["id", "name", "phone", "email", "role"]
 
@@ -135,13 +136,17 @@ export const checkJWT = catchAsync(
     const decoded = (await verifyToken(token as string)) as decodedToken
 
     const teacher = await getTeacherByIdService({ id: decoded.id })
-    res
-      .status(200)
-      .json({
-        status: "success",
-        message: "The token is verified!",
-        role: teacher.role,
-      })
+    res.status(200).json({
+      status: "success",
+      message: "The token is verified!",
+      role: teacher.role,
+    })
+  }
+)
+export const getAdminBalance = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const balance = await getStripeBalance()
+    res.status(200).json({ status: "success", balance: balance.available })
   }
 )
 export const loginTeacher = login(Teacher)

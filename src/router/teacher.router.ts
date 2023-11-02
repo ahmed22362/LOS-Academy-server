@@ -3,6 +3,7 @@ import {
   checkJWT,
   createTeacher,
   deleteTeacher,
+  getAdminBalance,
   getAllTeachers,
   getTeacher,
   getTeacherAllSessions,
@@ -18,6 +19,9 @@ const teacherRouter = Router()
 
 teacherRouter.route("/").post(createTeacher).get(getAllTeachers)
 teacherRouter.route("/login").post(loginTeacher)
+teacherRouter
+  .route("/adminBalance")
+  .get(protectTeacher, restrictTo("admin"), getAdminBalance)
 teacherRouter
   .route("/sessions")
   .get(protectTeacher, setUserOrTeacherId, getTeacherAllSessions)
