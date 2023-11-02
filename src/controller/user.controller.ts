@@ -181,3 +181,14 @@ export const getUserSessions = catchAsync(
       .json({ status: "success", length: sessions.length, data: sessions })
   }
 )
+export const checkJWT = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.body.userId
+    if (!userId) {
+      next(new AppError(404, "There is no userId"))
+    }
+    res
+      .status(200)
+      .json({ status: "success", message: "The token is verified!" })
+  }
+)

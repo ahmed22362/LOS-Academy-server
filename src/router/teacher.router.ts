@@ -1,26 +1,40 @@
 import { Router } from "express"
 import {
+  checkJWT,
   createTeacher,
   deleteTeacher,
   getAllTeachers,
   getTeacher,
-  getTeacherSessions,
+  getTeacherAllSessions,
+  getTeacherUpcomingSessions,
   loginTeacher,
   protectTeacher,
   updateTeacher,
 } from "../controller/teacher.controller"
 import { setUserOrTeacherId } from "../controller/user.controller"
 import { getTeacherReports } from "../controller/report.controller"
+import { restrictTo } from "../controller/auth.controller"
 const teacherRouter = Router()
 
 teacherRouter.route("/").post(createTeacher).get(getAllTeachers)
 teacherRouter.route("/login").post(loginTeacher)
 teacherRouter
-  .route("/mySessions")
-  .get(protectTeacher, setUserOrTeacherId, getTeacherSessions)
+  .route("/sessions")
+  .get(protectTeacher, setUserOrTeacherId, getTeacherAllSessions)
+teacherRouter
+  .route("/upcomingSessions")
+  .get(protectTeacher, setUserOrTeacherId, getTeacherUpcomingSessions)
 teacherRouter
   .route("/myReports")
   .get(protectTeacher, setUserOrTeacherId, getTeacherReports)
+teacherRouter.get(
+  "/checkJWT",
+  protectTeacher,
+  setUserOrTeacherId,
+  restrictTo("admin"),
+  checkJWT
+)
+
 teacherRouter
   .route("/:id")
   .get(getTeacher)

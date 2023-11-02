@@ -316,7 +316,7 @@ export async function getUserUpcomingSessionsService({
 
 export async function getAllSessionWithDetailsService() {
   const [results, metadata] = await sequelize.query(`select 
-  s.id, 
+  s.id as sessionId, 
   s."sessionDuration", 
   s."sessionDate", 
   s.status, 

@@ -10,7 +10,10 @@ import {
 import AppError from "../utils/AppError"
 import Teacher, { ITeacherInput } from "../db/models/teacher.model"
 import { login, protect } from "./auth.controller"
-import { getTeacherUpcomingSessionsService } from "../service/session.service"
+import {
+  getTeacherAllSessionsService,
+  getTeacherUpcomingSessionsService,
+} from "../service/session.service"
 
 export const getTeacherAtt = ["id", "name", "phone", "email", "role"]
 
@@ -106,13 +109,34 @@ export const getTeacher = catchAsync(
     res.status(200).json({ status: "success", data: teacher })
   }
 )
-export const getTeacherSessions = catchAsync(
+export const getTeacherUpcomingSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
     const sessions = await getTeacherUpcomingSessionsService({ teacherId })
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+export const getTeacherAllSessions = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    const sessions = await getTeacherAllSessionsService({ teacherId })
+    const allSessions = Object.values(sessions).flatMap((session) => session)
+    res
+      .status(200)
+      .json({ status: "success", length: allSessions.length, sessions })
+  }
+)
+export const checkJWT = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    if (!teacherId) {
+      next(new AppError(404, "there is no teacher with this id!"))
+    }
+    res
+      .status(200)
+      .json({ status: "success", message: "The token is verified!" })
   }
 )
 export const loginTeacher = login(Teacher)
