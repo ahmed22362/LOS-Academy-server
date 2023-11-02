@@ -10,7 +10,13 @@ import {
   updateUserService,
 } from "../service/user.service"
 import AppError from "../utils/AppError"
-import { IRequestWithUser, login, protect, restrictTo } from "./auth.controller"
+import {
+  IRequestWithUser,
+  decodedToken,
+  login,
+  protect,
+  restrictTo,
+} from "./auth.controller"
 import { createStripeBillingPortal } from "../service/stripe.service"
 import {
   getUserAllDoneSessionsService,
@@ -18,6 +24,7 @@ import {
   getUserUpcomingSessionsService,
 } from "../service/session.service"
 import { SessionStatus } from "../db/models/session.model"
+import { verifyToken } from "../utils/jwt"
 export const setUserOrTeacherId = (
   req: IRequestWithUser,
   res: Response,
@@ -183,12 +190,13 @@ export const getUserSessions = catchAsync(
 )
 export const checkJWT = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.body.userId
-    if (!userId) {
-      next(new AppError(404, "There is no userId"))
-    }
-    res
-      .status(200)
-      .json({ status: "success", message: "The token is verified!" })
+    const token = req.query.token
+    const decoded = (await verifyToken(token as string)) as decodedToken
+    const user = await getUserByIdService({ userId: decoded.id })
+    res.status(200).json({
+      status: "success",
+      message: "The token is verified!",
+      userName: user?.name,
+    })
   }
 )

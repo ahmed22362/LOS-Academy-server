@@ -9,11 +9,12 @@ import {
 } from "../service/teacher.service"
 import AppError from "../utils/AppError"
 import Teacher, { ITeacherInput } from "../db/models/teacher.model"
-import { login, protect } from "./auth.controller"
+import { decodedToken, login, protect } from "./auth.controller"
 import {
   getTeacherAllSessionsService,
   getTeacherUpcomingSessionsService,
 } from "../service/session.service"
+import { verifyToken } from "../utils/jwt"
 
 export const getTeacherAtt = ["id", "name", "phone", "email", "role"]
 
@@ -130,13 +131,17 @@ export const getTeacherAllSessions = catchAsync(
 )
 export const checkJWT = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    if (!teacherId) {
-      next(new AppError(404, "there is no teacher with this id!"))
-    }
+    const token = req.query.token
+    const decoded = (await verifyToken(token as string)) as decodedToken
+
+    const teacher = await getTeacherByIdService({ id: decoded.id })
     res
       .status(200)
-      .json({ status: "success", message: "The token is verified!" })
+      .json({
+        status: "success",
+        message: "The token is verified!",
+        role: teacher.role,
+      })
   }
 )
 export const loginTeacher = login(Teacher)

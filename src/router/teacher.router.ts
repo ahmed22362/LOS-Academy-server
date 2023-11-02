@@ -27,13 +27,7 @@ teacherRouter
 teacherRouter
   .route("/myReports")
   .get(protectTeacher, setUserOrTeacherId, getTeacherReports)
-teacherRouter.get(
-  "/checkJWT",
-  protectTeacher,
-  setUserOrTeacherId,
-  restrictTo("admin"),
-  checkJWT
-)
+teacherRouter.get("/checkJWT", checkJWT)
 
 teacherRouter
   .route("/:id")

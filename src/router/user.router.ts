@@ -45,7 +45,7 @@ userRouter.get(
 userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
 userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports)
 userRouter.get("/updateMyPlan", protectUser, updateUserPlan)
-userRouter.get("/checkJWT", protectUser, setUserOrTeacherId, checkJWT)
+userRouter.get("/checkJWT", checkJWT)
 userRouter.route("/:id").patch(updateUser).delete(deleteUser).get(getUser)
 
 export default userRouter

@@ -10,6 +10,7 @@ import {
   updateModelService,
 } from "./factory.services"
 import { createStripeCustomer } from "./stripe.service"
+import AppError from "../utils/AppError"
 
 export async function createTeacherService(body: ITeacherInput) {
   const stripeCustomer = await createStripeCustomer({
@@ -30,7 +31,15 @@ export async function getTeacherByIdService({
   id: string | number
   findOptions?: FindOptions
 }) {
-  return await getModelByIdService({ ModelClass: Teacher, Id: id, findOptions })
+  const teacher = await getModelByIdService({
+    ModelClass: Teacher,
+    Id: id,
+    findOptions,
+  })
+  if (!teacher) {
+    throw new AppError(404, "Can't find teacher with this id!")
+  }
+  return teacher as Teacher
 }
 export async function getTeachersService({
   findOptions,

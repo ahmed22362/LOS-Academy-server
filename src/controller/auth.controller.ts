@@ -31,7 +31,7 @@ export interface IRequestWithUser extends Request {
   user?: User
   teacher?: Teacher
 }
-interface decodedToken {
+export interface decodedToken {
   id: string
   iat: number
   exp: number
@@ -122,7 +122,7 @@ export const login = (Model: ModelClass) =>
     createSendToken({ user: model, statusCode: 202, res })
   })
 
-export const protect = (Model: ModelClass) =>
+export const protect = (Model: ModelClass, inputToken?: string) =>
   catchAsync(
     async (req: IRequestWithUser, res: Response, next: NextFunction) => {
       if (!Model) {
@@ -138,6 +138,8 @@ export const protect = (Model: ModelClass) =>
         token = req.headers.authorization.split(" ")[1]
       } else if (req.cookies.token !== undefined) {
         token = req.cookies.token
+      } else if (inputToken) {
+        token = inputToken
       }
       if (!token) {
         return next(
