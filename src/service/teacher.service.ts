@@ -4,6 +4,7 @@ import { ITeacherInput } from "../db/models/teacher.model"
 import {
   createModelService,
   deleteModelService,
+  getAllModelsByService,
   getModelByIdService,
   getModelsService,
   getOneModelByService,
@@ -11,6 +12,9 @@ import {
 } from "./factory.services"
 import { createStripeCustomer } from "./stripe.service"
 import AppError from "../utils/AppError"
+import SessionInfo from "../db/models/sessionInfo.model"
+import User from "../db/models/user.model"
+import { getUserAttr } from "../controller/user.controller"
 
 export async function createTeacherService(body: ITeacherInput) {
   const stripeCustomer = await createStripeCustomer({
@@ -69,4 +73,19 @@ export async function getTeacherByService({
   findOptions: FindOptions
 }): Promise<Teacher | null> {
   return await getOneModelByService({ Model: Teacher, findOptions })
+}
+export async function getTeacherStudentsService({
+  teacherId,
+}: {
+  teacherId: String
+}) {
+  const sessionInfos = (await getAllModelsByService({
+    Model: SessionInfo,
+    findOptions: { include: { model: User, attributes: getUserAttr } },
+  })) as SessionInfo[]
+  const students = sessionInfos.map((info) => info.user)
+  const unique = [...new Set(students.map((item) => JSON.stringify(item)))].map(
+    (item) => JSON.parse(item)
+  )
+  return unique
 }

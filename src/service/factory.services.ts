@@ -137,6 +137,7 @@ async function updateModelService({
   transaction?: Transaction
 }): Promise<Model | null> {
   try {
+    console.log("this is the updated daata ", updatedData)
     const [affectedCount, affectedRows] = await ModelClass.update(updatedData, {
       where: { id },
       returning: true,

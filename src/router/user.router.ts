@@ -5,6 +5,7 @@ import {
   deleteUser,
   getAllUsers,
   getMyHistorySessions,
+  getMySessionRescheduleRequests,
   getMySubscription,
   getUpcomingSessions,
   getUser,
@@ -44,6 +45,9 @@ userRouter.get(
 )
 userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
 userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports)
+userRouter
+  .route("/myRescheduleRequests")
+  .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests)
 userRouter.get("/updateMyPlan", protectUser, updateUserPlan)
 userRouter.get("/checkJWT", checkJWT)
 userRouter.route("/:id").patch(updateUser).delete(deleteUser).get(getUser)

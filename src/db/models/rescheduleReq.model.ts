@@ -10,7 +10,7 @@ import {
 } from "sequelize-typescript"
 import Session from "./session.model"
 
-enum RescheduleRequestStatus {
+export enum RescheduleRequestStatus {
   PENDING = "pending",
   APPROVED = "approved",
   DECLINED = "declined",

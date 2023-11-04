@@ -5,8 +5,10 @@ import {
   deleteTeacher,
   getAdminBalance,
   getAllTeachers,
+  getMySessionRescheduleRequests,
   getTeacher,
   getTeacherAllSessions,
+  getTeacherAllStudents,
   getTeacherUpcomingSessions,
   loginTeacher,
   protectTeacher,
@@ -31,6 +33,12 @@ teacherRouter
 teacherRouter
   .route("/myReports")
   .get(protectTeacher, setUserOrTeacherId, getTeacherReports)
+teacherRouter
+  .route("/myStudents")
+  .get(protectTeacher, setUserOrTeacherId, getTeacherAllStudents)
+teacherRouter
+  .route("/myRescheduleRequests")
+  .get(protectTeacher, setUserOrTeacherId, getMySessionRescheduleRequests)
 teacherRouter.get("/checkJWT", checkJWT)
 
 teacherRouter

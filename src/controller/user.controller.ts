@@ -25,6 +25,7 @@ import {
 } from "../service/session.service"
 import { SessionStatus } from "../db/models/session.model"
 import { verifyToken } from "../utils/jwt"
+import { getUserRescheduleRequests } from "../service/rescheduleReq.service"
 export const setUserOrTeacherId = (
   req: IRequestWithUser,
   res: Response,
@@ -186,6 +187,17 @@ export const getUserSessions = catchAsync(
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+export const getMySessionRescheduleRequests = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.body.userId
+    const rescheduleRequests = await getUserRescheduleRequests({ userId })
+    res.status(200).json({
+      status: "success",
+      length: rescheduleRequests.length,
+      data: rescheduleRequests,
+    })
   }
 )
 export const checkJWT = catchAsync(

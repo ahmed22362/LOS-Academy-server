@@ -4,6 +4,7 @@ import {
   createTeacherService,
   deleteTeacherService,
   getTeacherByIdService,
+  getTeacherStudentsService,
   getTeachersService,
   updateTeacherService,
 } from "../service/teacher.service"
@@ -16,6 +17,7 @@ import {
 } from "../service/session.service"
 import { verifyToken } from "../utils/jwt"
 import { getStripeBalance } from "../service/stripe.service"
+import { getTeacherRescheduleRequests } from "../service/rescheduleReq.service"
 
 export const getTeacherAtt = ["id", "name", "phone", "email", "role"]
 
@@ -130,6 +132,13 @@ export const getTeacherAllSessions = catchAsync(
       .json({ status: "success", length: allSessions.length, sessions })
   }
 )
+export const getTeacherAllStudents = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    const student = await getTeacherStudentsService({ teacherId })
+    res.status(200).json({ status: "success", data: student })
+  }
+)
 export const checkJWT = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const token = req.query.token
@@ -147,6 +156,17 @@ export const getAdminBalance = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const balance = await getStripeBalance()
     res.status(200).json({ status: "success", balance: balance.available })
+  }
+)
+export const getMySessionRescheduleRequests = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    const rescheduleRequests = await getTeacherRescheduleRequests({ teacherId })
+    res.status(200).json({
+      status: "success",
+      length: rescheduleRequests.length,
+      data: rescheduleRequests,
+    })
   }
 )
 export const loginTeacher = login(Teacher)

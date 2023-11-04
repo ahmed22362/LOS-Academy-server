@@ -57,15 +57,15 @@ export async function getSessionInfoService({
   id: string | number
   findOptions?: FindOptions
 }) {
-  const session = await getModelByIdService({
+  const sessionInfo = await getModelByIdService({
     ModelClass: SessionInfo,
     Id: id,
     findOptions,
   })
-  if (!session) {
-    throw new AppError(404, "can't find session with this id!")
+  if (!sessionInfo) {
+    throw new AppError(404, "can't find sessionInfo with this id!")
   }
-  return session
+  return sessionInfo as SessionInfo
 }
 export async function getTeacherSessionInfoService({
   teacherId,

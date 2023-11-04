@@ -80,6 +80,7 @@ export const getAllAvailableSessionsReq = (type: SessionType) =>
     const sessions = await getAllSessionsRequestService({
       findOptions: {
         where: { type, status: SessionStatus.PENDING },
+        include: { model: User, attributes: getUserAttr },
       },
     })
     res

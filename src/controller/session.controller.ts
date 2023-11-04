@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
+  checkDateFormat,
   createPaidSessionsService,
   generateMeetingLinkAndUpdateSession,
   getAllSessionWithDetailsService,
@@ -13,6 +14,13 @@ import {
 import { sequelize } from "../db/sequalize"
 import AppError from "../utils/AppError"
 import { IRequestWithUser } from "./auth.controller"
+import {
+  acceptOrDeclineRescheduleRequestService,
+  getAllRescheduleRequestsService,
+  getPendingRequestBySessionId,
+  requestRescheduleService,
+} from "../service/rescheduleReq.service"
+import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -101,14 +109,22 @@ export const generateSessionLink = catchAsync(
     const sessionId = req.body.sessionId
     const teacherId = req.body.teacherId
     const sessions = await getTeacherAllSessionsService({ teacherId })
-    const allSessionsId = Object.values(sessions)
-      .flatMap((sessions) => sessions)
-      .map((s) => s.id)
-    if (!allSessionsId.includes(sessionId)) {
+    const allSessions = Object.values(sessions).flatMap((sessions) => sessions)
+    const allSessionsIds = allSessions.map((session) => session.id)
+    if (!allSessionsIds.includes(sessionId)) {
       return next(
         new AppError(
           401,
           "You cant generate meeting link to a session is not yours"
+        )
+      )
+    }
+    const session = allSessions.find((s) => s.id === sessionId)
+    if (!(session?.teacherAttended && session.studentAttended)) {
+      next(
+        new AppError(
+          400,
+          `Can't generate link teacher and student must attend, TeacherAttend?: ${session?.teacherAttended}, StudentAttend?: ${session?.studentAttended}`
         )
       )
     }
@@ -138,3 +154,54 @@ export const updateSessionStatus = catchAsync(
     })
   }
 )
+export const requestSessionReschedule = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId, sessionId, newDate } = req.body
+    checkDateFormat(newDate)
+    const previousRequest = await getPendingRequestBySessionId({ sessionId })
+    if (previousRequest) {
+      return next(
+        new AppError(
+          400,
+          "Can't request another reschedule before the previous request has response"
+        )
+      )
+    }
+    const rescheduleReq = await requestRescheduleService({
+      sessionId,
+      userId,
+      newDate,
+    })
+    res.status(200).json({
+      status: "success",
+      message: "Reschedule Requested successfully!",
+      data: rescheduleReq,
+    })
+  }
+)
+export const getAllRescheduleRequests = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const requests = await getAllRescheduleRequestsService({})
+    res.status(200).json({ status: "success", data: requests })
+  }
+)
+export const updateStatusSessionReschedule = (
+  status: RescheduleRequestStatus
+) =>
+  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { teacherId, rescheduleRequestId } = req.body
+    const rescheduledSession = await acceptOrDeclineRescheduleRequestService({
+      requestId: rescheduleRequestId,
+      teacherId,
+      status,
+    })
+    let message = "reschedule request accepted successfully"
+    status === RescheduleRequestStatus.DECLINED
+      ? (message = "reschedule request declined successfully!")
+      : message
+    res.status(200).json({
+      status: "success",
+      message,
+      data: rescheduledSession,
+    })
+  })
