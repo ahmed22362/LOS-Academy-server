@@ -5,9 +5,11 @@ import Stripe from "stripe"
 
 import dotenv from "dotenv"
 import {
-  handelSubscriptionCompleted,
+  handelCheckoutSessionCompleted,
+  handelSubscriptionPayed,
   handelSubscriptionUpdated,
 } from "../service/subscription.service"
+import logger from "../utils/logger"
 
 dotenv.config()
 
@@ -16,7 +18,6 @@ export const webhook = catchAsync(
     // Retrieve the event by verifying the signature using the raw body and secret.
     let event: Stripe.Event
     const rawBody = req.body as Buffer
-    console.log(rawBody)
     try {
       event = stripe.webhooks.constructEvent(
         rawBody,
@@ -33,19 +34,15 @@ export const webhook = catchAsync(
     const eventType: string = event.type
     switch (eventType) {
       case "customer.created":
-        console.log("in suctomer subscription")
+        console.log("in customer creation")
         break
       case "payment_intent.succeeded":
-        console.log("in suctomer subscription")
-        const pi: Stripe.PaymentIntent = data.object as Stripe.PaymentIntent
-        // Funds have been captured
-        // Fulfill any orders, e-mail receipts, etc
-        // To cancel the payment after capture you will need to issue a Refund (https://stripe.com/docs/api/refunds).
-        console.log(`🔔  Webhook received: ${pi.object} ${pi.status}!`)
+        const payment_intent = event.data.object as Stripe.PaymentIntent
+        await handelSubscriptionPayed(payment_intent)
+        console.log(`🔔  Webhook received: ${"Event"}: ${payment_intent}!`)
         console.log("💰 Payment captured!")
         break
       case "payment_intent.payment_failed": {
-        console.log("in suctomer subscription")
         const pi: Stripe.PaymentIntent = data.object as Stripe.PaymentIntent
         console.log(`🔔  Webhook received: ${pi.object} ${pi.status}!`)
         console.log("❌ Payment failed.")
@@ -53,8 +50,8 @@ export const webhook = catchAsync(
       case "checkout.session.completed":
         {
           const checkoutSession = event.data.object as Stripe.Checkout.Session
-          await handelSubscriptionCompleted(checkoutSession)
-          console.log(`in session completed: ${checkoutSession}`)
+          await handelCheckoutSessionCompleted(checkoutSession)
+          console.log(`in session completed`)
         }
         break
       // the same as completed
@@ -67,9 +64,8 @@ export const webhook = catchAsync(
           "in customer subscription updated and deleted",
           "subscription.updated"
         )
-        await handelSubscriptionUpdated(
-          event.data.object as Stripe.Checkout.Session
-        )
+        const checkoutSession = event.data.object as Stripe.Subscription
+        await handelSubscriptionUpdated(checkoutSession)
         break
       }
     }

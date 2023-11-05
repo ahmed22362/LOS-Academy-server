@@ -1,20 +1,25 @@
 import Stripe from "stripe"
-import Subscription from "../db/models/subscription.model"
+import Subscription, {
+  SubscriptionStatus,
+} from "../db/models/subscription.model"
 import {
   createModelService,
   getAllModelsByService,
   getModelByIdService,
   getOneModelByService,
-  updateModelService,
 } from "./factory.services"
 import { getPlanService } from "./plan.service"
 import { createStripeSession, getStripeSubscription } from "./stripe.service"
-import { getUserByIdService } from "./user.service"
+import {
+  getUserByIdService,
+  getUserByService,
+  updateUserRemainSessionService,
+} from "./user.service"
 import AppError from "../utils/AppError"
 import { FindOptions, Transaction } from "sequelize"
-import { createSessionRequestService } from "./sessionReq.service"
 import Plan from "../db/models/plan.model"
 import { sequelize } from "../db/sequalize"
+import logger from "../utils/logger"
 
 interface stripeCreateSubscription {
   userId: string
@@ -55,7 +60,7 @@ export async function createSubscriptionService({
     ModelClass: Subscription,
     data: body,
   })
-  return subscription
+  return subscription as Subscription
 }
 export async function updateSubscriptionService({
   id,
@@ -66,9 +71,13 @@ export async function updateSubscriptionService({
   updatedData: Partial<ICreateSubscription>
   transaction?: Transaction
 }) {
-  return await Subscription.update(updatedData, { where: { id }, transaction })
+  const updated = await Subscription.update(updatedData, {
+    where: { id },
+    transaction,
+    returning: true,
+  })
+  return updated
 }
-
 export async function getSubscriptionByID({
   id,
   findOptions,
@@ -87,7 +96,7 @@ export async function getSubscriptionByID({
 export async function getSubscriptionByUserId({ userId }: { userId: string }) {
   const subscription = await getOneModelByService({
     Model: Subscription,
-    findOptions: { where: { userId } },
+    findOptions: { where: { userId }, include: Plan },
   })
   return subscription
 }
@@ -105,13 +114,27 @@ export async function getSubscriptionBy({
   }
   return subscription as Subscription
 }
-
 export async function getSubscriptionBySessionID(
   stripe_checkout_session_id: string
 ) {
   const membership = await getOneModelByService({
     Model: Subscription,
     findOptions: { where: { stripe_checkout_session_id }, include: Plan },
+  })
+  if (!membership) {
+    throw new AppError(
+      404,
+      "There is no membership with this stripe checkout session id"
+    )
+  }
+  return membership as Subscription
+}
+export async function getSubscriptionByStripeSubscriptionId(
+  stripe_subscription_id: string
+) {
+  const membership = await getOneModelByService({
+    Model: Subscription,
+    findOptions: { where: { stripe_subscription_id }, include: Plan },
   })
   if (!membership) {
     throw new AppError(
@@ -147,14 +170,14 @@ export async function checkPreviousUserSubreption({
   const previousSubscription = await getSubscriptionByUserId({
     userId,
   })
-  if (previousSubscription && previousSubscription.status === "pending") {
-    throw new AppError(
-      400,
-      "you can't subscribe to another when there is pending one!"
-    )
-  }
+  if (
+    previousSubscription &&
+    previousSubscription.status !== SubscriptionStatus.ACTIVE
+  ) {
+    return previousSubscription
+  } else return null
 }
-export async function handelSubscriptionCompleted(
+export async function handelCheckoutSessionCompleted(
   checkoutSession: Stripe.Checkout.Session
 ) {
   const t = await sequelize.transaction()
@@ -163,7 +186,6 @@ export async function handelSubscriptionCompleted(
     const stripeSubscription = await getStripeSubscription(
       checkoutSession.subscription as string
     )
-    const user = await getUserByIdService({ userId: membership.userId })
     await updateSubscriptionService({
       id: membership.id,
       updatedData: {
@@ -172,25 +194,40 @@ export async function handelSubscriptionCompleted(
       },
       transaction: t,
     })
-    user!.remainSessions += membership.plan.sessionsCount
-    await user?.save({ transaction: t })
     await t.commit()
-    console.log(user, membership)
+  } catch (error: any) {
+    await t.rollback()
+    throw new AppError(400, `Error updating subscription ${error.message}`)
+  }
+}
+export async function handelSubscriptionPayed(
+  payment_intent: Stripe.PaymentIntent
+) {
+  const t = await sequelize.transaction()
+  try {
+    const user = await getUserByService({
+      findOptions: { where: { customerId: payment_intent.customer } },
+    })
+    const membership = await getSubscriptionByUserId({ userId: user?.id })
+    await updateUserRemainSessionService({
+      userId: user.id,
+      amountOfSessions: membership.plan.sessionsCount,
+    })
+    await t.commit()
   } catch (error: any) {
     await t.rollback()
     throw new AppError(400, `Error updating subscription ${error.message}`)
   }
 }
 export async function handelSubscriptionUpdated(
-  checkoutSession: Stripe.Checkout.Session
+  subscription: Stripe.Subscription
 ) {
-  const membership = await getSubscriptionBySessionID(checkoutSession.id)
-  const stripeSubscription = await getStripeSubscription(
-    checkoutSession.subscription as string
+  const membership = await getSubscriptionByStripeSubscriptionId(
+    subscription.id
   )
-  if (stripeSubscription.status === "canceled") {
+  if (subscription.status === "canceled") {
     await membership.destroy()
   } else {
-    await membership.update({ status: stripeSubscription.status })
+    await membership.update({ status: subscription.status })
   }
 }

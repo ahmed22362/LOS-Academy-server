@@ -13,7 +13,29 @@ export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
     let planId = req.body.planId
-    await checkPreviousUserSubreption({ userId })
+    const successLink: string = `${req.protocol}://${req.get(
+      "host"
+    )}/?session_id={CHECKOUT_SESSION_ID}`
+    const failLink: string = `${req.protocol}://${req.get("host")}/`
+    // check if there is active subscription
+    const previousSubscription = await checkPreviousUserSubreption({ userId })
+    if (previousSubscription) {
+      const stripeCheckSession = await createStripeSubscriptionService({
+        body: {
+          userId: previousSubscription.userId,
+          planId: previousSubscription.plan.id,
+          success_url: successLink,
+          cancel_url: failLink,
+        },
+      })
+      await updateSubscriptionService({
+        id: previousSubscription.id,
+        updatedData: { stripe_checkout_session_id: stripeCheckSession.id },
+      })
+      return res
+        .status(200)
+        .json({ status: "success", data: stripeCheckSession })
+    }
     if (!planId) {
       const sessionDuration = req.body.sessionDuration
       const sessionsCount = req.body.sessionsCount
@@ -28,11 +50,6 @@ export const createSubscription = catchAsync(
       })
       planId = plan.id
     }
-    const successLink: string = `${req.protocol}://${req.get(
-      "host"
-    )}/?session_id={CHECKOUT_SESSION_ID}`
-    const failLink: string = `${req.protocol}://${req.get("host")}/`
-
     const stripeCheckSession = await createStripeSubscriptionService({
       body: { userId, planId, success_url: successLink, cancel_url: failLink },
     })
@@ -54,9 +71,10 @@ export const createSubscription = catchAsync(
 export const updateSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
+    const { status } = req.body
     const updatedSubscription = await updateSubscriptionService({
       id: +id,
-      updatedData: { status: "active" },
+      updatedData: { status },
     })
     res.status(200).json({
       status: "success",

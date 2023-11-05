@@ -1,5 +1,5 @@
 import Teacher from "../db/models/teacher.model"
-import { FindOptions } from "sequelize"
+import { FindOptions, Transaction } from "sequelize"
 import { ITeacherInput } from "../db/models/teacher.model"
 import {
   createModelService,
@@ -66,7 +66,29 @@ export async function updateTeacherService({
     updatedData: updatedData,
   })
 }
-
+export async function updateTeacherBalance({
+  teacherId,
+  amount,
+  numOfSessions = 1,
+  transaction,
+}: {
+  teacherId: string
+  amount?: number
+  numOfSessions?: number
+  transaction?: Transaction
+}) {
+  const teacher = await getTeacherByIdService({ id: teacherId })
+  if (!amount) {
+    amount = numOfSessions * teacher.sessionCost
+  }
+  const updated = await teacher.increment(
+    { balance: amount, committedSessions: 1 },
+    {
+      transaction,
+    }
+  )
+  return updated
+}
 export async function getTeacherByService({
   findOptions,
 }: {

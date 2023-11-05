@@ -20,6 +20,8 @@ import { sequelize } from "../db/sequalize"
 import ZoomService from "../connect/zoom"
 import Teacher from "../db/models/teacher.model"
 import User from "../db/models/user.model"
+import { getUserAttr } from "../controller/user.controller"
+import { getTeacherAtt } from "../controller/teacher.controller"
 
 export interface IInfoBody {
   userId: string
@@ -160,10 +162,12 @@ export async function updateSessionStatusService({
   id,
   updatedData,
   teacherId,
+  transaction,
 }: {
-  id: number | string
+  id: number
   updatedData: Partial<ISessionUpdateTeacher>
   teacherId: string
+  transaction?: Transaction
 }) {
   // to check if the teacher has this session in the session info
   const sessionsInfo = await getTeacherSessionInfoService({ teacherId })
@@ -182,6 +186,7 @@ export async function updateSessionStatusService({
     ModelClass: Session,
     id: id,
     updatedData,
+    transaction,
   })
   if (!updateModelService) {
     throw new AppError(400, "Can't update service!")
@@ -218,16 +223,27 @@ export async function deleteSessionInfoService({
 }) {
   await deleteModelService({ ModelClass: Session, id })
 }
-export async function getAllSessionsService({
+export async function getAllSessionsServiceByStatus({
   findOptions,
+  status,
 }: {
   findOptions?: FindOptions
+  status?: SessionStatus
 }) {
-  const sessions = await getModelsService({
-    ModelClass: Session,
-    findOptions: {
-      include: [SessionInfo],
-    },
+  const whereObj: any = {}
+  status ? (whereObj.status = status) : {}
+  const sessions = await Session.findAll({
+    include: [
+      {
+        model: SessionInfo,
+        attributes: ["userId", "teacherId"],
+        include: [
+          { model: User, attributes: getUserAttr },
+          { model: Teacher, attributes: getTeacherAtt },
+        ],
+      },
+    ],
+    where: whereObj,
   })
   if (!sessions) {
     throw new AppError(400, "Can't get sessions!")
@@ -246,7 +262,8 @@ export async function getOneSessionDetailsService({
     s.status, 
     s.type, 
     s."teacherAttended", 
-    s."studentAttended", 
+    s."studentAttended",
+    u.id as userId, 
     u.name as userName, 
     u.email as userEmail, 
     t.name as teacherName, 
@@ -260,17 +277,19 @@ export async function getOneSessionDetailsService({
   where s.id = ${sessionId}`)
   return results[0] as ISessionDetails
 }
-export async function getOneSessionService({
-  id,
-  findOptions,
-}: {
-  id: string | number
-  findOptions?: FindOptions
-}) {
+export async function getOneSessionService({ id }: { id: number }) {
   const session = await getModelByIdService({
     ModelClass: Session,
     Id: id,
-    findOptions,
+    findOptions: {
+      include: [
+        {
+          model: SessionInfo,
+          attributes: ["userId"],
+          include: [{ model: User, attributes: getUserAttr }],
+        },
+      ],
+    },
   })
   if (!session) {
     throw new AppError(404, "can't find session with this id!")
@@ -280,10 +299,8 @@ export async function getOneSessionService({
 
 export async function getUserAllDoneSessionsService({
   userId,
-  status,
 }: {
   userId: string
-  status: SessionStatus
 }) {
   const sessions = await generateGetterUserSessions({
     userId,
@@ -373,12 +390,10 @@ export async function updateSessionTeacherAttendanceService({
   attend: boolean
   transaction?: Transaction
 }) {
-  const session = await getOneSessionService({ id: sessionId })
-
   // to check if the teacher has this session in the session info
-  const exist = await teacherOwnThisSession({
+  const { exist, session } = await teacherOwnThisSession({
     teacherId,
-    sessionId: session.id,
+    sessionId,
   })
   if (!exist) {
     throw new AppError(404, "The Teacher is not assign to this session")
@@ -398,9 +413,10 @@ export async function updateSessionStudentAttendanceService({
   transaction?: Transaction
 }) {
   // to check if the user has this session in the session info
-  const sessionsInfo = await getUserSessionInfoService({ userId })
-  const session = await getOneSessionService({ id: sessionId })
-  const exist = sessionsInfo.some((info) => info.id === session.sessionInfoId)
+  const { exist, session } = await userOwnThisSession({
+    userId,
+    sessionId,
+  })
   if (!exist) {
     throw new AppError(404, "The student is not assign to this session")
   }
@@ -564,5 +580,17 @@ export async function teacherOwnThisSession({
   const sessionsInfo = await getTeacherSessionInfoService({ teacherId })
   const session = await getOneSessionService({ id: sessionId })
   const exist = sessionsInfo.some((info) => info.id === session.sessionInfoId)
-  return exist
+  return { exist, session }
+}
+export async function userOwnThisSession({
+  userId,
+  sessionId,
+}: {
+  userId: string
+  sessionId: number
+}) {
+  const sessionsInfo = await getUserSessionInfoService({ userId })
+  const session = await getOneSessionService({ id: sessionId })
+  const exist = sessionsInfo.some((info) => info.id === session.sessionInfoId)
+  return { exist, session }
 }

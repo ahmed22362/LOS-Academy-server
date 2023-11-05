@@ -1,4 +1,4 @@
-import { FindOptions } from "sequelize"
+import { FindOptions, Transaction } from "sequelize"
 import User, { IUserInput } from "../db/models/user.model"
 import AppError from "../utils/AppError"
 import {
@@ -6,8 +6,7 @@ import {
   getSubscriptionByUserId,
 } from "./subscription.service"
 import Plan from "../db/models/plan.model"
-import Subscription from "../db/models/subscription.model"
-import { getModelByIdService } from "./factory.services"
+import { SubscriptionStatus } from "../db/models/subscription.model"
 const { Op } = require("sequelize")
 
 async function createUserService({
@@ -42,7 +41,7 @@ async function getUserByIdService({
 }: {
   userId: string
   findOptions?: FindOptions
-}): Promise<User | null> {
+}): Promise<User> {
   try {
     const user = await User.findByPk(userId, findOptions)
     if (!user) {
@@ -58,13 +57,19 @@ async function getUserByService({
   findOptions,
 }: {
   findOptions?: FindOptions
-}): Promise<User | null> {
+}): Promise<User> {
   try {
     const user = await User.findOne(findOptions)
+    if (!user) {
+      throw new AppError(404, "Can't find user")
+    }
     return user
   } catch (error: any) {
     console.error("Error retrieving user by what you want:", error.message)
-    return null
+    throw new AppError(
+      400,
+      `Error retrieving user by what you want:", ${error.message}`
+    )
   }
 }
 async function getUserByResetTokenService({
@@ -113,6 +118,21 @@ async function updateUserService({
     throw new AppError(400, error.message)
   }
 }
+async function updateUserRemainSessionService({
+  userId,
+  amountOfSessions,
+  transaction,
+}: {
+  userId: string
+  amountOfSessions: number
+  transaction?: Transaction
+}) {
+  const user = await getUserByIdService({ userId })
+  return await user.increment(
+    { remainSessions: amountOfSessions },
+    { transaction }
+  )
+}
 async function deleteUserService({
   userId,
 }: {
@@ -134,9 +154,19 @@ async function deleteUserService({
   }
 }
 
-async function getUserSubscriptionPlan({ userId }: { userId: string }) {
+async function getUserSubscriptionPlan({
+  userId,
+  status,
+}: {
+  userId: string
+  status?: SubscriptionStatus
+}) {
+  const where: any = { userId }
+  if (status) {
+    where.status = status
+  }
   const userSubscription = getSubscriptionBy({
-    findOptions: { where: { userId, status: "active" }, include: Plan },
+    findOptions: { where, include: Plan },
   })
   return userSubscription
 }
@@ -174,4 +204,5 @@ export {
   getUserByResetTokenService,
   getUserSubscriptionPlan,
   checkUserSubscription,
+  updateUserRemainSessionService,
 }

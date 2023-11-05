@@ -53,6 +53,7 @@ export const getUserAttr = [
   "phone",
   "email",
   "availableFreeSession",
+  "remainSessions",
   "age",
 ]
 
@@ -162,7 +163,6 @@ export const getMyHistorySessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const sessions = await getUserAllDoneSessionsService({
       userId: req.body.userId,
-      status: SessionStatus.DONE,
     })
     res
       .status(200)

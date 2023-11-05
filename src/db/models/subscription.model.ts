@@ -10,7 +10,15 @@ import {
 } from "sequelize-typescript"
 import User from "./user.model"
 import Plan from "./plan.model"
-
+export enum SubscriptionStatus {
+  INCOMPLETE = "incomplete",
+  INCOMPLETE_EXPIRED = "incomplete_expired",
+  TRIALING = "trialing",
+  ACTIVE = " active",
+  PAST_DUE = "past_due",
+  CANCELED = "canceled",
+  UNPAID = "unpaid",
+}
 @Table({ tableName: "subscription", timestamps: true, freezeTableName: true })
 export default class Subscription extends Model {
   @PrimaryKey
@@ -22,13 +30,13 @@ export default class Subscription extends Model {
   id!: number
 
   @Column({
-    type: DataType.STRING,
-    defaultValue: "pending",
+    type: DataType.ENUM({ values: Object.values(SubscriptionStatus) }),
+    defaultValue: SubscriptionStatus.INCOMPLETE,
   })
   status!: string
 
   @Column({ type: DataType.STRING, allowNull: true })
-  stripe_subscription_id!: string | null | undefined
+  stripe_subscription_id?: string | null
 
   @Column
   stripe_checkout_session_id!: string

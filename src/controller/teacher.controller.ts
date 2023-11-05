@@ -19,7 +19,16 @@ import { verifyToken } from "../utils/jwt"
 import { getStripeBalance } from "../service/stripe.service"
 import { getTeacherRescheduleRequests } from "../service/rescheduleReq.service"
 
-export const getTeacherAtt = ["id", "name", "phone", "email", "role"]
+export const getTeacherAtt = [
+  "id",
+  "name",
+  "phone",
+  "email",
+  "role",
+  "sessionCost",
+  "committedSessions",
+  "balance",
+]
 
 export const createTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

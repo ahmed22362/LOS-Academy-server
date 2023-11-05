@@ -22,7 +22,6 @@ import { loginUser } from "../controller/user.controller"
 const authRouter = Router()
 
 authRouter.get("/oauth/google/callback", googleOauthController)
-
 authRouter.post("/signup", validate(signupUserSchema), signup)
 authRouter.post("/login", validate(loginUserSchema), loginUser)
 authRouter.post(

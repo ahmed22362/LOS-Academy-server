@@ -13,6 +13,7 @@ import {
   generateSessionLink,
   getAllRescheduleRequests,
   getAllSessions,
+  getAllSessionsByStatus,
   getOneSessionInfo,
   requestSessionReschedule,
   updateSessionAttendance,
@@ -72,5 +73,7 @@ sessionRouter
 sessionRouter
   .route("/:id")
   .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo)
-sessionRouter.route("/").get(protectTeacher, setUserOrTeacherId, getAllSessions)
+sessionRouter
+  .route("/")
+  .get(protectTeacher, setUserOrTeacherId, getAllSessionsByStatus)
 export default sessionRouter

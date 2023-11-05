@@ -5,8 +5,10 @@ import {
   createPaidSessionsService,
   generateMeetingLinkAndUpdateSession,
   getAllSessionWithDetailsService,
+  getAllSessionsServiceByStatus,
   getOneSessionDetailsService,
   getTeacherAllSessionsService,
+  teacherOwnThisSession,
   updateSessionStatusService,
   updateSessionStudentAttendanceService,
   updateSessionTeacherAttendanceService,
@@ -21,6 +23,12 @@ import {
   requestRescheduleService,
 } from "../service/rescheduleReq.service"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
+import { SessionStatus } from "../db/models/session.model"
+import {
+  updateTeacherBalance,
+  updateTeacherService,
+} from "../service/teacher.service"
+import { updateUserRemainSessionService } from "../service/user.service"
 
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -28,6 +36,17 @@ export const getAllSessions = catchAsync(
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+export const getAllSessionsByStatus = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const status = req.query.status as SessionStatus
+    const sessions = await getAllSessionsServiceByStatus({ status: status })
+    res.status(200).json({
+      status: "success",
+      length: sessions.length,
+      data: sessions,
+    })
   }
 )
 export const getOneSessionInfo = catchAsync(
@@ -140,18 +159,48 @@ export const generateSessionLink = catchAsync(
 )
 export const updateSessionStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sessionId = req.body.sessionId
-    const status = req.body.status
-    const session = await updateSessionStatusService({
-      id: sessionId,
-      updatedData: { status },
-      teacherId: req.body.teacherId,
-    })
-    res.status(200).json({
-      status: "success",
-      message: "session status updated successfully",
-      data: session,
-    })
+    const { sessionId, teacherId, status } = req.body
+    const t = await sequelize.transaction()
+    try {
+      const { exist, session } = await teacherOwnThisSession({
+        teacherId,
+        sessionId,
+      })
+      if (!exist) {
+        return next(
+          new AppError(401, "you can't update session that is not yours")
+        )
+      }
+      if (session.status !== SessionStatus.PENDING) {
+        return next(new AppError(400, "Session already updated!"))
+      }
+      await updateSessionStatusService({
+        id: sessionId,
+        updatedData: { status },
+        teacherId: teacherId,
+        transaction: t,
+      })
+      await updateTeacherBalance({
+        teacherId,
+        numOfSessions: 1,
+        transaction: t,
+      })
+      await updateUserRemainSessionService({
+        userId: session.SessionInfo.userId as string,
+        amountOfSessions: -1,
+        transaction: t,
+      })
+      await t.commit()
+      res.status(200).json({
+        status: "success",
+        message:
+          "session status updated successfully and the teacher take his money and the user remain sessions decreased by one!",
+        data: session,
+      })
+    } catch (error: any) {
+      await t.rollback()
+      next(new AppError(400, `Error updating session: ${error.message}`))
+    }
   }
 )
 export const requestSessionReschedule = catchAsync(

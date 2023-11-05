@@ -10,7 +10,7 @@ import {
 } from "sequelize-typescript"
 import Teacher from "./teacher.model"
 
-enum PayoutRequestStatus {
+export enum PayoutRequestStatus {
   PENDING = "pending",
   DONE = "done",
   PROCESSING = "processing",

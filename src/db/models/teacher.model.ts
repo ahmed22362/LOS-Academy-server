@@ -79,6 +79,9 @@ export default class Teacher extends Model<Teacher> {
   @Column({ type: DataType.INTEGER, defaultValue: 0 })
   committedSessions!: number
 
+  @Column({ type: DataType.INTEGER, defaultValue: 0 })
+  balance!: number
+
   @Column(DataType.DATE)
   passwordChangedAt?: Date
 

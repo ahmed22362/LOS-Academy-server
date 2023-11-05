@@ -138,8 +138,10 @@ export const protect = (Model: ModelClass) =>
         token = req.headers.authorization.split(" ")[1]
       } else if (req.cookies.token !== undefined) {
         token = req.cookies.token
+        console.log("here in cookies")
       }
-      if (!token) {
+      console.log(typeof token, req.cookies.token)
+      if (!token || token === "null") {
         return next(
           new AppError(
             401,
