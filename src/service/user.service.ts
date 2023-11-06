@@ -153,7 +153,6 @@ async function deleteUserService({
     return false
   }
 }
-
 async function getUserSubscriptionPlan({
   userId,
   status,
@@ -166,7 +165,7 @@ async function getUserSubscriptionPlan({
     where.status = status
   }
   const userSubscription = getSubscriptionBy({
-    findOptions: { where, include: Plan },
+    findOptions: { where, include: Plan, order: [["createAt", "DESC"]] },
   })
   return userSubscription
 }

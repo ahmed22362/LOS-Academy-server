@@ -71,6 +71,7 @@ export const updateSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
     const { status } = req.body
+    console.log(id, status)
     const updatedSubscription = await updateSubscriptionService({
       id: +id,
       updatedData: { status },

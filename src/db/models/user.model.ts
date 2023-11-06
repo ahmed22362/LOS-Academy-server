@@ -20,6 +20,11 @@ export interface IUserInput extends User {
   age: number
 }
 
+enum Gender {
+  MALE = "male",
+  FEMALE = "female",
+}
+
 @Table({
   tableName: "user",
   freezeTableName: true,
@@ -44,6 +49,9 @@ export default class User extends Model<User> {
     allowNull: false,
   })
   age!: number
+
+  @Column({ type: DataType.ENUM({ values: Object.values(Gender) }) })
+  gender!: Gender
 
   @Column({
     type: DataType.STRING,

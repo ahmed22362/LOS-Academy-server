@@ -1,4 +1,4 @@
-import { Op, Transaction, WhereOptions } from "sequelize"
+import { FindOptions, Op, Transaction, WhereOptions } from "sequelize"
 import Session, { SessionStatus } from "../db/models/session.model"
 import { SessionType } from "../db/models/session.model"
 import AppError from "../utils/AppError"
@@ -215,6 +215,14 @@ export async function updateSessionStatusService({
 export async function deleteSessionService({ id }: { id: number }) {
   await deleteModelService({ ModelClass: Session, id })
 }
+export async function getAllSessionsService({
+  findOptions,
+}: {
+  findOptions?: FindOptions
+}) {
+  const sessions = await Session.findAll(findOptions)
+  return sessions
+}
 export async function getAllSessionsServiceByStatus({
   status,
   page,
@@ -312,7 +320,6 @@ export async function getUserUpcomingSessionsService({
   })
   return sessions
 }
-
 export async function getTeacherAllSessionsService({
   teacherId,
   page,
@@ -340,7 +347,6 @@ export async function getTeacherUpcomingSessionsService({
   })
   return sessions
 }
-
 export async function updateSessionTeacherAttendanceService({
   sessionId,
   teacherId,
@@ -420,28 +426,34 @@ async function generateGetterUserSessions({
     userId,
     include: { model: Teacher },
   })
-  const userSessions: UserSessions = {}
-
-  for (let info of sessionInfo) {
-    const where: any = { sessionInfoId: info.id }
-
-    if (status) {
-      where.status = status
-    }
-    const sessions = await getAllModelsByService({
-      Model: Session,
-      findOptions: {
-        where,
-      },
-      page,
-      pageSize,
-    })
-    if (!sessions) {
-      throw new AppError(404, "there is no sessions with this session info!")
-    }
-    userSessions[`${info.teacher!.name} - ${info.teacher!.email}`] = sessions
+  const sessionInfoIds = sessionInfo.map((info) => info.id)
+  const where: WhereOptions = {
+    sessionInfoId: { [Op.in]: sessionInfoIds },
   }
-  return userSessions
+  if (status) {
+    where.status = status
+  }
+  console.log(sessionInfoIds)
+  let limit
+  let offset
+  if (pageSize) limit = pageSize
+  if (pageSize && page) offset = page * pageSize
+  const sessions = await getAllSessionsService({
+    findOptions: {
+      include: [
+        {
+          model: SessionInfo,
+          attributes: ["teacherId"],
+          include: [{ model: Teacher, attributes: getTeacherAtt }],
+        },
+      ],
+      where,
+      limit,
+      offset,
+      order: [["sessionDate", "ASC"]],
+    },
+  })
+  return sessions
 }
 async function generateGetterTeacherSessions({
   teacherId,
@@ -458,28 +470,32 @@ async function generateGetterTeacherSessions({
     teacherId,
     include: { model: User },
   })
-  const teacherSessions: UserSessions = {}
-
-  for (let info of sessionInfo) {
-    const where: any = { sessionInfoId: info.id }
-
-    if (status) {
-      where.status = status
-    }
-    const sessions = await getAllModelsByService({
-      Model: Session,
-      findOptions: {
-        where,
-      },
-      page,
-      pageSize,
-    })
-    if (!sessions) {
-      throw new AppError(404, "there is no sessions with this session info!")
-    }
-    teacherSessions[`${info.user!.name} - ${info.user!.email}`] = sessions
+  const sessionInfoIds = sessionInfo.map((info) => info.id)
+  const where: WhereOptions = {
+    sessionInfoId: { [Op.in]: sessionInfoIds },
   }
-  return teacherSessions
+  if (status) {
+    where.status = status
+  }
+  let limit
+  let offset
+  if (pageSize) limit = pageSize
+  if (pageSize && page) offset = page * pageSize
+  const sessions = await getAllSessionsService({
+    findOptions: {
+      include: [
+        {
+          model: SessionInfo,
+          attributes: ["userId"],
+          include: [{ model: User, attributes: getUserAttr }],
+        },
+      ],
+      where,
+      limit,
+      offset,
+    },
+  })
+  return sessions
 }
 export async function getSessionInfosSessions(sessionInfoIds: number[]) {
   const sessions = await Session.findAll({

@@ -9,6 +9,7 @@ const payload = {
       age: z.number({
         required_error: "age is required",
       }),
+      gender: z.enum(["male", "female"]),
       password: z
         .string({
           required_error: "Password is required",
@@ -45,7 +46,7 @@ export const loginUserSchema = z.object({
 export const forgetPasswordSchema = z.object({
   body: z.object({
     email: z
-      .string({ required_error: "Email is required for log in!" })
+      .string({ required_error: "Email is required !" })
       .email("Not a valid mail!"),
   }),
 })
@@ -90,6 +91,8 @@ export const updateMeSchema = z.object({
     name: z.optional(z.string()),
     phone: z.optional(z.string()),
     email: z.optional(z.string().email("Not a valid mail")),
+    gender: z.optional(z.enum(["male", "female"])),
+    age: z.optional(z.number()),
   }),
 })
 const params = {

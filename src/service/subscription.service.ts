@@ -33,7 +33,7 @@ interface ICreateSubscription {
   stripe_checkout_session_id: string
   userId: string
   planId: number
-  status?: string
+  status?: SubscriptionStatus
 }
 
 export async function createStripeSubscriptionService({
@@ -71,6 +71,7 @@ export async function updateSubscriptionService({
   updatedData: Partial<ICreateSubscription>
   transaction?: Transaction
 }) {
+  console.log(updatedData)
   const updated = await Subscription.update(updatedData, {
     where: { id },
     transaction,
@@ -189,7 +190,7 @@ export async function handelCheckoutSessionCompleted(
     await updateSubscriptionService({
       id: membership.id,
       updatedData: {
-        status: stripeSubscription.status,
+        status: stripeSubscription.status as SubscriptionStatus,
         stripe_subscription_id: checkoutSession.subscription as string,
       },
       transaction: t,
