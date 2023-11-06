@@ -11,7 +11,8 @@ export interface ModelClass {
   findByPk(id: number | string, options?: FindOptions): Promise<Model | null>
   destroy(options?: FindOptions): Promise<number>
 }
-
+//  const offset = page * pageSize;
+// const limit = pageSize;
 async function createModelService({
   ModelClass,
   data,
@@ -30,11 +31,20 @@ async function createModelService({
 async function getModelsService({
   ModelClass,
   findOptions,
+  limit,
+  page,
 }: {
   ModelClass: ModelClass
   findOptions?: FindOptions
+  page?: number
+  limit?: number
 }): Promise<Model[] | null> {
   try {
+    // add pagination
+    if (!findOptions) findOptions = {}
+    if (limit) findOptions.limit = limit
+    if (page && limit) findOptions.offset = page * limit
+    console.log(findOptions)
     const models = await ModelClass.findAll(findOptions)
     return models
   } catch (error: any) {
@@ -45,11 +55,19 @@ async function getModelsService({
 async function getAllModelsByService({
   Model,
   findOptions,
+  page,
+  pageSize,
 }: {
   Model: ModelClass
   findOptions?: FindOptions
+  pageSize?: number
+  page?: number
 }): Promise<any | null> {
   try {
+    // add pagination
+    if (!findOptions) findOptions = {}
+    if (pageSize) findOptions.limit = pageSize
+    if (page && pageSize) findOptions.offset = page * pageSize
     console.log(findOptions)
     const model = await Model.findAll(findOptions)
     return model

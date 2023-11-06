@@ -2,14 +2,12 @@ import { Request, Response } from "express"
 import catchAsync from "../utils/catchAsync"
 import { stripe } from "../service/stripe.service"
 import Stripe from "stripe"
-
 import dotenv from "dotenv"
 import {
   handelCheckoutSessionCompleted,
   handelSubscriptionPayed,
   handelSubscriptionUpdated,
 } from "../service/subscription.service"
-import logger from "../utils/logger"
 
 dotenv.config()
 

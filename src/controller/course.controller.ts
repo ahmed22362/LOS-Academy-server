@@ -25,7 +25,15 @@ export const createCourse = catchAsync(
 )
 export const getAllCourses = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const courses = await getAllCoursesService()
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
+    const courses = await getAllCoursesService({ page: nPage, limit: nLimit })
     res
       .status(200)
       .json({ status: "success", length: courses.length, data: courses })

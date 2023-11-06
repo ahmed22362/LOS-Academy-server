@@ -5,10 +5,12 @@ import RescheduleRequest, {
 import AppError from "../utils/AppError"
 import { updateModelService } from "./factory.services"
 import {
-  getOneSessionService,
+  getOneSessionDetailsService,
   getTeacherAllSessionsService,
   getUserAllSessionsService,
+  teacherOwnThisSession,
   updateSessionService,
+  userOwnThisSession,
 } from "./session.service"
 import Session from "../db/models/session.model"
 import SessionInfo from "../db/models/sessionInfo.model"
@@ -140,9 +142,7 @@ export async function requestRescheduleService({
   userId: string
   newDate: Date
 }) {
-  const sessionsInfo = await getUserSessionInfoService({ userId })
-  const session = await getOneSessionService({ id: sessionId })
-  const exist = sessionsInfo.some((info) => info.id === session.sessionInfoId)
+  const { session, exist } = await userOwnThisSession({ userId, sessionId })
   if (!exist) {
     throw new AppError(
       401,
@@ -172,11 +172,10 @@ export async function acceptOrDeclineRescheduleRequestService({
     throw new AppError(400, "Already responded to!")
   }
   // to check if the teacher has this session to accept the request
-  const sessionsInfo = await getTeacherSessionInfoService({ teacherId })
-  const session = await getOneSessionService({
-    id: rescheduleRequest.sessionId,
+  const { exist, session } = await teacherOwnThisSession({
+    teacherId,
+    sessionId: rescheduleRequest.sessionId,
   })
-  const exist = sessionsInfo.some((info) => info.id === session.sessionInfoId)
   if (!exist) {
     throw new AppError(401, "can't accept request for session is not yours")
   }
@@ -225,15 +224,25 @@ export async function getUserRescheduleRequests({
 }
 export async function getTeacherRescheduleRequests({
   teacherId,
+  page,
+  pageSize,
 }: {
   teacherId: string
+  page?: number
+  pageSize?: number
 }) {
+  let limit
+  let offset
+  if (pageSize) limit = pageSize
+  if (page && pageSize) offset = page * pageSize
   const sessionsObj = await getTeacherAllSessionsService({ teacherId })
   const sessionsIds: number[] = Object.values(sessionsObj)
     .flatMap((session) => session)
     .map((session) => session.id)
   const rescheduleRequests = await RescheduleRequest.findAll({
     where: { sessionId: { [Op.in]: sessionsIds } },
+    limit,
+    offset,
   })
   return rescheduleRequests
 }

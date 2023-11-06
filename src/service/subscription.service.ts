@@ -18,7 +18,7 @@ import {
 import AppError from "../utils/AppError"
 import { FindOptions, Transaction } from "sequelize"
 import Plan from "../db/models/plan.model"
-import { sequelize } from "../db/sequalize"
+import { sequelize } from "../db/sequelize"
 import logger from "../utils/logger"
 
 interface stripeCreateSubscription {

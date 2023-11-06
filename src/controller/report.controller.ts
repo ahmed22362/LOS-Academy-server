@@ -1,7 +1,7 @@
 import { NextFunction, Response, Request } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
-  getOneSessionService,
+  getOneSessionDetailsService,
   teacherOwnThisSession,
 } from "../service/session.service"
 import AppError from "../utils/AppError"
@@ -36,7 +36,7 @@ export const createReport = catchAsync(
         )
       )
     }
-    const session = await getOneSessionService({ id: sessionId })
+    const session = await getOneSessionDetailsService({ sessionId })
     if (session.status !== SessionStatus.TAKEN) {
       return next(new AppError(400, "can't add report to a non taken session"))
     }
@@ -118,10 +118,23 @@ export const deleteReport = catchAsync(
 )
 export const getAllReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    let offset
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+      offset = nPage * nLimit
+    }
     const reports = await getAllReportsService({
-      findOptions: { include: { model: Session, attributes: ["sessionDate"] } },
+      findOptions: {
+        include: { model: Session, attributes: ["sessionDate"] },
+        limit: nLimit,
+        offset: offset,
+      },
     })
-    console.log(reports)
     res
       .status(200)
       .json({ status: "success", length: reports.length, data: reports })
@@ -129,8 +142,20 @@ export const getAllReports = catchAsync(
 )
 export const getUserReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
     const userId = req.query.userId || req.body.userId
-    const reports = await getUserOrTeacherReportsService({ userId })
+    const reports = await getUserOrTeacherReportsService({
+      userId,
+      page: nPage,
+      pageSize: nLimit,
+    })
     res
       .status(200)
       .json({ status: "success", length: reports.length, data: reports })
@@ -138,8 +163,20 @@ export const getUserReports = catchAsync(
 )
 export const getTeacherReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
     const teacherId = req.query.teacherId || req.body.teacherId
-    const reports = await getUserOrTeacherReportsService({ teacherId })
+    const reports = await getUserOrTeacherReportsService({
+      teacherId,
+      page: nPage,
+      pageSize: nLimit,
+    })
     res
       .status(200)
       .json({ status: "success", length: reports.length, data: reports })

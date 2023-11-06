@@ -52,8 +52,18 @@ export const createTeacher = catchAsync(
 )
 export const getAllTeachers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    let offset
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+      offset = nPage * nLimit
+    }
     const teachers = await getTeachersService({
-      findOptions: { attributes: getTeacherAtt },
+      findOptions: { attributes: getTeacherAtt, limit: nLimit, offset },
     })
     if (!teachers) {
       return next(new AppError(400, "Error getting all teachers!"))
@@ -79,7 +89,8 @@ export const deleteTeacher = catchAsync(
 export const updateTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const { name, sessionCost, email, phone, nationalId, role } = req.body
+    const { name, sessionCost, email, phone, nationalId, role, password } =
+      req.body
     const body = {
       name,
       email,
@@ -87,6 +98,7 @@ export const updateTeacher = catchAsync(
       nationalId,
       role,
       sessionCost,
+      password,
     } as ITeacherInput
     const teacher = await updateTeacherService({
       teacherId: id,
@@ -134,7 +146,21 @@ export const getTeacherUpcomingSessions = catchAsync(
 export const getTeacherAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
-    const sessions = await getTeacherAllSessionsService({ teacherId })
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    let offset
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+      offset = nPage * nLimit
+    }
+    const sessions = await getTeacherAllSessionsService({
+      teacherId,
+      page: nPage,
+      pageSize: nLimit,
+    })
     const allSessions = Object.values(sessions).flatMap((session) => session)
     res
       .status(200)

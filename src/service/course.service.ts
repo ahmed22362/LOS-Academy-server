@@ -34,9 +34,19 @@ export async function createCourseService({
     )
   }
 }
-export async function getAllCoursesService() {
+export async function getAllCoursesService({
+  page,
+  limit,
+}: {
+  page?: number
+  limit?: number
+}) {
   try {
-    const courses = await getModelsService({ ModelClass: Course })
+    const courses = await getModelsService({
+      ModelClass: Course,
+      page,
+      limit,
+    })
     if (!courses) {
       throw new AppError(400, `Error while retrieving course`)
     }

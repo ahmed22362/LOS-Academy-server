@@ -2,7 +2,7 @@ import { FindOptions, IncludeOptions, Transaction } from "sequelize"
 import SessionInfo from "../db/models/sessionInfo.model"
 import AppError from "../utils/AppError"
 import {
-  createModelService,
+  deleteModelService,
   getAllModelsByService,
   getModelByIdService,
   getModelsService,
@@ -130,4 +130,11 @@ export async function updateSessionInfoService({
     throw new AppError(400, "Can't update session info!")
   }
   return updatedSession
+}
+export async function deleteSessionInfoService({
+  sessionInfoId,
+}: {
+  sessionInfoId: number
+}) {
+  await deleteModelService({ ModelClass: SessionInfo, id: sessionInfoId })
 }

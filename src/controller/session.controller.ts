@@ -4,7 +4,6 @@ import {
   checkDateFormat,
   createPaidSessionsService,
   generateMeetingLinkAndUpdateSession,
-  getAllSessionWithDetailsService,
   getAllSessionsServiceByStatus,
   getOneSessionDetailsService,
   getTeacherAllSessionsService,
@@ -13,7 +12,7 @@ import {
   updateSessionStudentAttendanceService,
   updateSessionTeacherAttendanceService,
 } from "../service/session.service"
-import { sequelize } from "../db/sequalize"
+import { sequelize } from "../db/sequelize"
 import AppError from "../utils/AppError"
 import { IRequestWithUser } from "./auth.controller"
 import {
@@ -24,15 +23,20 @@ import {
 } from "../service/rescheduleReq.service"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import { SessionStatus } from "../db/models/session.model"
-import {
-  updateTeacherBalance,
-  updateTeacherService,
-} from "../service/teacher.service"
+import { updateTeacherBalance } from "../service/teacher.service"
 import { updateUserRemainSessionService } from "../service/user.service"
 
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sessions = await getAllSessionWithDetailsService()
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
+    const sessions = await getAllSessionsServiceByStatus({})
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
@@ -41,7 +45,19 @@ export const getAllSessions = catchAsync(
 export const getAllSessionsByStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const status = req.query.status as SessionStatus
-    const sessions = await getAllSessionsServiceByStatus({ status: status })
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
+    const sessions = await getAllSessionsServiceByStatus({
+      status: status,
+      page: nPage,
+      pageSize: nLimit,
+    })
     res.status(200).json({
       status: "success",
       length: sessions.length,
@@ -230,7 +246,19 @@ export const requestSessionReschedule = catchAsync(
 )
 export const getAllRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const requests = await getAllRescheduleRequestsService({})
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    let offset
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+      offset = nPage * nLimit
+    }
+    const requests = await getAllRescheduleRequestsService({
+      findOptions: { limit: nLimit, offset },
+    })
     res.status(200).json({ status: "success", data: requests })
   }
 )

@@ -12,7 +12,7 @@ import {
   updatePayoutRequestService,
 } from "../service/payout.service"
 import { PayoutRequestStatus } from "../db/models/payoutReq.model"
-import { sequelize } from "../db/sequalize"
+import { sequelize } from "../db/sequelize"
 
 export const createPayoutRequest = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -36,13 +36,23 @@ export const createPayoutRequest = catchAsync(
 )
 export const getAllPayoutRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const requests = await getAllPayoutRequestService({})
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
+    const requests = await getAllPayoutRequestService({
+      page: nPage,
+      limit: nLimit,
+    })
     res
       .status(200)
       .json({ status: "success", length: requests.length, data: requests })
   }
 )
-
 export const getOnePayoutRequest = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id

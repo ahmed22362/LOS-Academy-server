@@ -15,7 +15,7 @@ import {
   createPaidSessionsService,
 } from "./session.service"
 import { checkUniqueUserAndTeacher } from "./sessionInfo.service"
-import { sequelize } from "../db/sequalize"
+import { sequelize } from "../db/sequelize"
 export const DATE_PATTERN: RegExp = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
 export const FREE_SESSION_TOPIC = "User Free Session"
 export const FREE_SESSION_DURATION = 20 // 20 min

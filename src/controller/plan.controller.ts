@@ -32,10 +32,17 @@ export const createPlan = catchAsync(
     res.status(200).json({ status: "success", data: plan })
   }
 )
-
 export const getPlans = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const plans = await getPlansService({})
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
+    const plans = await getPlansService({ page: nPage, limit: nLimit })
     if (!plans) {
       return next(
         new AppError(400, "something wrong happened while getting plans")
@@ -61,7 +68,6 @@ export const updatePlan = catchAsync(
     res.status(200).json({ status: "success", data: updatedPlan })
   }
 )
-
 export const deletePlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
@@ -71,7 +77,6 @@ export const deletePlan = catchAsync(
       .json({ status: "success", message: "plan deleted successfully" })
   }
 )
-
 export const getPlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id

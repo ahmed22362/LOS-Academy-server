@@ -35,11 +35,21 @@ export async function getOnePayoutRequestService({
 }
 export async function getAllPayoutRequestService({
   findOptions,
+  page,
+  limit,
 }: {
   findOptions?: FindOptions
+  page?: number
+  limit?: number
 }) {
+  let pageSize
+  if (page && limit) {
+    pageSize = limit * page
+  }
   const requests = await PayOutRequest.findAll({
     include: [{ model: Teacher, attributes: getTeacherAtt }],
+    limit: limit,
+    offset: pageSize,
   })
   return requests
 }

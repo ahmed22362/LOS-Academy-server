@@ -67,7 +67,6 @@ export const createSubscription = catchAsync(
       .json({ status: "success", data: { stripeCheckSession, subscription } })
   }
 )
-
 export const updateSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
@@ -83,10 +82,21 @@ export const updateSubscription = catchAsync(
     })
   }
 )
-
 export const getAllUsersSubscriptions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const subscriptions = await getAllSubscriptionsService({})
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    let offset
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+      offset = nPage * nLimit
+    }
+    const subscriptions = await getAllSubscriptionsService({
+      findOptions: { limit: nLimit, offset },
+    })
     res.status(200).json({
       status: "success",
       length: subscriptions.length,

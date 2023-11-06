@@ -59,10 +59,19 @@ export async function createPlanService({ data }: { data: planCreateInput }) {
 }
 export async function getPlansService({
   findOptions,
+  page,
+  limit,
 }: {
   findOptions?: FindOptions
+  page?: number
+  limit?: number
 }) {
-  const plan = await getModelsService({ ModelClass: Plan, findOptions })
+  const plan = await getModelsService({
+    ModelClass: Plan,
+    findOptions,
+    page,
+    limit,
+  })
   if (!plan) {
     throw new AppError(404, "Can't find plan with this id!")
   }

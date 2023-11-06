@@ -1,4 +1,4 @@
-import { sequelize } from "../db/sequalize"
+import { sequelize } from "../db/sequelize"
 import logger from "../utils/logger"
 
 let force = false

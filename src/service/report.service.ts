@@ -78,22 +78,32 @@ export async function getSessionReportService({
 export async function getUserOrTeacherReportsService({
   userId,
   teacherId,
+  page,
+  pageSize,
 }: {
   userId?: string
   teacherId?: string
+  page?: number
+  pageSize?: number
 }) {
   let sessionInfos: SessionInfo[]
   if (userId) {
     sessionInfos = await getUserSessionInfoService({ userId })
   } else if (teacherId) {
-    sessionInfos = await getTeacherSessionInfoService({ teacherId })
+    sessionInfos = await getTeacherSessionInfoService({
+      teacherId,
+    })
   } else {
     throw new AppError(404, "please provide user or teacher id")
   }
-  const sessionIds = sessionInfos.map((si) => si.id)
+  const sessionInfoIds = sessionInfos.map((si) => si.id)
 
-  const sessions = await getSessionInfosSessions(sessionIds)
+  const sessions = await getSessionInfosSessions(sessionInfoIds)
   const reportIds = sessions.map((s) => s.id)
+  let limit
+  let offset
+  if (pageSize) limit = pageSize
+  if (page && pageSize) offset = page * pageSize
   const reports = await sessionReport.findAll({
     where: {
       id: {
@@ -101,13 +111,15 @@ export async function getUserOrTeacherReportsService({
       },
     },
     include: { model: Session, attributes: ["sessionDate"] },
+    limit,
+    offset,
   })
   return reports
 }
 export async function getAllReportsService({
   findOptions,
 }: {
-  findOptions: FindOptions
+  findOptions?: FindOptions
 }) {
   const reports = await sessionReport.findAll(findOptions)
   return reports

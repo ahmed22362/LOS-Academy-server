@@ -10,16 +10,15 @@ import {
   getOneSessionRequestService,
   updateSessionRequestService,
 } from "../service/sessionReq.service"
-import Session, { SessionStatus, SessionType } from "../db/models/session.model"
+import { SessionStatus, SessionType } from "../db/models/session.model"
 import {
   checkUserSubscription,
-  getUserByIdService,
   sessionPerWeekEqualDates,
 } from "../service/user.service"
 import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
 import { checkDateFormat } from "../service/session.service"
-import { sequelize } from "../db/sequalize"
+import { sequelize } from "../db/sequelize"
 
 export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -77,10 +76,22 @@ export const requestSession = (type: SessionType) =>
   })
 export const getAllAvailableSessionsReq = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    let offset
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+      offset = nPage * nLimit
+    }
     const sessions = await getAllSessionsRequestService({
       findOptions: {
         where: { type, status: SessionStatus.PENDING },
         include: { model: User, attributes: getUserAttr },
+        limit: nLimit,
+        offset,
       },
     })
     res
@@ -89,8 +100,22 @@ export const getAllAvailableSessionsReq = (type: SessionType) =>
   })
 export const getAllSessionsReq = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    let offset
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+      offset = nPage * nLimit
+    }
     const sessions = await getAllSessionsRequestService({
-      findOptions: { include: { model: User, attributes: getUserAttr } },
+      findOptions: {
+        include: { model: User, attributes: getUserAttr },
+        limit: nLimit,
+        offset,
+      },
     })
     res
       .status(200)

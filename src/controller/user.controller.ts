@@ -72,8 +72,18 @@ export const createUser = catchAsync(
 )
 export const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    let offset
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+      offset = nPage * nLimit
+    }
     const users = await getUsersService({
-      findOptions: { attributes: getUserAttr },
+      findOptions: { attributes: getUserAttr, limit: nLimit, offset },
     })
     if (!users) {
       return next(new AppError(400, "Error getting all users!"))
@@ -181,8 +191,19 @@ export const getUpcomingSessions = catchAsync(
 )
 export const getUserSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    let offset
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
     const sessions = await getUserAllSessionsService({
       userId: req.body.userId,
+      page: nPage,
+      pageSize: nLimit,
     })
     res
       .status(200)
