@@ -20,6 +20,9 @@ import { FindOptions, Transaction } from "sequelize"
 import Plan from "../db/models/plan.model"
 import { sequelize } from "../db/sequelize"
 import logger from "../utils/logger"
+import { getPlanAtt } from "../controller/plan.controller"
+import User from "../db/models/user.model"
+import { getUserAttr } from "../controller/user.controller"
 
 interface stripeCreateSubscription {
   userId: string
@@ -71,7 +74,6 @@ export async function updateSubscriptionService({
   updatedData: Partial<ICreateSubscription>
   transaction?: Transaction
 }) {
-  console.log(updatedData)
   const updated = await Subscription.update(updatedData, {
     where: { id },
     transaction,
@@ -83,7 +85,7 @@ export async function getSubscriptionByID({
   id,
   findOptions,
 }: {
-  id: string
+  id: number
   findOptions?: FindOptions
 }) {
   const subscription = await getModelByIdService({
@@ -91,7 +93,10 @@ export async function getSubscriptionByID({
     Id: id,
     findOptions,
   })
-  return subscription
+  if (!subscription) {
+    throw new AppError(404, "Can't find subscription with this id")
+  }
+  return subscription as Subscription
 }
 
 export async function getSubscriptionByUserId({ userId }: { userId: string }) {
@@ -219,6 +224,28 @@ export async function handelSubscriptionPayed(
     await t.rollback()
     throw new AppError(400, `Error updating subscription ${error.message}`)
   }
+}
+export async function handelSubscriptionPayedManually({
+  subscriptionId,
+  transaction,
+}: {
+  subscriptionId: number
+  transaction?: Transaction
+}) {
+  const membership = await getSubscriptionByID({
+    id: subscriptionId,
+    findOptions: {
+      include: [
+        { model: Plan, attributes: getPlanAtt },
+        { model: User, attributes: getUserAttr },
+      ],
+    },
+  })
+  await updateUserRemainSessionService({
+    userId: membership.userId,
+    amountOfSessions: membership.plan.sessionsCount,
+    transaction,
+  })
 }
 export async function handelSubscriptionUpdated(
   subscription: Stripe.Subscription

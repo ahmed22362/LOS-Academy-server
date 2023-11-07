@@ -12,7 +12,7 @@ import SessionInfo from "./sessionInfo.model"
 
 export enum SessionStatus {
   PENDING = "pending",
-  DONE = "done",
+  ONGOING = "ongoing",
   TAKEN = "taken",
   ABSENT = "absent",
 }

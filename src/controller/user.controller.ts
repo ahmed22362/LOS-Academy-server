@@ -17,11 +17,15 @@ import {
   protect,
   restrictTo,
 } from "./auth.controller"
-import { createStripeBillingPortal } from "../service/stripe.service"
+import {
+  createStripeBillingPortal,
+  createStripeCustomer,
+} from "../service/stripe.service"
 import {
   getUserAllDoneSessionsService,
   getUserAllSessionsService,
-  getUserUpcomingSessionsService,
+  getUserRemainSessionsService,
+  getUserUpcomingSessionService,
 } from "../service/session.service"
 import { SessionStatus } from "../db/models/session.model"
 import { verifyToken } from "../utils/jwt"
@@ -55,6 +59,7 @@ export const getUserAttr = [
   "availableFreeSession",
   "remainSessions",
   "age",
+  "gender",
 ]
 
 export const loginUser = login(User)
@@ -63,10 +68,17 @@ export const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, age, email, password, phone, gender } = req.body
     const body = { name, age, email, password, phone, gender } as IUserInput
+
     const newUser = await createUserService({ userData: body })
     if (!newUser) {
       return next(new AppError(400, "Can't create new User!"))
     }
+    const stripeCustomer = await createStripeCustomer({
+      email,
+      name: name,
+      phone,
+    })
+    newUser.customerId = stripeCustomer.id
     res.status(200).json({ status: "success", data: newUser })
   }
 )
@@ -179,14 +191,21 @@ export const getMyHistorySessions = catchAsync(
       .json({ status: "success", length: sessions.length, data: sessions })
   }
 )
-export const getUpcomingSessions = catchAsync(
+export const getUserRemainSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sessions = await getUserUpcomingSessionsService({
+    const sessions = await getUserRemainSessionsService({
       userId: req.body.userId,
     })
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+export const getUserUpcomingSession = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.body.userId
+    const session = await getUserUpcomingSessionService({ userId })
+    res.status(200).json({ status: "success", data: session })
   }
 )
 export const getUserSessions = catchAsync(
@@ -195,7 +214,6 @@ export const getUserSessions = catchAsync(
     let limit = req.query.limit
     let nPage
     let nLimit
-    let offset
     if (page && limit) {
       nPage = Number(page)
       nLimit = Number(limit)

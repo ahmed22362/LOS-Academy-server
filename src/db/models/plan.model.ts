@@ -49,7 +49,7 @@ export default class Plan extends Model {
   sessionsPerWeek!: number
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.DOUBLE,
     allowNull: false,
   })
   price!: number

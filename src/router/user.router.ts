@@ -7,9 +7,10 @@ import {
   getMyHistorySessions,
   getMySessionRescheduleRequests,
   getMySubscription,
-  getUpcomingSessions,
   getUser,
+  getUserRemainSessions,
   getUserSessions,
+  getUserUpcomingSession,
   protectUser,
   setUserIdToParams,
   setUserOrTeacherId,
@@ -38,10 +39,16 @@ userRouter.get(
   getMyHistorySessions
 )
 userRouter.get(
-  "/upcomingSessions",
+  "/remainSessions",
   protectUser,
   setUserOrTeacherId,
-  getUpcomingSessions
+  getUserRemainSessions
+)
+userRouter.get(
+  "/upcomingSession",
+  protectUser,
+  setUserOrTeacherId,
+  getUserUpcomingSession
 )
 userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
 userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports)

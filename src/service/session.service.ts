@@ -286,7 +286,7 @@ export async function getUserAllDoneSessionsService({
 }) {
   const sessions = await generateGetterUserSessions({
     userId,
-    status: SessionStatus.DONE,
+    status: SessionStatus.TAKEN,
   })
   return sessions
 }
@@ -306,7 +306,7 @@ export async function getUserAllSessionsService({
   })
   return sessions
 }
-export async function getUserUpcomingSessionsService({
+export async function getUserRemainSessionsService({
   userId,
 }: {
   userId: string
@@ -316,6 +316,18 @@ export async function getUserUpcomingSessionsService({
     status: SessionStatus.PENDING,
   })
   return sessions
+}
+export async function getUserUpcomingSessionService({
+  userId,
+}: {
+  userId: string
+}) {
+  const session = await generateGetterUserSessions({
+    userId,
+    status: SessionStatus.PENDING,
+    pageSize: 1,
+  })
+  return session
 }
 export async function getTeacherAllSessionsService({
   teacherId,
@@ -430,7 +442,6 @@ async function generateGetterUserSessions({
   if (status) {
     where.status = status
   }
-  console.log(sessionInfoIds)
   let limit
   let offset
   if (pageSize) limit = pageSize

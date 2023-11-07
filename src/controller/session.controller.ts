@@ -187,7 +187,10 @@ export const updateSessionStatus = catchAsync(
           new AppError(401, "you can't update session that is not yours")
         )
       }
-      if (session.status !== SessionStatus.PENDING) {
+      if (
+        session.status !== SessionStatus.PENDING &&
+        session.status !== SessionStatus.ONGOING
+      ) {
         return next(new AppError(400, "Session already updated!"))
       }
       await updateSessionStatusService({
@@ -196,22 +199,27 @@ export const updateSessionStatus = catchAsync(
         teacherId: teacherId,
         transaction: t,
       })
-      await updateTeacherBalance({
-        teacherId,
-        numOfSessions: 1,
-        transaction: t,
-      })
-      await updateUserRemainSessionService({
-        userId: session.SessionInfo.userId as string,
-        amountOfSessions: -1,
-        transaction: t,
-      })
+      if (status === SessionStatus.TAKEN) {
+        await updateTeacherBalance({
+          teacherId,
+          numOfSessions: 1,
+          transaction: t,
+        })
+        await updateUserRemainSessionService({
+          userId: session.SessionInfo.userId as string,
+          amountOfSessions: -1,
+          transaction: t,
+        })
+      }
       await t.commit()
+      const updatedSession = await getOneSessionDetailsService({
+        sessionId: session.id,
+      })
       res.status(200).json({
         status: "success",
         message:
           "session status updated successfully and the teacher take his money and the user remain sessions decreased by one!",
-        data: session,
+        data: updatedSession,
       })
     } catch (error: any) {
       await t.rollback()

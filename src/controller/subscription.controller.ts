@@ -5,6 +5,8 @@ import {
   createStripeSubscriptionService,
   createSubscriptionService,
   getAllSubscriptionsService,
+  handelSubscriptionPayed,
+  handelSubscriptionPayedManually,
   updateSubscriptionService,
 } from "../service/subscription.service"
 import { createPlanService } from "../service/plan.service"
@@ -12,6 +14,10 @@ import Plan, { PlanType } from "../db/models/plan.model"
 import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
 import { getPlanAtt } from "./plan.controller"
+import { SubscriptionStatus } from "../db/models/subscription.model"
+import { updateUserRemainSessionService } from "../service/user.service"
+import { sequelize } from "../db/sequelize"
+import AppError from "../utils/AppError"
 
 export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -76,16 +82,29 @@ export const updateSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
     const { status } = req.body
-    console.log(id, status)
-    const updatedSubscription = await updateSubscriptionService({
-      id: +id,
-      updatedData: { status },
-    })
-    res.status(200).json({
-      status: "success",
-      message: "subscription updated successfully",
-      data: updatedSubscription,
-    })
+    const t = await sequelize.transaction()
+    try {
+      const updatedSubscription = await updateSubscriptionService({
+        id: +id,
+        updatedData: { status },
+        transaction: t,
+      })
+      if (status === SubscriptionStatus.ACTIVE) {
+        await handelSubscriptionPayedManually({
+          subscriptionId: +id,
+          transaction: t,
+        })
+      }
+      await t.commit()
+      res.status(200).json({
+        status: "success",
+        message: "subscription updated successfully",
+        data: updatedSubscription,
+      })
+    } catch (error: any) {
+      await t.rollback()
+      next(new AppError(400, `Error updating subscription: ${error.message}`))
+    }
   }
 )
 export const getAllUsersSubscriptions = catchAsync(
