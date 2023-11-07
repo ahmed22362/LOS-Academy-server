@@ -8,22 +8,33 @@ import {
   updatePlanService,
 } from "../service/plan.service"
 import AppError from "../utils/AppError"
+import { PlanType } from "../db/models/plan.model"
 
 export interface planCreateInput {
   sessionDuration: number
   sessionsCount: number
   sessionsPerWeek: number
   title: string
+  type: PlanType
 }
-
+export const getPlanAtt = [
+  "title",
+  "sessionDuration",
+  "sessionsCount",
+  "sessionsPerWeek",
+  "price",
+  "active",
+]
 export const createPlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionsCount, sessionDuration, title, sessionsPerWeek } = req.body
+    const { sessionsCount, sessionDuration, title, sessionsPerWeek, type } =
+      req.body
     const body: planCreateInput = {
       sessionDuration,
       sessionsCount,
       sessionsPerWeek,
       title,
+      type,
     }
     const plan = await createPlanService({ data: body })
     if (!plan) {

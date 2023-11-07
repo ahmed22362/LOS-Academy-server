@@ -8,7 +8,11 @@ import {
   PrimaryKey,
   Table,
 } from "sequelize-typescript"
-import { createStripePrice } from "../../service/stripe.service"
+
+export enum PlanType {
+  STANDARD = "standard",
+  CUSTOM = "custom",
+}
 
 @Table({ tableName: "plan", timestamps: true, freezeTableName: true })
 export default class Plan extends Model {
@@ -61,4 +65,9 @@ export default class Plan extends Model {
     allowNull: false,
   })
   stripePriceId!: string
+  @Column({
+    type: DataType.ENUM({ values: Object.values(PlanType) }),
+    defaultValue: PlanType.CUSTOM,
+  })
+  type!: PlanType
 }

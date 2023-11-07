@@ -8,6 +8,10 @@ import {
   updateSubscriptionService,
 } from "../service/subscription.service"
 import { createPlanService } from "../service/plan.service"
+import Plan, { PlanType } from "../db/models/plan.model"
+import User from "../db/models/user.model"
+import { getUserAttr } from "./user.controller"
+import { getPlanAtt } from "./plan.controller"
 
 export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -46,6 +50,7 @@ export const createSubscription = catchAsync(
           sessionsCount,
           sessionsPerWeek,
           title: "custom plan",
+          type: PlanType.CUSTOM,
         },
       })
       planId = plan.id
@@ -96,7 +101,14 @@ export const getAllUsersSubscriptions = catchAsync(
       offset = nPage * nLimit
     }
     const subscriptions = await getAllSubscriptionsService({
-      findOptions: { limit: nLimit, offset },
+      findOptions: {
+        limit: nLimit,
+        offset,
+        include: [
+          { model: Plan, attributes: getPlanAtt },
+          { model: User, attributes: getUserAttr },
+        ],
+      },
     })
     res.status(200).json({
       status: "success",

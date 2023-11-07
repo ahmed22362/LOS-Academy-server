@@ -1,5 +1,5 @@
 import { FindOptions } from "sequelize"
-import Plan from "../db/models/plan.model"
+import Plan, { PlanType } from "../db/models/plan.model"
 import {
   createModelService,
   deleteModelService,
@@ -23,6 +23,7 @@ interface IPlanCreateData {
   title: string
   stripePriceId?: string
   price: number
+  type: PlanType
 }
 export async function createPlanService({ data }: { data: planCreateInput }) {
   const plan = await getPlanBy({
@@ -52,6 +53,7 @@ export async function createPlanService({ data }: { data: planCreateInput }) {
     sessionsPerWeek: data.sessionsPerWeek,
     title: data.title,
     price,
+    type: data.type,
   }
   const stripePlan = await createStripePrice(stripeBody)
   planBody.stripePriceId = stripePlan.id
