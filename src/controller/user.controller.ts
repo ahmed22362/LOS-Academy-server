@@ -61,8 +61,8 @@ export const loginUser = login(User)
 export const protectUser = protect(User)
 export const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, age, email, password, phone } = req.body
-    const body = { name, age, email, password, phone } as IUserInput
+    const { name, age, email, password, phone, gender } = req.body
+    const body = { name, age, email, password, phone, gender } as IUserInput
     const newUser = await createUserService({ userData: body })
     if (!newUser) {
       return next(new AppError(400, "Can't create new User!"))

@@ -57,9 +57,6 @@ export interface ISessionDetails {
   teacherEmail: string
   meetingLink: string
 }
-interface UserSessions {
-  [userName: string]: Session[]
-}
 
 export async function createFreeSessionService({
   userId,
