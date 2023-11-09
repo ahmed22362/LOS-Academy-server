@@ -80,7 +80,11 @@ export const signup = catchAsync(async function (
   next: NextFunction
 ) {
   const { name, email, password, phone, age, gender }: IUserInput = req.body
-
+  const stripeCustomer = await createStripeCustomer({
+    email,
+    name: name,
+    phone,
+  })
   const userData = {
     name,
     email,
@@ -88,18 +92,13 @@ export const signup = catchAsync(async function (
     phone,
     age,
     gender,
+    customerId: stripeCustomer.id,
   } as IUserInput
+
   const newUser = await createUserService({ userData })
   if (!newUser) {
     return next(new AppError(400, "Cant signup now try again later"))
   }
-  const stripeCustomer = await createStripeCustomer({
-    email,
-    name: name,
-    phone,
-  })
-  newUser.customerId = stripeCustomer.id
-  await newUser.save()
   createSendToken({ user: newUser, statusCode: 201, res })
 })
 

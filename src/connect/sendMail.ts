@@ -3,7 +3,6 @@ import dotenv from "dotenv"
 import generateResetPasswordTemplate from "../templates/resetPasswordTemplate"
 import generateWelcomeTemplate from "../templates/welcomeTemplate"
 import generateConfirmOrder from "../templates/confirmOrderTemplate"
-import logger from "../utils/logger"
 dotenv.config()
 
 export interface MailInterface {
@@ -30,24 +29,44 @@ class Mail {
     this.url = url
   }
   newTransporter() {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "developmt") {
+      console.log("in development and try to send mail")
       return nodemailer.createTransport({
-        host: process.env.MAIL_HOST as any,
-        port: process.env.MAIL_PORT as any,
-        secure: true,
+        host: "smtp.resend.com",
+        port: 465,
+        secure: false,
+        tls: {
+          rejectUnauthorized: false,
+        },
         auth: {
-          user: process.env.MAIL_USER,
-          pass: process.env.MAIL_PASSWORD,
+          user: "resend",
+          pass: `re_KpjAX6QM_C7SfmdHQLt224YHtv9ZaF3PE`,
         },
       })
+      return nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD,
+        },
+      })
+      // return nodemailer.createTransport({
+      //   host: process.env.MAIL_HOST as any,
+      //   port: process.env.MAIL_PORT as any,
+      //   secure: true,
+      //   auth: {
+      //     user: process.env.MAIL_USER,
+      //     pass: process.env.MAIL_PASSWORD,
+      //   },
+      // })
     } else {
       return nodemailer.createTransport({
         host: process.env.MAIL_HOST as any,
         port: process.env.MAIL_PORT as any,
         // secure: true,
-        // tls: {
-        //   ciphers: "SSLv3",
-        // },
+        tls: {
+          ciphers: "SSLv3",
+        },
         auth: {
           user: process.env.MAIL_USER,
           pass: process.env.MAIL_PASSWORD,

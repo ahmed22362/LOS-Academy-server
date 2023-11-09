@@ -96,18 +96,19 @@ export const updateStatusPayoutRequestService = catchAsync(
 
     const t = await sequelize.transaction()
     try {
+      const payoutRequest = await getOnePayoutRequestService({ requestId })
+      if (payoutRequest.status === PayoutRequestStatus.DONE) {
+        return next(new AppError(400, "Can't update a status of done request"))
+      }
       const updatedRequest = await updatePayoutRequestService({
         requestId: +requestId,
         status,
         transaction: t,
       })
-      if (updatedRequest.status === PayoutRequestStatus.DONE) {
-        return next(new AppError(400, "Can't update a status of done request"))
-      }
       if (status === PayoutRequestStatus.DONE) {
         await updateTeacherBalance({
-          teacherId: updatedRequest.teacherId,
-          amount: -updatedRequest.amount,
+          teacherId: payoutRequest.teacherId,
+          amount: -payoutRequest.amount,
           transaction: t,
         })
       }

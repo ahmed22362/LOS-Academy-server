@@ -2,11 +2,7 @@ import { FindOptions, Op, Transaction, WhereOptions } from "sequelize"
 import Session, { SessionStatus } from "../db/models/session.model"
 import { SessionType } from "../db/models/session.model"
 import AppError from "../utils/AppError"
-import {
-  deleteModelService,
-  getAllModelsByService,
-  updateModelService,
-} from "./factory.services"
+import { deleteModelService, updateModelService } from "./factory.services"
 import { DATE_PATTERN, FREE_SESSION_DURATION } from "./sessionReq.service"
 import {
   createSessionInfoService,

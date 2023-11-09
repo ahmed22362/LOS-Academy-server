@@ -5,12 +5,14 @@ import {
   DataType,
   BeforeSave,
   HasMany,
+  AfterCreate,
 } from "sequelize-typescript"
 import { ulid } from "ulid"
 import bcrypt from "bcrypt"
 import crypto from "crypto"
 
 import FreeSession from "./sessionReq.model"
+import { createSendMailJob } from "../../utils/scheduler"
 
 export interface IUserInput extends User {
   name: string
