@@ -78,5 +78,4 @@ const errorHandler = (
     sendErrorProd(err, res)
   }
 }
-
 export default errorHandler

@@ -140,7 +140,7 @@ export const login = (Model: ModelClass) =>
     if (model instanceof User && !model.verified) {
       return next(
         new AppError(
-          401,
+          403,
           "Can't log in before you verify you email if you miss the first mail you can always resend it!"
         )
       )
