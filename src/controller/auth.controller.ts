@@ -422,7 +422,12 @@ export const resendMailConfirmation = catchAsync(
     if (!user) {
       throw new AppError(404, "Can't find user registered with this email!")
     }
-
+    if (user.verified) {
+      throw new AppError(
+        400,
+        "User already verified his mail user can log in now!"
+      )
+    }
     await createAndSendConfirmMail(user, req)
     res
       .status(200)
