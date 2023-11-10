@@ -13,6 +13,7 @@ import {
   getGoogleUser,
 } from "../service/googleOauth.service"
 import {
+  UserResponse,
   createUserService,
   getUserByResetTokenService,
   getUserByService,
@@ -25,6 +26,10 @@ import {
 } from "../service/factory.services"
 import Teacher from "../db/models/teacher.model"
 import { createStripeCustomer } from "../service/stripe.service"
+import {
+  scheduleVerifyMailJob,
+  scheduleWelcomeMailJob,
+} from "../utils/scheduler"
 dotenv.config()
 
 export interface IRequestWithUser extends Request {
@@ -57,7 +62,6 @@ const createSendToken = ({
     expires: new Date(Date.now() + cookieExpire * millSecToDay),
     httpOnly: true,
     secure: false,
-    // domain: ".cubuild.net",
   }
 
   // local host is not https so for test purpose we will make this if statement
@@ -99,7 +103,22 @@ export const signup = catchAsync(async function (
   if (!newUser) {
     return next(new AppError(400, "Cant signup now try again later"))
   }
-  createSendToken({ user: newUser, statusCode: 201, res })
+  const userRes: UserResponse = {
+    id: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
+    age: newUser.age,
+    gender: newUser.gender,
+    remainSessions: newUser.remainSessions,
+    availableFreeSession: newUser.availableFreeSession,
+    verified: newUser.verified,
+  }
+  await createAndSendConfirmMail(newUser, req)
+  res.status(201).json({
+    status: "success",
+    message: "Confirmation Mail sent, Now confirm your mail so you can log in!",
+    data: userRes,
+  })
 })
 
 export const checkToken = (req: Request, res: Response, next: NextFunction) => {
@@ -118,7 +137,27 @@ export const login = (Model: ModelClass) =>
     if (!model || !(await model.correctPassword(password, model.password))) {
       return next(new AppError(401, "There email or password is not correct!"))
     }
-
+    if (model instanceof User && !model.verified) {
+      return next(
+        new AppError(
+          401,
+          "Can't log in before you verify you email if you miss the first mail you can always resend it!"
+        )
+      )
+    }
+    if (model instanceof User) {
+      const userRes: UserResponse = {
+        id: model.id,
+        name: model.name,
+        email: model.email,
+        age: model.age,
+        gender: model.gender,
+        remainSessions: model.remainSessions,
+        availableFreeSession: model.availableFreeSession,
+        verified: model.verified,
+      }
+      return createSendToken({ user: userRes as User, statusCode: 202, res })
+    }
     createSendToken({ user: model, statusCode: 202, res })
   })
 
@@ -128,7 +167,6 @@ export const protect = (Model: ModelClass) =>
       if (!Model) {
         return next(new AppError(404, "Please provide model to search with!"))
       }
-      console.log("in protect", Model)
       // 1) Getting token and check if it's there
       let token: string | undefined
       if (
@@ -138,9 +176,7 @@ export const protect = (Model: ModelClass) =>
         token = req.headers.authorization.split(" ")[1]
       } else if (req.cookies.token !== undefined) {
         token = req.cookies.token
-        console.log("here in cookies")
       }
-      console.log(typeof token, req.cookies.token)
       if (!token || token === "null") {
         return next(
           new AppError(
@@ -151,7 +187,6 @@ export const protect = (Model: ModelClass) =>
       }
       // 2) Verification token
       const decoded = (await verifyToken(token)) as decodedToken
-      console.log(decoded)
       // 3) Check if user still exists
       const currentUser = (await getModelByIdService({
         ModelClass: Model,
@@ -180,7 +215,6 @@ export const protect = (Model: ModelClass) =>
       } else {
         throw new AppError(400, "Can't identify the object identity!")
       }
-      console.log("done protect")
       next()
     }
   )
@@ -188,7 +222,6 @@ export const protect = (Model: ModelClass) =>
 export const restrictTo = (...roles: string[]) => {
   return (req: IRequestWithUser, res: Response, next: NextFunction) => {
     roles.flat(Infinity)
-    console.log(req.teacher!.role)
     if (!roles.includes(req.teacher!.role)) {
       return next(new AppError(403, "You don't have permission to do this!"))
     }
@@ -251,6 +284,11 @@ export const resetPassword = catchAsync(
     // Validate the new password and confirmation
     if (password !== passwordConfirmation) {
       return next(new AppError(400, "Passwords do not match!"))
+    }
+    if (new Date() > (user.passwordResetExpire as Date)) {
+      return res.render("errorPage", {
+        message: "Looks like the this link has expired Request a new link",
+      })
     }
     await updateUserService({
       userId: user.id,
@@ -330,3 +368,71 @@ export const googleOauthController = catchAsync(
     }
   }
 )
+export const sendConfirmEmail = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {}
+)
+export const verifyMail = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { token } = req.query
+    if (!token) {
+      return res.render("errorPage", { message: "some thing wrong happened" })
+    }
+    const hashedToken: string = crypto
+      .createHash("sha256")
+      .update(token as string)
+      .digest("hex")
+    const user = await User.findOne({
+      where: { OTPToken: hashedToken },
+    })
+    if (!user) {
+      return res.render("errorPage", {
+        message: "Looks like the link is invalid",
+      })
+    }
+    if (new Date() > (user!.OTPexpireAt as Date)) {
+      return res.render("errorPage", {
+        message: "Looks like the link has expired! request a new one",
+      })
+    }
+    await updateUserService({
+      userId: user!.id,
+      updatedData: {
+        verified: true,
+        OTPToken: null,
+        OTPexpireAt: null,
+      },
+    })
+    res.render("successPage", {
+      successMessage: "Your Email confirmed successfully!",
+      redirectLink: "/",
+      to: "Home",
+    })
+  }
+)
+export const resendMailConfirmation = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const email = req.query.email
+    if (!email) {
+      throw new AppError(
+        400,
+        "Please provide mail to resend token to confirm the mail"
+      )
+    }
+    const user = await getUserByService({ findOptions: { where: { email } } })
+    if (!user) {
+      throw new AppError(404, "Can't find user registered with this email!")
+    }
+
+    await createAndSendConfirmMail(user, req)
+    res
+      .status(200)
+      .json({ status: "success", message: "email send successfully" })
+  }
+)
+const createAndSendConfirmMail = async (user: User, req: Request) => {
+  const code = await user.createVerifyEmailCode()
+  const link: string = `${req.protocol}://${req.get(
+    "host"
+  )}/api/v1/user/auth/verifyEmail?token=${code}`
+  scheduleVerifyMailJob({ to: user.email, name: user.name, link })
+}

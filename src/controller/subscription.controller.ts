@@ -72,7 +72,6 @@ export const createSubscription = catchAsync(
     const subscription = await createSubscriptionService({
       body: subscriptionBody,
     })
-    console.log(stripeCheckSession.url as string)
     res
       .status(200)
       .json({ status: "success", data: { stripeCheckSession, subscription } })

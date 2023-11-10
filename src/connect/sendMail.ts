@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 import generateResetPasswordTemplate from "../templates/resetPasswordTemplate"
 import generateWelcomeTemplate from "../templates/welcomeTemplate"
 import generateConfirmOrder from "../templates/confirmOrderTemplate"
+import generateVerifyEmail from "../templates/verifyEmailTamplate"
 dotenv.config()
 
 export interface MailInterface {
@@ -29,50 +30,15 @@ class Mail {
     this.url = url
   }
   newTransporter() {
-    if (process.env.NODE_ENV === "developmt") {
-      console.log("in development and try to send mail")
-      return nodemailer.createTransport({
-        host: "smtp.resend.com",
-        port: 465,
-        secure: false,
-        tls: {
-          rejectUnauthorized: false,
-        },
-        auth: {
-          user: "resend",
-          pass: `re_KpjAX6QM_C7SfmdHQLt224YHtv9ZaF3PE`,
-        },
-      })
-      return nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.GMAIL_USER,
-          pass: process.env.GMAIL_APP_PASSWORD,
-        },
-      })
-      // return nodemailer.createTransport({
-      //   host: process.env.MAIL_HOST as any,
-      //   port: process.env.MAIL_PORT as any,
-      //   secure: true,
-      //   auth: {
-      //     user: process.env.MAIL_USER,
-      //     pass: process.env.MAIL_PASSWORD,
-      //   },
-      // })
-    } else {
-      return nodemailer.createTransport({
-        host: process.env.MAIL_HOST as any,
-        port: process.env.MAIL_PORT as any,
-        // secure: true,
-        tls: {
-          ciphers: "SSLv3",
-        },
-        auth: {
-          user: process.env.MAIL_USER,
-          pass: process.env.MAIL_PASSWORD,
-        },
-      })
-    }
+    return nodemailer.createTransport({
+      host: process.env.MAIL_HOST as any,
+      port: process.env.MAIL_PORT as any,
+      secure: true,
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASSWORD,
+      },
+    })
   }
 
   async send(template: ITemplate, subject: string) {
@@ -113,15 +79,14 @@ class Mail {
       console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
     }
   }
+  async sendVerifyMail({ link }: { link: string }) {
+    const verifyMailTemplate = generateVerifyEmail({ name: this.name, link })
+    const info = await this.send(verifyMailTemplate, "Email Confirmation!")
+    if (process.env.NODE_ENV === "development") {
+      console.log("Message sent: %s", info.messageId)
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    }
+  }
 }
-
-let testTransporter = nodemailer.createTransport({
-  host: "sandbox.smtp.mailtrap.io",
-  port: 2525,
-  auth: {
-    user: "6c17daa23163c3",
-    pass: "e879316559a500",
-  },
-})
 
 export default Mail

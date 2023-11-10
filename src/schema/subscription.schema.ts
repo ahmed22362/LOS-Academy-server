@@ -16,8 +16,8 @@ const customPlanSchema = z.object({
 const standardPlanSchema = z.object({
   priceId: z.number({ required_error: "please enter the standard price id" }),
 })
-const compositeSchema = customPlanSchema.or(standardPlanSchema)
+const compositeSchema = customPlanSchema.merge(standardPlanSchema)
 
 export const createSubscriptionSchema = z.object({
-  body: standardPlanSchema,
+  body: compositeSchema,
 })

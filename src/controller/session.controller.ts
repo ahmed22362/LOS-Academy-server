@@ -22,9 +22,14 @@ import {
   requestRescheduleService,
 } from "../service/rescheduleReq.service"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
-import { SessionStatus } from "../db/models/session.model"
+import Session, { SessionStatus } from "../db/models/session.model"
 import { updateTeacherBalance } from "../service/teacher.service"
 import { updateUserRemainSessionService } from "../service/user.service"
+import SessionInfo from "../db/models/sessionInfo.model"
+import User from "../db/models/user.model"
+import { getUserAttr } from "./user.controller"
+import Teacher from "../db/models/teacher.model"
+import { getTeacherAtt } from "./teacher.controller"
 
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -265,7 +270,26 @@ export const getAllRescheduleRequests = catchAsync(
       offset = nPage * nLimit
     }
     const requests = await getAllRescheduleRequestsService({
-      findOptions: { limit: nLimit, offset },
+      findOptions: {
+        limit: nLimit,
+        offset,
+        include: [
+          {
+            model: Session,
+            attributes: ["sessionInfoId"],
+            include: [
+              {
+                model: SessionInfo,
+                attributes: ["userId", "teacherId"],
+                include: [
+                  { model: User, attributes: getUserAttr },
+                  { model: Teacher, attributes: getTeacherAtt },
+                ],
+              },
+            ],
+          },
+        ],
+      },
     })
     res.status(200).json({ status: "success", data: requests })
   }

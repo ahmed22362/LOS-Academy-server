@@ -19,6 +19,10 @@ import {
 } from "../controller/user.controller"
 import authRouter from "./auth.router"
 import { getUserReports } from "../controller/report.controller"
+import {
+  getUserSessionReq,
+  updateSessionReqDate,
+} from "../controller/sessionReq.controller"
 
 const userRouter = Router()
 
@@ -31,6 +35,18 @@ userRouter.get(
   protectUser,
   setUserOrTeacherId,
   getMySubscription
+)
+userRouter.get(
+  "/mySessionReq",
+  protectUser,
+  setUserOrTeacherId,
+  getUserSessionReq
+)
+userRouter.patch(
+  "/mySessionReq/:id",
+  protectUser,
+  setUserOrTeacherId,
+  updateSessionReqDate
 )
 userRouter.get(
   "/myHistorySessions",

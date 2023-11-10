@@ -44,7 +44,6 @@ async function getModelsService({
     if (!findOptions) findOptions = {}
     if (limit) findOptions.limit = limit
     if (page && limit) findOptions.offset = page * limit
-    console.log(findOptions)
     const models = await ModelClass.findAll(findOptions)
     return models
   } catch (error: any) {
@@ -68,7 +67,6 @@ async function getAllModelsByService({
     if (!findOptions) findOptions = {}
     if (pageSize) findOptions.limit = pageSize
     if (page && pageSize) findOptions.offset = page * pageSize
-    console.log(findOptions)
     const model = await Model.findAll(findOptions)
     return model
   } catch (error: any) {
@@ -92,7 +90,6 @@ async function getOneModelByService({
     // to always get the most recent record
     myFindOptions!.order = [["createdAt", "DESC"]]
     myFindOptions!.limit = 1
-    console.log({ "here in getOneModel": myFindOptions })
     const model = await Model.findOne(myFindOptions)
     return model
   } catch (error: any) {
@@ -155,7 +152,6 @@ async function updateModelService({
   transaction?: Transaction
 }): Promise<Model | null> {
   try {
-    console.log("this is the updated daata ", updatedData)
     const [affectedCount, affectedRows] = await ModelClass.update(updatedData, {
       where: { id },
       returning: true,

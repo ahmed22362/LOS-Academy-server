@@ -33,9 +33,7 @@ export default class B2Client {
   async uploadFile(file: Express.Multer.File) {
     const authResponse = await this.getAuthToken()
     const { downloadUrl } = authResponse
-    console.log(downloadUrl)
     const bucketId = process.env.LOS_Bucket_ID || ""
-    console.log(bucketId)
     const response = await this.getUploadLink(bucketId)
     const { authorizationToken, uploadUrl } = response.data
     try {

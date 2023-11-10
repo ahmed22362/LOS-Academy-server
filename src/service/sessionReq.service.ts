@@ -16,7 +16,8 @@ import {
 } from "./session.service"
 import { checkUniqueUserAndTeacher } from "./sessionInfo.service"
 import { sequelize } from "../db/sequelize"
-export const DATE_PATTERN: RegExp = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
+export const DATE_PATTERN: RegExp =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
 export const FREE_SESSION_TOPIC = "User Free Session"
 export const FREE_SESSION_DURATION = 20 // 20 min
 export interface ICreateReq {
@@ -27,9 +28,9 @@ export interface ICreateReq {
 }
 
 export interface IUpdateReq {
-  sessionDates: Date[]
-  status: SessionStatus
-  sessionStartTime: string
+  sessionDates?: Date[]
+  status?: SessionStatus
+  sessionStartTime?: string
 }
 export async function createSessionRequestService({
   body,
@@ -73,7 +74,17 @@ export async function getAllSessionsRequestService({
   })
   return requests
 }
-
+export async function getUserSessionRequestService({
+  userId,
+}: {
+  userId: string
+}) {
+  const requests = await SessionReq.findAll({ where: { userId } })
+  if (!requests) {
+    throw new AppError(400, "Error getting user requests!")
+  }
+  return requests
+}
 export async function acceptSessionRequestService({
   sessionReqId,
   teacherId,

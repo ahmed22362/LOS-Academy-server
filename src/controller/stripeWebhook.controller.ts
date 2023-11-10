@@ -42,7 +42,6 @@ export const webhook = catchAsync(
         break
       case "payment_intent.payment_failed": {
         const pi: Stripe.PaymentIntent = data.object as Stripe.PaymentIntent
-        console.log(`🔔  Webhook received: ${pi.object} ${pi.status}!`)
         console.log("❌ Payment failed.")
       }
       case "checkout.session.completed":

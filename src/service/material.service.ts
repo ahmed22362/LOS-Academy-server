@@ -84,7 +84,6 @@ export async function getTeacherMaterialsService({
 }: {
   teacherId: string
 }) {
-  console.log(teacherId)
   const materials = await Material.findAll({ where: { teacherId } })
   return materials
 }

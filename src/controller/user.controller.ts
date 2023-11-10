@@ -22,12 +22,11 @@ import {
   createStripeCustomer,
 } from "../service/stripe.service"
 import {
-  getUserAllDoneSessionsService,
   getUserAllSessionsService,
+  getUserAllTakenSessionsService,
   getUserRemainSessionsService,
   getUserUpcomingSessionService,
 } from "../service/session.service"
-import { SessionStatus } from "../db/models/session.model"
 import { verifyToken } from "../utils/jwt"
 import { getUserRescheduleRequests } from "../service/rescheduleReq.service"
 export const setUserOrTeacherId = (
@@ -37,9 +36,6 @@ export const setUserOrTeacherId = (
 ) => {
   if (!req.body.user) req.body.userId = req.user?.id
   if (!req.body.teacher) req.body.teacherId = req.teacher?.id
-  console.log(
-    `done setting this is user: ${req.body.UserId} teacher: ${req.body.teacherId}`
-  )
   next()
 }
 export const setUserIdToParams = (
@@ -60,6 +56,7 @@ export const getUserAttr = [
   "remainSessions",
   "age",
   "gender",
+  "verified",
 ]
 
 export const loginUser = login(User)
@@ -183,7 +180,7 @@ export const updateUserPlan = catchAsync(
 )
 export const getMyHistorySessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sessions = await getUserAllDoneSessionsService({
+    const sessions = await getUserAllTakenSessionsService({
       userId: req.body.userId,
     })
     res

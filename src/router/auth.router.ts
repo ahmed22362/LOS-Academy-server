@@ -14,10 +14,12 @@ import {
   resetPassword,
   updatePassword,
   googleOauthController,
+  verifyMail,
+  resendMailConfirmation,
 } from "../controller/auth.controller"
 import validate from "../middleware/validate"
 import { protect } from "../controller/auth.controller"
-import { loginUser } from "../controller/user.controller"
+import { loginUser, protectUser } from "../controller/user.controller"
 
 const authRouter = Router()
 
@@ -36,7 +38,9 @@ authRouter.route("/resetPassword/:token").get((req, res) => {
 authRouter.post("/resetPassword", validate(resetPasswordSchema), resetPassword)
 authRouter
   .route("/updateMyPassword")
-  .patch(protect, validate(updateMyPasswordSchema), updatePassword)
-authRouter.get("/checkSign", protect, checkToken)
+  .patch(protectUser, validate(updateMyPasswordSchema), updatePassword)
+authRouter.get("/checkSign", protectUser, checkToken)
+authRouter.get("/verifyEmail", verifyMail)
+authRouter.get("/resendMailConfirmation", resendMailConfirmation)
 
 export default authRouter

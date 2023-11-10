@@ -36,7 +36,6 @@ export async function createPlanService({ data }: { data: planCreateInput }) {
     },
   })
   if (plan) {
-    console.log("There is plan with this spec ")
     return plan
   }
   const price =

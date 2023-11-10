@@ -13,11 +13,14 @@ import Teacher, { ITeacherInput } from "../db/models/teacher.model"
 import { decodedToken, login, protect } from "./auth.controller"
 import {
   getTeacherAllSessionsService,
-  getTeacherUpcomingSessionsService,
+  getTeacherRemainSessionsService,
+  getTeacherTakenSessionsService,
+  getTeacherUpcomingSessionService,
 } from "../service/session.service"
 import { verifyToken } from "../utils/jwt"
 import { getStripeBalance } from "../service/stripe.service"
 import { getTeacherRescheduleRequests } from "../service/rescheduleReq.service"
+import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 
 export const getTeacherAtt = [
   "id",
@@ -134,15 +137,34 @@ export const getTeacher = catchAsync(
     res.status(200).json({ status: "success", data: teacher })
   }
 )
-export const getTeacherUpcomingSessions = catchAsync(
+export const getTeacherRemainSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
-    const sessions = await getTeacherUpcomingSessionsService({ teacherId })
+    const sessions = await getTeacherRemainSessionsService({ teacherId })
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
   }
 )
+export const getTeacherTakenSessions = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    const sessions = await getTeacherTakenSessionsService({ teacherId })
+    res
+      .status(200)
+      .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+export const getTeacherUpcomingSession = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    const sessions = await getTeacherUpcomingSessionService({ teacherId })
+    res
+      .status(200)
+      .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+
 export const getTeacherAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
@@ -196,7 +218,11 @@ export const getAdminBalance = catchAsync(
 export const getMySessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
-    const rescheduleRequests = await getTeacherRescheduleRequests({ teacherId })
+    const status = req.query.status
+    const rescheduleRequests = await getTeacherRescheduleRequests({
+      teacherId,
+      status: status as any,
+    })
     res.status(200).json({
       status: "success",
       length: rescheduleRequests.length,

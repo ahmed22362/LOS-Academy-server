@@ -1,4 +1,4 @@
-import { FindOptions, Op, Transaction } from "sequelize"
+import { FindOptions, Op, Transaction, WhereOptions } from "sequelize"
 import RescheduleRequest, {
   RescheduleRequestStatus,
 } from "../db/models/rescheduleReq.model"
@@ -19,6 +19,7 @@ import {
   getTeacherSessionInfoService,
   getUserSessionInfoService,
 } from "./sessionInfo.service"
+import { getUserAttr } from "../controller/user.controller"
 
 export async function createRescheduleRequestService({
   sessionId,
@@ -226,10 +227,12 @@ export async function getTeacherRescheduleRequests({
   teacherId,
   page,
   pageSize,
+  status,
 }: {
   teacherId: string
   page?: number
   pageSize?: number
+  status?: RescheduleRequestStatus
 }) {
   let limit
   let offset
@@ -239,10 +242,26 @@ export async function getTeacherRescheduleRequests({
   const sessionsIds: number[] = Object.values(sessionsObj)
     .flatMap((session) => session)
     .map((session) => session.id)
+  const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
+  if (status) where.status = status
+
   const rescheduleRequests = await RescheduleRequest.findAll({
-    where: { sessionId: { [Op.in]: sessionsIds } },
+    where,
     limit,
     offset,
+    include: [
+      {
+        model: Session,
+        attributes: ["sessionInfoId"],
+        include: [
+          {
+            model: SessionInfo,
+            attributes: ["userId"],
+            include: [{ model: User, attributes: getUserAttr }],
+          },
+        ],
+      },
+    ],
   })
   return rescheduleRequests
 }

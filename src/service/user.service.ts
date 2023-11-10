@@ -1,5 +1,5 @@
 import { FindOptions, Transaction } from "sequelize"
-import User, { IUserInput } from "../db/models/user.model"
+import User, { Gender, IUserInput } from "../db/models/user.model"
 import AppError from "../utils/AppError"
 import {
   getSubscriptionBy,
@@ -8,6 +8,18 @@ import {
 import Plan from "../db/models/plan.model"
 import { SubscriptionStatus } from "../db/models/subscription.model"
 const { Op } = require("sequelize")
+
+export interface UserResponse {
+  id: string
+  name: string
+  email: string
+  age: number
+  phone?: string
+  gender: Gender
+  availableFreeSession: number
+  remainSessions: number
+  verified: boolean
+}
 
 async function createUserService({
   userData,

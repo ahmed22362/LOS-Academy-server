@@ -4,7 +4,7 @@ import {
   acceptSessionReq,
   getAllSessionsReq,
   getOneSessionReq,
-  updateSessionReq,
+  updateSessionReqDate,
 } from "../controller/sessionReq.controller"
 import freeSessionRouter from "./session.free.router"
 import paidSessionRouter from "./session.paid.router"
@@ -31,12 +31,6 @@ sessionRouter
   .get(protectTeacher, setUserOrTeacherId, getOneSessionReq)
 sessionRouter.use("/free", freeSessionRouter)
 sessionRouter.use("/paid", paidSessionRouter)
-sessionRouter.patch(
-  "/request/:id",
-  protectTeacher,
-  setUserOrTeacherId,
-  updateSessionReq
-)
 sessionRouter
   .route("/updateUserAttendance")
   .post(protectUser, setUserOrTeacherId, updateSessionAttendance)

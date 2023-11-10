@@ -275,7 +275,7 @@ export async function getOneSessionDetailsService({
   }
   return session
 }
-export async function getUserAllDoneSessionsService({
+export async function getUserAllTakenSessionsService({
   userId,
 }: {
   userId: string
@@ -325,6 +325,7 @@ export async function getUserUpcomingSessionService({
   })
   return session
 }
+
 export async function getTeacherAllSessionsService({
   teacherId,
   page,
@@ -341,7 +342,19 @@ export async function getTeacherAllSessionsService({
   })
   return session
 }
-export async function getTeacherUpcomingSessionsService({
+export async function getTeacherUpcomingSessionService({
+  teacherId,
+}: {
+  teacherId: string
+}) {
+  const session = await generateGetterTeacherSessions({
+    teacherId,
+    status: SessionStatus.PENDING,
+    pageSize: 1,
+  })
+  return session
+}
+export async function getTeacherRemainSessionsService({
   teacherId,
 }: {
   teacherId: string
@@ -349,6 +362,17 @@ export async function getTeacherUpcomingSessionsService({
   const sessions = await generateGetterTeacherSessions({
     teacherId,
     status: SessionStatus.PENDING,
+  })
+  return sessions
+}
+export async function getTeacherTakenSessionsService({
+  teacherId,
+}: {
+  teacherId: string
+}) {
+  const sessions = await generateGetterTeacherSessions({
+    teacherId,
+    status: SessionStatus.TAKEN,
   })
   return sessions
 }
@@ -538,7 +562,8 @@ export async function userOwnThisSession({
 export function checkDateFormat(date: string) {
   if (!DATE_PATTERN.test(date)) {
     const errorMessage =
-      "Input does not match the pattern. Please use the format 'YYYY-MM-DD HH:MM:SS'"
+      "Input does not match the pattern. Date string must be a valid ISO 8601 UTC date 'YYYY-MM-DDTHH:mm:ss.sssZ'"
+
     throw new AppError(400, errorMessage)
   }
 }
@@ -557,17 +582,9 @@ function generateSessions({
 }) {
   const sessions: ISessionBody[] = []
   const milSecToWeek = 7 * 24 * 60 * 60 * 1000
-  console.log({
-    sessionCount,
-    sessionDates,
-    sessionsPerWeek,
-    sessionInfoId,
-    sessionDuration,
-  })
   for (let session = 0; session < sessionCount; session++) {
     const weekIndex = Math.floor(session / sessionsPerWeek)
     const date = sessionDates[session % sessionsPerWeek]
-    console.log(date, session % sessionsPerWeek)
     if (!date) {
       throw new AppError(400, "date is not defined while generating sessions!")
     }
@@ -584,6 +601,5 @@ function generateSessions({
       sessionStartTime: sessionTime,
     })
   }
-  console.log(sessions)
   return sessions
 }

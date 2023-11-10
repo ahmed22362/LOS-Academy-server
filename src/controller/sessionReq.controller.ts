@@ -8,6 +8,7 @@ import {
   createSessionRequestService,
   getAllSessionsRequestService,
   getOneSessionRequestService,
+  getUserSessionRequestService,
   updateSessionRequestService,
 } from "../service/sessionReq.service"
 import { SessionStatus, SessionType } from "../db/models/session.model"
@@ -24,7 +25,7 @@ export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { userId, sessionDates } = req.body
     if (!Array.isArray(sessionDates)) {
-      throw new AppError(400, "Please provide dateList as list or array!")
+      throw new AppError(400, "Please provide sessionDates as list or array!")
     }
     if (type === SessionType.FREE) {
       await checkPreviousReq({ userId, type: SessionType.FREE })
@@ -40,7 +41,6 @@ export const requestSession = (type: SessionType) =>
 
     for (let date of sessionDates) {
       checkDateFormat(date)
-      console.log(date)
       newSessionDates.push(new Date(date))
     }
 
@@ -129,10 +129,11 @@ export const getOneSessionReq = catchAsync(
     res.status(200).json({ status: "success", data: sessionReq })
   }
 )
-export const updateSessionReq = catchAsync(
+export const updateSessionReqDate = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionDates, status, sessionStartTime } = req.body
-    const body: IUpdateReq = { sessionDates, status, sessionStartTime }
+    const { sessionDates, sessionStartTime } = req.body
+    const id = req.params.id
+    const body: IUpdateReq = { sessionDates, sessionStartTime }
     const newSessionDates: Date[] = []
     if (sessionDates && !Array.isArray(sessionDates)) {
       throw new AppError(400, "Please provide dateList as list or array!")
@@ -140,17 +141,37 @@ export const updateSessionReq = catchAsync(
     if (sessionDates) {
       for (let date of sessionDates) {
         checkDateFormat(date)
-        console.log(date)
         newSessionDates.push(new Date(date))
       }
     }
+    console.log(newSessionDates)
+    const sessionRequest = await getOneSessionRequestService({ id: +id })
+    if (sessionRequest.type === SessionType.FREE) {
+      body.sessionDates = [newSessionDates[0]]
+    }
+    console.log(body)
+    const sessionRequestUpdated = await updateSessionRequestService({
+      id: +id,
+      updateBody: body,
+    })
+    res.status(200).json({
+      status: "success",
+      message: "request Time updated successfully!",
+      data: sessionRequestUpdated,
+    })
+  }
+)
+export const updateSessionReqStatus = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { status } = req.body
+    const body: IUpdateReq = { status }
     const sessionReq = await updateSessionRequestService({
       id: +req.params.id,
       updateBody: body,
     })
     res.status(200).json({
       status: "success",
-      message: "request updated successfully!",
+      message: "request status updated successfully!",
       data: sessionReq,
     })
   }
@@ -168,5 +189,12 @@ export const acceptSessionReq = catchAsync(
       length: Array.isArray(sessions) ? sessions.length : 1,
       sessions,
     })
+  }
+)
+export const getUserSessionReq = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId } = req.body
+    const requests = await getUserSessionRequestService({ userId })
+    res.status(200).json({ status: "success", data: requests })
   }
 )
