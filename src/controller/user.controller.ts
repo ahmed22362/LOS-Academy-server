@@ -20,6 +20,7 @@ import {
 import {
   createStripeBillingPortal,
   createStripeCustomer,
+  getStripeSubscription,
 } from "../service/stripe.service"
 import {
   getUserAllSessionsService,
@@ -118,8 +119,8 @@ export const deleteUser = catchAsync(
 export const updateUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const { name, email, phone, age } = req.body
-    const body = { name, email, phone, age } as IUserInput
+    const { name, email, phone, age, gender } = req.body
+    const body = { name, email, phone, age, gender } as IUserInput
     const user = await updateUserService({ userId: id, updatedData: body })
     if (!user) {
       return next(new AppError(404, "Can't find user to update!"))
@@ -152,7 +153,23 @@ export const getMySubscription = catchAsync(
     if (!userSubscription) {
       return next(new AppError(404, "there is no subscripting for this user!"))
     }
-    res.status(200).json({ status: "success", data: userSubscription })
+    const stripeSubscription = await getStripeSubscription(
+      userSubscription.stripe_subscription_id as string
+    )
+    const subscriptionRes = {
+      status: userSubscription.status,
+      planId: userSubscription.planId,
+      planTitle: userSubscription.plan.title,
+      sessionDuration: userSubscription.plan.sessionDuration,
+      sessionsCount: userSubscription.plan.sessionsCount,
+      sessionsPerWeek: userSubscription.plan.sessionsPerWeek,
+      price: userSubscription.plan.price,
+      subscriptionStartAt: new Date(
+        stripeSubscription.current_period_start * 1000 // convert timestamp from sec to milliseconds
+      ),
+      subscriptionEndAt: new Date(stripeSubscription.current_period_end * 1000), // convert timestamp from sec to milliseconds
+    }
+    res.status(200).json({ status: "success", data: subscriptionRes })
   }
 )
 export const updateUserPlan = catchAsync(

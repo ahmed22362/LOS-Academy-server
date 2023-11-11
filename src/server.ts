@@ -3,9 +3,10 @@ import routes from "./routes"
 import logger from "./utils/logger"
 import connectDB from "./connect/connectDB"
 const PORT = process.env.PORT || 3000
-
+const test = async () => {}
 app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`)
   await connectDB()
   routes(app)
+  await test()
 })

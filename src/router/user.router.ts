@@ -29,7 +29,10 @@ const userRouter = Router()
 userRouter.use("/auth", authRouter)
 
 userRouter.route("/").post(createUser).get(getAllUsers)
-userRouter.get("/me", protectUser, setUserIdToParams, getUser)
+userRouter
+  .route("/me")
+  .get(protectUser, setUserIdToParams, getUser)
+  .patch(protectUser, setUserIdToParams, updateUser)
 userRouter.get(
   "/mySubscription",
   protectUser,

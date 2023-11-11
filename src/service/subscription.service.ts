@@ -23,6 +23,10 @@ import logger from "../utils/logger"
 import { getPlanAtt } from "../controller/plan.controller"
 import User from "../db/models/user.model"
 import { getUserAttr } from "../controller/user.controller"
+import {
+  scheduleSubscriptionCanceledMailJob,
+  scheduleSuccessSubscriptionMailJob,
+} from "../utils/scheduler"
 
 interface stripeCreateSubscription {
   userId: string
@@ -219,6 +223,14 @@ export async function handelSubscriptionPayed(
       userId: user.id,
       amountOfSessions: membership.plan.sessionsCount,
     })
+    scheduleSuccessSubscriptionMailJob({
+      to: user.email,
+      name: user.name,
+      subscriptionAmount: membership.plan.price,
+      subscriptionTitle: membership.plan.title,
+      subscriptionCycle: "Monthly",
+    })
+
     await t.commit()
   } catch (error: any) {
     await t.rollback()
@@ -254,7 +266,9 @@ export async function handelSubscriptionUpdated(
     subscription.id
   )
   if (subscription.status === "canceled") {
+    const user = await getUserByIdService({ userId: membership.userId })
     await membership.destroy()
+    scheduleSubscriptionCanceledMailJob({ to: user.email, name: user.name })
   } else {
     await membership.update({ status: subscription.status })
   }

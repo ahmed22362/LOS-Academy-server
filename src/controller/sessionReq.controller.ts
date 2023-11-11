@@ -18,8 +18,12 @@ import {
 } from "../service/user.service"
 import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
-import { checkDateFormat } from "../service/session.service"
+import {
+  checkDateFormat,
+  getOneSessionDetailsService,
+} from "../service/session.service"
 import { sequelize } from "../db/sequelize"
+import { scheduleSessionPlacedMailJob } from "../utils/scheduler"
 
 export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -144,12 +148,13 @@ export const updateSessionReqDate = catchAsync(
         newSessionDates.push(new Date(date))
       }
     }
-    console.log(newSessionDates)
     const sessionRequest = await getOneSessionRequestService({ id: +id })
     if (sessionRequest.type === SessionType.FREE) {
       body.sessionDates = [newSessionDates[0]]
     }
-    console.log(body)
+    if (sessionRequest.status === SessionStatus.TAKEN) {
+      throw new AppError(403, "Can't update request of and accepted request!")
+    }
     const sessionRequestUpdated = await updateSessionRequestService({
       id: +id,
       updateBody: body,
@@ -182,6 +187,16 @@ export const acceptSessionReq = catchAsync(
     const sessions = await acceptSessionRequestService({
       sessionReqId: +sessionReqId,
       teacherId: teacherId as string,
+    })
+    const session = await getOneSessionDetailsService({
+      sessionId: Array.isArray(sessions) ? sessions[0].id : sessions.id,
+    })
+    scheduleSessionPlacedMailJob({
+      userEmail: session.SessionInfo.user?.email as string,
+      userName: session.SessionInfo.user?.name as string,
+      teacherEmail: session.SessionInfo.teacher?.email as string,
+      teacherName: session.SessionInfo.teacher?.name as string,
+      sessionDate: session.sessionDate,
     })
     res.status(201).json({
       status: "success",

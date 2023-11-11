@@ -3,7 +3,6 @@ import { SessionStatus, SessionType } from "../db/models/session.model"
 import SessionReq from "../db/models/sessionReq.model"
 import AppError from "../utils/AppError"
 import {
-  createModelService,
   deleteModelService,
   getAllModelsByService,
   getModelByIdService,

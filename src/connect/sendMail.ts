@@ -1,9 +1,15 @@
 import nodemailer from "nodemailer"
 import dotenv from "dotenv"
-import generateResetPasswordTemplate from "../templates/resetPasswordTemplate"
-import generateWelcomeTemplate from "../templates/welcomeTemplate"
-import generateConfirmOrder from "../templates/confirmOrderTemplate"
-import generateVerifyEmail from "../templates/verifyEmailTamplate"
+import generateVerifyEmail from "../templates/verifyEmailTemplate"
+import generateGenericEmail from "../templates/genericEmailTemplate"
+import {
+  forgetPasswordPayload,
+  payoutRequestPayload,
+  sessionPlacedPayload,
+  sessionReminderPayload,
+  subscriptionCanceledPayload,
+  subscriptionCreatePayload,
+} from "../templates/mails.payloads"
 dotenv.config()
 
 export interface MailInterface {
@@ -23,11 +29,9 @@ interface ITemplate {
 class Mail {
   to: string
   name: string
-  url?: string
-  constructor(to: string, name: string, url?: string) {
+  constructor(to: string, name: string) {
     this.to = to
     this.name = name
-    this.url = url
   }
   newTransporter() {
     return nodemailer.createTransport({
@@ -51,37 +55,148 @@ class Mail {
     }
     return await this.newTransporter().sendMail(mailOptions)
   }
-
-  async sendWelcome() {
-    const welcomeTemplate = generateWelcomeTemplate(this.name)
-    let info = await this.send(welcomeTemplate, "Welcome To LOS Academy")
+  async sendVerifyMail({ link }: { link: string }) {
+    const verifyMailTemplate = generateVerifyEmail({ name: this.name, link })
+    const info = await this.send(verifyMailTemplate, "Email Confirmation!")
     if (process.env.NODE_ENV === "development") {
       console.log("Message sent: %s", info.messageId)
       console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
     }
   }
-  async sendForgetPassword() {
-    const forgetTemplate = generateResetPasswordTemplate(
-      this.url as string,
-      this.name
-    )
+  async sendForgetPassword({ link }: { link: string }) {
+    const { header, title, paragraph, footer, mailAdds } =
+      forgetPasswordPayload({
+        name: this.name,
+        link,
+      })
+    const forgetTemplate = generateGenericEmail({
+      header,
+      paragraph,
+      footer,
+      mailAdds,
+      title,
+    })
     let info = await this.send(forgetTemplate, "Password Reset Request!")
     if (process.env.NODE_ENV === "development") {
       console.log("Message sent: %s", info.messageId)
       console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
     }
   }
-  async sendConfirmOrder(order: any, total: number) {
-    const confirmOrderTemplate = generateConfirmOrder(order, total, this.name)
-    const info = await this.send(confirmOrderTemplate, "Order details!")
+  async sendSubscriptionCreateMail({
+    subscriptionTitle,
+    subscriptionAmount,
+    subscriptionCycle,
+  }: {
+    subscriptionTitle: string
+    subscriptionAmount: number
+    subscriptionCycle: string
+  }) {
+    const { header, title, paragraph, footer, mailAdds } =
+      subscriptionCreatePayload({
+        name: this.name,
+        subscriptionTitle,
+        subscriptionAmount,
+        subscriptionCycle,
+      })
+    const activeSubscriptionTemplate = generateGenericEmail({
+      title,
+      header,
+      footer,
+      mailAdds,
+      paragraph,
+    })
+    const info = await this.send(
+      activeSubscriptionTemplate,
+      "Subscription Successful!!"
+    )
     if (process.env.NODE_ENV === "development") {
       console.log("Message sent: %s", info.messageId)
       console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
     }
   }
-  async sendVerifyMail({ link }: { link: string }) {
-    const verifyMailTemplate = generateVerifyEmail({ name: this.name, link })
-    const info = await this.send(verifyMailTemplate, "Email Confirmation!")
+  async sendSubscriptionCanceledMail() {
+    const { title, paragraph, header } = subscriptionCanceledPayload({
+      name: this.name,
+    })
+    const subscriptionCanceledTemplate = generateGenericEmail({
+      title,
+      paragraph,
+      header,
+    })
+    const info = await this.send(
+      subscriptionCanceledTemplate,
+      "Subscription Cancellation Confirmation"
+    )
+    if (process.env.NODE_ENV === "development") {
+      console.log("Message sent: %s", info.messageId)
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    }
+  }
+  async sendSessionPlacesMail({ sessionDate }: { sessionDate: string }) {
+    const { title, paragraph, header, footer, mailAdds } = sessionPlacedPayload(
+      {
+        name: this.name,
+        sessionDate,
+      }
+    )
+    const sessionPlacedTemplate = generateGenericEmail({
+      title,
+      paragraph,
+      header,
+      footer,
+      mailAdds,
+    })
+    const info = await this.send(
+      sessionPlacedTemplate,
+      "Session Placed Confirmation"
+    )
+    if (process.env.NODE_ENV === "development") {
+      console.log("Message sent: %s", info.messageId)
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    }
+  }
+  async sendSessionReminderMail({ sessionDate }: { sessionDate: string }) {
+    const { title, paragraph, header, footer } = sessionReminderPayload({
+      name: this.name,
+      sessionDate,
+    })
+    const sessionReminderTemplate = generateGenericEmail({
+      title,
+      paragraph,
+      header,
+      footer,
+    })
+    const info = await this.send(
+      sessionReminderTemplate,
+      "Your session is in 30 minutes!"
+    )
+    if (process.env.NODE_ENV === "development") {
+      console.log("Message sent: %s", info.messageId)
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    }
+  }
+  async sendPayoutRequestMail({
+    teacherName,
+    amount,
+  }: {
+    teacherName: string
+    amount: number
+  }) {
+    const { title, paragraph, header, footer } = payoutRequestPayload({
+      name: this.name,
+      teacherName,
+      amount,
+    })
+    const payoutRequestTemplate = generateGenericEmail({
+      title,
+      paragraph,
+      header,
+      footer,
+    })
+    const info = await this.send(
+      payoutRequestTemplate,
+      "Teacher Payout Request!"
+    )
     if (process.env.NODE_ENV === "development") {
       console.log("Message sent: %s", info.messageId)
       console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))

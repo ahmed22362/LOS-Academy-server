@@ -15,6 +15,8 @@ import Teacher from "../db/models/teacher.model"
 import User from "../db/models/user.model"
 import { getUserAttr } from "../controller/user.controller"
 import { getTeacherAtt } from "../controller/teacher.controller"
+import { scheduleSessionReminderMailJob } from "../utils/scheduler"
+import logger from "../utils/logger"
 
 export interface IInfoBody {
   userId: string
@@ -86,6 +88,15 @@ export async function createFreeSessionService({
   if (!session) {
     throw new AppError(400, "Can't create free session!")
   }
+  const reminderTime = new Date(session.sessionDate)
+  reminderTime.setMinutes(reminderTime.getMinutes() - 30)
+  logger.info(reminderTime.toUTCString())
+  scheduleSessionReminderMailJob({
+    userId,
+    teacherId,
+    sessionDate: reminderTime,
+    sessionTitle: `session-${session.id}`,
+  })
   return session
 }
 export async function createPaidSessionsService({
@@ -126,6 +137,14 @@ export async function createPaidSessionsService({
     if (!session) {
       throw new AppError(400, "Can't create paid session!")
     }
+    const reminderTime = new Date(session.sessionDate)
+    reminderTime.setMinutes(reminderTime.getMinutes() - 30)
+    scheduleSessionReminderMailJob({
+      userId,
+      teacherId,
+      sessionDate: reminderTime,
+      sessionTitle: `session-${session.id}`,
+    })
     sessions.push(session as Session)
   }
 
@@ -325,7 +344,6 @@ export async function getUserUpcomingSessionService({
   })
   return session
 }
-
 export async function getTeacherAllSessionsService({
   teacherId,
   page,

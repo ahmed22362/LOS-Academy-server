@@ -26,10 +26,7 @@ import {
 } from "../service/factory.services"
 import Teacher from "../db/models/teacher.model"
 import { createStripeCustomer } from "../service/stripe.service"
-import {
-  scheduleVerifyMailJob,
-  scheduleWelcomeMailJob,
-} from "../utils/scheduler"
+import { scheduleVerifyMailJob } from "../utils/scheduler"
 dotenv.config()
 
 export interface IRequestWithUser extends Request {
@@ -243,8 +240,8 @@ export const forgetPassword = catchAsync(
       "host"
     )}/api/v1/user/auth/resetPassword/${resetToken}`
     try {
-      const mail = new Mail(user.email, `${user.name}`, resetURL)
-      await mail.sendForgetPassword()
+      const mail = new Mail(user.email, `${user.name}`)
+      await mail.sendForgetPassword({ link: resetURL })
       res.status(200).json({ status: "success", message: "token sent to mail" })
     } catch (error: any) {
       await updateUserService({
