@@ -1,10 +1,14 @@
 import { z } from "zod"
 
 const payload = {
+  //body = { name, age, email, password, phone, gender }
   body: z
     .object({
       name: z.string({
         required_error: "name is required",
+      }),
+      phone: z.string({
+        required_error: "phone is required",
       }),
       age: z.number({
         required_error: "age is required",

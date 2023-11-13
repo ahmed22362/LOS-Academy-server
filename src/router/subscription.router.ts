@@ -9,6 +9,7 @@ import { protectTeacher } from "../controller/teacher.controller"
 import { restrictTo } from "../controller/auth.controller"
 import validate from "../middleware/validate"
 import { createSubscriptionSchema } from "../schema/subscription.schema"
+import { RoleType } from "../db/models/teacher.model"
 const subscriptionRouter = Router()
 
 subscriptionRouter
@@ -16,12 +17,12 @@ subscriptionRouter
   .post(
     protectUser,
     setUserOrTeacherId,
-    // validate(createSubscriptionSchema),
+    validate(createSubscriptionSchema),
     createSubscription
   )
   .get(protectTeacher, setUserOrTeacherId, getAllUsersSubscriptions)
 subscriptionRouter
   .route("/:id")
-  .patch(protectTeacher, restrictTo("admin"), updateSubscription)
+  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateSubscription)
 
 export default subscriptionRouter

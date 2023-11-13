@@ -19,5 +19,5 @@ const standardPlanSchema = z.object({
 const compositeSchema = customPlanSchema.merge(standardPlanSchema)
 
 export const createSubscriptionSchema = z.object({
-  body: compositeSchema,
+  body: compositeSchema.partial(),
 })

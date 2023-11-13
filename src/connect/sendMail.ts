@@ -3,10 +3,15 @@ import dotenv from "dotenv"
 import generateVerifyEmail from "../templates/verifyEmailTemplate"
 import generateGenericEmail from "../templates/genericEmailTemplate"
 import {
+  SessionStartReminderForAdminPayload,
+  SessionStartReminderForUserPayload,
   forgetPasswordPayload,
   payoutRequestPayload,
+  payoutRequestStatusPayload,
   sessionPlacedPayload,
   sessionReminderPayload,
+  sessionReschedulePayload,
+  sessionRescheduleStatusPayload,
   subscriptionCanceledPayload,
   subscriptionCreatePayload,
 } from "../templates/mails.payloads"
@@ -175,6 +180,125 @@ class Mail {
       console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
     }
   }
+  async sendSessionRescheduleRequestMail({
+    userName,
+    sessionOldDate,
+    sessionNewDate,
+  }: {
+    userName: string
+    sessionOldDate: Date
+    sessionNewDate: Date
+  }) {
+    const { title, paragraph, header, footer } = sessionReschedulePayload({
+      teacherName: this.name,
+      userName,
+      sessionNewDate: sessionNewDate.toUTCString(),
+      sessionOldDate: sessionOldDate.toUTCString(),
+    })
+    const sessionRescheduleTemplate = generateGenericEmail({
+      title,
+      paragraph,
+      header,
+      footer,
+    })
+    const info = await this.send(
+      sessionRescheduleTemplate,
+      "Session Reschedule Request!"
+    )
+    if (process.env.NODE_ENV === "development") {
+      console.log("Message sent: %s", info.messageId)
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    }
+  }
+  async sendSessionRescheduleRequestUpdateMail({
+    userName,
+    sessionOldDate,
+    sessionNewDate,
+    status,
+  }: {
+    userName: string
+    sessionOldDate: Date
+    sessionNewDate: Date
+    status: string
+  }) {
+    const { title, paragraph, header, footer } = sessionRescheduleStatusPayload(
+      {
+        userName,
+        sessionNewDate: sessionNewDate.toUTCString(),
+        sessionOldDate: sessionOldDate.toUTCString(),
+        status,
+      }
+    )
+    const sessionRescheduleTemplate = generateGenericEmail({
+      title,
+      paragraph,
+      header,
+      footer,
+    })
+    const info = await this.send(
+      sessionRescheduleTemplate,
+      "Session Reschedule Status Update!"
+    )
+    if (process.env.NODE_ENV === "development") {
+      console.log("Message sent: %s", info.messageId)
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    }
+  }
+  async sendSessionStartReminderForUser({
+    sessionDate,
+  }: {
+    sessionDate: string
+  }) {
+    const { title, paragraph, header, footer } =
+      SessionStartReminderForUserPayload({
+        userName: this.name,
+        sessionDate,
+      })
+    const sessionStartReminderTemplate = generateGenericEmail({
+      title,
+      paragraph,
+      header,
+      footer,
+    })
+    const info = await this.send(
+      sessionStartReminderTemplate,
+      "Your session has started!"
+    )
+    if (process.env.NODE_ENV === "development") {
+      console.log("Message sent: %s", info.messageId)
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    }
+  }
+  async sendSessionStartReminderForAdmin({
+    userName,
+    teacherName,
+    sessionDate,
+  }: {
+    userName: string
+    teacherName: string
+    sessionDate: string
+  }) {
+    const { title, paragraph, header, footer } =
+      SessionStartReminderForAdminPayload({
+        teacherName: teacherName,
+        userName,
+        sessionDate,
+      })
+    const sessionStartReminderAdminTemplate = generateGenericEmail({
+      title,
+      paragraph,
+      header,
+      footer,
+    })
+    const info = await this.send(
+      sessionStartReminderAdminTemplate,
+      "Student missed session start!"
+    )
+    if (process.env.NODE_ENV === "development") {
+      console.log("Message sent: %s", info.messageId)
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    }
+  }
   async sendPayoutRequestMail({
     teacherName,
     amount,
@@ -196,6 +320,26 @@ class Mail {
     const info = await this.send(
       payoutRequestTemplate,
       "Teacher Payout Request!"
+    )
+    if (process.env.NODE_ENV === "development") {
+      console.log("Message sent: %s", info.messageId)
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+    }
+  }
+  async sendPayoutRequestStatusUpdatedMail({ status }: { status: string }) {
+    const { title, paragraph, header, footer } = payoutRequestStatusPayload({
+      name: this.name,
+      status,
+    })
+    const payoutRequestTemplate = generateGenericEmail({
+      title,
+      paragraph,
+      header,
+      footer,
+    })
+    const info = await this.send(
+      payoutRequestTemplate,
+      "Payout Request Status Updated!"
     )
     if (process.env.NODE_ENV === "development") {
       console.log("Message sent: %s", info.messageId)

@@ -30,6 +30,11 @@ import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
 import Teacher from "../db/models/teacher.model"
 import { getTeacherAtt } from "./teacher.controller"
+import {
+  rescheduleReminderJob,
+  scheduleSessionRescheduleRequestMailJob,
+  scheduleSessionRescheduleRequestUpdateMailJob,
+} from "../utils/scheduler"
 
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -250,6 +255,11 @@ export const requestSessionReschedule = catchAsync(
       userId,
       newDate,
     })
+    scheduleSessionRescheduleRequestMailJob({
+      sessionId,
+      sessionNewDate: rescheduleReq.newDate,
+      sessionOldDate: rescheduleReq.oldDate,
+    })
     res.status(200).json({
       status: "success",
       message: "Reschedule Requested successfully!",
@@ -304,6 +314,17 @@ export const updateStatusSessionReschedule = (
       teacherId,
       status,
     })
+    scheduleSessionRescheduleRequestUpdateMailJob({
+      rescheduleRequestId,
+      sessionId: rescheduledSession?.id,
+      status,
+    })
+    if (status === RescheduleRequestStatus.APPROVED) {
+      rescheduleReminderJob({
+        sessionId: rescheduledSession?.id,
+        newDate: (rescheduledSession as Session).sessionDate,
+      })
+    }
     let message = "reschedule request accepted successfully"
     status === RescheduleRequestStatus.DECLINED
       ? (message = "reschedule request declined successfully!")

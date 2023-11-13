@@ -30,6 +30,7 @@ import {
 } from "../service/session.service"
 import { verifyToken } from "../utils/jwt"
 import { getUserRescheduleRequests } from "../service/rescheduleReq.service"
+import { SubscriptionStatus } from "../db/models/subscription.model"
 export const setUserOrTeacherId = (
   req: IRequestWithUser,
   res: Response,
@@ -153,9 +154,21 @@ export const getMySubscription = catchAsync(
     if (!userSubscription) {
       return next(new AppError(404, "there is no subscripting for this user!"))
     }
-    const stripeSubscription = await getStripeSubscription(
-      userSubscription.stripe_subscription_id as string
-    )
+    let stripeSubscription
+    let subscriptionStartAt
+    let subscriptionEndAt
+
+    if (userSubscription.status === SubscriptionStatus.ACTIVE) {
+      stripeSubscription = await getStripeSubscription(
+        userSubscription.stripe_subscription_id as string
+      )
+      ;(subscriptionStartAt = new Date(
+        stripeSubscription.current_period_start * 1000 // convert timestamp from sec to milliseconds
+      )),
+        (subscriptionEndAt = new Date(
+          stripeSubscription.current_period_end * 1000
+        )) // convert timestamp from sec to milliseconds
+    }
     const subscriptionRes = {
       status: userSubscription.status,
       planId: userSubscription.planId,
@@ -164,10 +177,8 @@ export const getMySubscription = catchAsync(
       sessionsCount: userSubscription.plan.sessionsCount,
       sessionsPerWeek: userSubscription.plan.sessionsPerWeek,
       price: userSubscription.plan.price,
-      subscriptionStartAt: new Date(
-        stripeSubscription.current_period_start * 1000 // convert timestamp from sec to milliseconds
-      ),
-      subscriptionEndAt: new Date(stripeSubscription.current_period_end * 1000), // convert timestamp from sec to milliseconds
+      subscriptionStartAt,
+      subscriptionEndAt,
     }
     res.status(200).json({ status: "success", data: subscriptionRes })
   }

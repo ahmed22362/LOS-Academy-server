@@ -13,6 +13,7 @@ import {
 } from "../service/payout.service"
 import { PayoutRequestStatus } from "../db/models/payoutReq.model"
 import { sequelize } from "../db/sequelize"
+import { schedulePayoutRequestMailJob } from "../utils/scheduler"
 
 export const createPayoutRequest = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -25,6 +26,10 @@ export const createPayoutRequest = catchAsync(
     }
     const payOutRequest = await createPayoutRequestService({
       teacherId,
+      amount,
+    })
+    schedulePayoutRequestMailJob({
+      teacherName: teacher.name,
       amount,
     })
     res.status(200).json({
@@ -113,6 +118,7 @@ export const updateStatusPayoutRequestService = catchAsync(
         })
       }
       await t.commit()
+
       res.status(200).json({
         status: "success",
         message: "request updated successfully!",

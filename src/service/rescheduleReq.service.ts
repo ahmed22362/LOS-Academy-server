@@ -20,6 +20,7 @@ import {
   getUserSessionInfoService,
 } from "./sessionInfo.service"
 import { getUserAttr } from "../controller/user.controller"
+import { scheduleSessionRescheduleRequestUpdateMailJob } from "../utils/scheduler"
 
 export async function createRescheduleRequestService({
   sessionId,
@@ -197,7 +198,7 @@ export async function acceptOrDeclineRescheduleRequestService({
       meetingLink: null,
     } as any,
   })
-  return updatedSession
+  return updatedSession as Session
 }
 export async function getPendingRequestBySessionId({
   sessionId,

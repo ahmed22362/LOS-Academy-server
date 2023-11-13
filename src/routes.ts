@@ -10,7 +10,7 @@ import subscriptionRouter from "./router/subscription.router"
 import stripeRouter from "./router/stripe.router"
 import reportRouter from "./router/report.router"
 import payoutRouter from "./router/payout.router"
-import materialRouter from "./router/matrerial.router"
+import materialRouter from "./router/material.router"
 
 const PRE_API_V1: string = "/api/v1"
 

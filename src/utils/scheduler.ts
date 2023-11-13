@@ -3,6 +3,8 @@ import Mail from "../connect/sendMail"
 import { getUserByIdService } from "../service/user.service"
 import { getTeacherByIdService } from "../service/teacher.service"
 import logger from "./logger"
+import { getOneSessionDetailsService } from "../service/session.service"
+import { getOneRescheduleRequestService } from "../service/rescheduleReq.service"
 
 export function scheduleVerifyMailJob({
   to,
@@ -13,17 +15,21 @@ export function scheduleVerifyMailJob({
   name: string
   link: string
 }) {
-  const mail = new Mail(to, name)
+  try {
+    const mail = new Mail(to, name)
 
-  logger.info("in send verify mail schedule!")
-  const date = new Date(new Date().getTime() + 20000)
-  const job = schedule.scheduleJob(date, async () => {
-    await mail.sendVerifyMail({ link })
-    logger.info("One time send verify mail executed!")
-    // Delete job
-    job.cancel()
-    logger.info("Job deleted")
-  })
+    logger.info("in send verify mail schedule!")
+    const date = new Date(new Date().getTime() + 10000)
+    const job = schedule.scheduleJob(date, async () => {
+      await mail.sendVerifyMail({ link })
+      logger.info("One time send verify mail executed!")
+      // Delete job
+      job.cancel()
+      logger.info("Job deleted")
+    })
+  } catch (error: any) {
+    logger.error(`Error while send verify mail: ${error.message}`)
+  }
 }
 export function scheduleSuccessSubscriptionMailJob({
   to,
@@ -38,20 +44,24 @@ export function scheduleSuccessSubscriptionMailJob({
   subscriptionAmount: number
   subscriptionCycle: string
 }) {
-  const mail = new Mail(to, name)
-  logger.info("in send subscription success mail schedule!")
-  const date = new Date(new Date().getTime() + 10000)
-  const job = schedule.scheduleJob(date, async () => {
-    await mail.sendSubscriptionCreateMail({
-      subscriptionAmount,
-      subscriptionCycle,
-      subscriptionTitle,
+  try {
+    const mail = new Mail(to, name)
+    logger.info("in send subscription success mail schedule!")
+    const date = new Date(new Date().getTime() + 10000)
+    const job = schedule.scheduleJob(date, async () => {
+      await mail.sendSubscriptionCreateMail({
+        subscriptionAmount,
+        subscriptionCycle,
+        subscriptionTitle,
+      })
+      logger.info("One time send subscription success mail executed!")
+      // Delete job
+      job.cancel()
+      logger.info("Job deleted")
     })
-    logger.info("One time send subscription success mail executed!")
-    // Delete job
-    job.cancel()
-    logger.info("Job deleted")
-  })
+  } catch (error: any) {
+    logger.error(`Error while subscription success mail: ${error.message}`)
+  }
 }
 export function scheduleSubscriptionCanceledMailJob({
   to,
@@ -60,16 +70,20 @@ export function scheduleSubscriptionCanceledMailJob({
   to: string
   name: string
 }) {
-  const mail = new Mail(to, name)
-  logger.info("in send subscription cancelled mail schedule!")
-  const date = new Date(new Date().getTime() + 10000)
-  const job = schedule.scheduleJob(date, async () => {
-    await mail.sendSubscriptionCanceledMail()
-    logger.info("One time send subscription cancelled executed!")
-    // Delete job
-    job.cancel()
-    logger.info("Job deleted")
-  })
+  try {
+    const mail = new Mail(to, name)
+    logger.info("in send subscription cancelled mail schedule!")
+    const date = new Date(new Date().getTime() + 10000)
+    const job = schedule.scheduleJob(date, async () => {
+      await mail.sendSubscriptionCanceledMail()
+      logger.info("One time send subscription cancelled executed!")
+      // Delete job
+      job.cancel()
+      logger.info("Job deleted")
+    })
+  } catch (error: any) {
+    logger.error(`Error while subscription cancelled mail: ${error.message}`)
+  }
 }
 export function scheduleSessionPlacedMailJob({
   userEmail,
@@ -84,45 +98,245 @@ export function scheduleSessionPlacedMailJob({
   teacherName: string
   sessionDate: Date
 }) {
-  logger.info("in send session placed mail schedule!")
-  const date = new Date(new Date().getTime() + 10000)
-  const job = schedule.scheduleJob("mail", date, async () => {
-    await new Mail(userEmail, userName).sendSessionPlacesMail({
-      sessionDate: sessionDate.toUTCString(),
+  try {
+    logger.info("in send session placed mail schedule!")
+    const date = new Date(new Date().getTime() + 10000)
+    const job = schedule.scheduleJob(`Session`, date, async () => {
+      await new Mail(userEmail, userName).sendSessionPlacesMail({
+        sessionDate: sessionDate.toUTCString(),
+      })
+      await new Mail(teacherEmail, teacherName).sendSessionPlacesMail({
+        sessionDate: sessionDate.toUTCString(),
+      })
+      logger.info("One time session placed mail executed!")
+      // Delete job
+      job.cancel()
+      logger.info("Job deleted")
     })
-    await new Mail(teacherEmail, teacherName).sendSessionPlacesMail({
-      sessionDate: sessionDate.toUTCString(),
-    })
-    logger.info("One time session placed mail executed!")
-    // Delete job
-    job.cancel()
-    logger.info("Job deleted")
-  })
+  } catch (error: any) {
+    logger.error(`Error while session placed mail: ${error.message}`)
+  }
 }
 export function scheduleSessionReminderMailJob({
-  userId,
-  teacherId,
   sessionDate,
-  sessionTitle,
+  sessionId,
 }: {
-  userId: string
-  teacherId: string
   sessionDate: Date
-  sessionTitle: string
+  sessionId: number
 }) {
-  logger.info("in session reminder mail schedule!")
-  const job = schedule.scheduleJob(sessionTitle, sessionDate, async () => {
-    const user = await getUserByIdService({ userId })
-    const teacher = await getTeacherByIdService({ id: teacherId })
-    await new Mail(user.email, user.name).sendSessionReminderMail({
-      sessionDate: sessionDate.toUTCString(),
+  try {
+    logger.info("in session reminder mail schedule!")
+    const date = new Date(sessionDate).setMinutes(sessionDate.getMinutes() - 30)
+    const job = schedule.scheduleJob(
+      `session #${sessionId}`,
+      date,
+      async () => {
+        const session = await getOneSessionDetailsService({ sessionId })
+        await new Mail(
+          session.SessionInfo.user!.email,
+          session.SessionInfo.user!.name
+        ).sendSessionReminderMail({
+          sessionDate: sessionDate.toUTCString(),
+        })
+        await new Mail(
+          session.SessionInfo.teacher!.email,
+          session.SessionInfo.teacher!.name
+        ).sendSessionReminderMail({
+          sessionDate: sessionDate.toUTCString(),
+        })
+        logger.info("One time session reminder mail executed!")
+        // Delete job
+        job.cancel()
+        logger.info("Job deleted")
+      }
+    )
+  } catch (error: any) {
+    logger.error(`Error while session reminder mail: ${error.message}`)
+  }
+}
+export function scheduleSessionStartReminderMailJob({
+  sessionId,
+  sessionDate,
+}: {
+  sessionId: number
+  sessionDate: Date
+}) {
+  try {
+    logger.info("in session started mail schedule!")
+    // add 4 mins to the session start to check if the user attend
+    const date = new Date(sessionDate).setMinutes(sessionDate.getMinutes() + 4)
+
+    const job = schedule.scheduleJob(
+      `session #${sessionId} started`,
+      date,
+      async () => {
+        const session = await getOneSessionDetailsService({ sessionId })
+        if (!session.studentAttended) {
+          await new Mail(
+            session.SessionInfo.user!.email,
+            session.SessionInfo.user!.name
+          ).sendSessionStartReminderForUser({
+            sessionDate: session.sessionDate.toUTCString(),
+          })
+          await new Mail(
+            process.env.ADMIN_EMAIL as string,
+            "Admin"
+          ).sendSessionStartReminderForAdmin({
+            userName: session.SessionInfo.user!.name,
+            teacherName: session.SessionInfo.teacher!.name,
+            sessionDate: session.sessionDate.toUTCString(),
+          })
+        }
+        logger.info("One time session started reminder mail executed!")
+        // Delete job
+        job.cancel()
+        logger.info("Job deleted")
+      }
+    )
+  } catch (error: any) {
+    logger.error(`Error while session started reminder mail: ${error.message}`)
+  }
+}
+export function scheduleSessionRescheduleRequestMailJob({
+  sessionId,
+  sessionOldDate,
+  sessionNewDate,
+}: {
+  sessionId: number
+  sessionOldDate: Date
+  sessionNewDate: Date
+}) {
+  try {
+    logger.info("in session reschedule request mail schedule!")
+    const date = new Date(new Date().getTime() + 10000)
+    const job = schedule.scheduleJob(
+      `Session #${sessionId}`,
+      date,
+      async () => {
+        const session = await getOneSessionDetailsService({ sessionId })
+        await new Mail(
+          session.SessionInfo.teacher!.email,
+          session.SessionInfo.teacher!.name
+        ).sendSessionRescheduleRequestMail({
+          userName: session.SessionInfo.user!.name,
+          sessionOldDate,
+          sessionNewDate,
+        })
+        logger.info("One time session reschedule request mail executed!")
+        // Delete job
+        job.cancel()
+        logger.info("Job deleted")
+      }
+    )
+  } catch (error: any) {
+    logger.error(
+      `Error while session reschedule request mail: ${error.message}`
+    )
+  }
+}
+export function scheduleSessionRescheduleRequestUpdateMailJob({
+  sessionId,
+  rescheduleRequestId,
+  status,
+}: {
+  rescheduleRequestId: number
+  sessionId: number
+  status: string
+}) {
+  try {
+    logger.info("in session reschedule request status update mail schedule!")
+    const date = new Date(new Date().getTime() + 10000)
+    const job = schedule.scheduleJob(
+      `Reschedule Request #${sessionId}`,
+      date,
+      async () => {
+        const session = await getOneSessionDetailsService({ sessionId })
+        const rescheduleRequest = await getOneRescheduleRequestService({
+          id: rescheduleRequestId,
+        })
+        await new Mail(
+          session.SessionInfo.user!.email,
+          session.SessionInfo.user!.name
+        ).sendSessionRescheduleRequestUpdateMail({
+          status,
+          userName: session.SessionInfo.user!.name,
+          sessionOldDate: rescheduleRequest.oldDate,
+          sessionNewDate: rescheduleRequest.newDate,
+        })
+        logger.info("One time session reminder mail executed!")
+        // Delete job
+        job.cancel()
+        logger.info("Job deleted")
+      }
+    )
+  } catch (error: any) {
+    logger.error(
+      `Error while session reschedule request status update mail: ${error.message}`
+    )
+  }
+}
+export function schedulePayoutRequestMailJob({
+  teacherName,
+  amount,
+}: {
+  teacherName: string
+  amount: number
+}) {
+  try {
+    logger.info("in payout request mail schedule!")
+    const date = new Date(new Date().getTime() + 10000)
+
+    const job = schedule.scheduleJob(date, async () => {
+      await new Mail(
+        process.env.ADMIN_EMAIL as string,
+        "admin"
+      ).sendPayoutRequestMail({ teacherName, amount })
+      logger.info("One time payout request mail executed!")
+      // Delete job
+      job.cancel()
+      logger.info("Job deleted")
     })
-    await new Mail(teacher.email, teacher.name).sendSessionReminderMail({
-      sessionDate: sessionDate.toUTCString(),
+  } catch (error: any) {
+    logger.error(`Error while payout request mail: ${error.message}`)
+  }
+}
+export function schedulePayoutStatusUpdateMailJob({
+  teacherName,
+  teacherEmail,
+  status,
+}: {
+  teacherEmail: string
+  teacherName: string
+  status: string
+}) {
+  try {
+    logger.info("in payout status updated mail schedule!")
+    const date = new Date(new Date().getTime() + 10000)
+
+    const job = schedule.scheduleJob(date, async () => {
+      await new Mail(
+        teacherEmail,
+        teacherName
+      ).sendPayoutRequestStatusUpdatedMail({
+        status,
+      })
+      logger.info("One payout status updated mail executed!")
+      // Delete job
+      job.cancel()
+      logger.info("Job deleted")
     })
-    logger.info("One time session reminder mail executed!")
-    // Delete job
-    job.cancel()
-    logger.info("Job deleted")
-  })
+  } catch (error: any) {
+    logger.error(`Error while payout status updated mail: ${error.message}`)
+  }
+}
+export function rescheduleReminderJob({
+  sessionId,
+  newDate,
+}: {
+  sessionId: number
+  newDate: Date
+}) {
+  const jobs = schedule.scheduledJobs
+  const job = jobs[`session #${sessionId}`]
+  job.reschedule(newDate.toISOString())
 }

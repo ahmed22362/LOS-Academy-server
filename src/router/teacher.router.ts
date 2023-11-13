@@ -25,16 +25,17 @@ import {
   isTeacherIdExist,
   loginTeacherSchema,
 } from "../schema/teacher.schema"
+import { RoleType } from "../db/models/teacher.model"
 const teacherRouter = Router()
 
 teacherRouter
   .route("/")
   .post(validate(createTeacherSchema), createTeacher)
-  .get(getAllTeachers)
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllTeachers)
 teacherRouter.route("/login").post(validate(loginTeacherSchema), loginTeacher)
 teacherRouter
   .route("/adminBalance")
-  .get(protectTeacher, restrictTo("admin"), getAdminBalance)
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAdminBalance)
 teacherRouter
   .route("/sessions")
   .get(
@@ -80,8 +81,8 @@ teacherRouter.get("/checkJWT", checkJWT)
 
 teacherRouter
   .route("/:id")
-  .get(getTeacher)
-  .patch(updateTeacher)
-  .delete(deleteTeacher)
+  .get(protectTeacher, getTeacher)
+  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateTeacher)
+  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteTeacher)
 
 export default teacherRouter

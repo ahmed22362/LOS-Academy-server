@@ -23,7 +23,10 @@ import {
   getOneSessionDetailsService,
 } from "../service/session.service"
 import { sequelize } from "../db/sequelize"
-import { scheduleSessionPlacedMailJob } from "../utils/scheduler"
+import {
+  scheduleSessionPlacedMailJob,
+  scheduleSessionStartReminderMailJob,
+} from "../utils/scheduler"
 
 export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {

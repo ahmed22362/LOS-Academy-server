@@ -70,6 +70,16 @@ export const subscriptionCreatePayload = ({
   const title = "Subscription Creation"
   return { header, title, paragraph, footer, mailAdds }
 }
+export const subscriptionCanceledPayload = ({ name }: { name: string }) => {
+  const title = "Subscription Cancellation Confirmation"
+  const header = "Your Subscription Has Been Cancelled!"
+  const paragraph = `Hi ${name},
+  <p>We wanted to confirm that your subscription has been successfully canceled. </P>
+  <p>We appreciate the time you've spent with us and value your feedback.</P>
+  If you have any suggestions for improvement or if there's anything we can do to assist you further, please don't hesitate to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.
+  <p>Thank you for being a part of our community.</p>`
+  return { title, header, paragraph }
+}
 export const sessionPlacedPayload = ({
   name,
   sessionDate,
@@ -99,15 +109,91 @@ export const sessionPlacedPayload = ({
   const footer = `<p>We hope you have a productive and enjoyable session. If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
   return { title, header, paragraph, mailAdds, footer }
 }
-export const subscriptionCanceledPayload = ({ name }: { name: string }) => {
-  const title = "Subscription Cancellation Confirmation"
-  const header = "Your Subscription Has Been Cancelled!"
-  const paragraph = `Hi ${name},
-  <p>We wanted to confirm that your subscription has been successfully canceled. </P>
-  <p>We appreciate the time you've spent with us and value your feedback.</P>
-  If you have any suggestions for improvement or if there's anything we can do to assist you further, please don't hesitate to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.
-  <p>Thank you for being a part of our community.</p>`
-  return { title, header, paragraph }
+export const sessionReschedulePayload = ({
+  teacherName,
+  userName,
+  sessionOldDate,
+  sessionNewDate,
+}: {
+  teacherName: string
+  userName: string
+  sessionOldDate: string
+  sessionNewDate: string
+}) => {
+  const title = "Session Reschedule Request"
+  const header = "Session Reschedule Request!"
+  const paragraph = `Hello ${teacherName},
+  <p>We hope this message finds you well. A user has requested to reschedule their session with you. Here are the details:</p>
+  <div style="margin-top: 20px; text-align: left;">
+  <p><strong>User:</strong> ${userName}</p>
+  <p><strong>Current Session Date and Time:</strong> ${sessionOldDate}</p>
+  <p><strong>Proposed Rescheduled Date and Time:</strong>${sessionNewDate}</p>
+</div>
+  `
+  const footer = `If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
+  return { title, header, paragraph, footer }
+}
+export const SessionStartReminderForUserPayload = ({
+  userName,
+  sessionDate,
+}: {
+  userName: string
+  sessionDate: string
+}) => {
+  const title = "Your session has started!"
+  const header = "Your session has started!"
+  const paragraph = `Dear ${userName},
+  <p>This is a reminder that your scheduled learning session started 3 minutes ago at ${sessionDate}.</p>
+  <p>The tutor is waiting for you to join the online session. Please login to the platform immediately and click the "Join Session" button on your dashboard to join the video call.</p>
+  `
+  const footer = `If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
+  return { title, header, paragraph, footer }
+}
+export const SessionStartReminderForAdminPayload = ({
+  userName,
+  teacherName,
+  sessionDate,
+}: {
+  userName: string
+  teacherName: string
+  sessionDate: string
+}) => {
+  const title = "Student missed session start!"
+  const header = "Student missed session start!"
+  const paragraph = `Hello Admin,
+  <p>This is an automated notification from LOS Academy to inform you that ${userName} has not joined the scheduled learning session with 
+  ${teacherName} after 3 minutes from the session start time of ${sessionDate}.</p>
+  <p>The tutor has been waiting in the virtual classroom but the student has failed to log in and connect as expected at the scheduled time.
+
+  Please follow up with the student directly to understand why they did not join and assist with rescheduling or cancelling if needed.</p>
+  `
+  const footer = `If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
+  return { title, header, paragraph, footer }
+}
+export const sessionRescheduleStatusPayload = ({
+  status,
+  userName,
+  sessionOldDate,
+  sessionNewDate,
+}: {
+  status: string
+  userName: string
+  sessionOldDate: string
+  sessionNewDate: string
+}) => {
+  const title = "Session Reschedule Status Update"
+  const header = "Session Reschedule Status Updated!"
+  const paragraph = `Hello ${userName},
+  <p>The teacher has updated the status of your session reschedule request. Here are the details:</p>
+  <div style="margin-top: 20px; text-align: left;">
+  <p><strong>Original Session Date and Time:</strong> ${sessionOldDate}</p>
+  <p><strong>Proposed Rescheduled Date and Time:</strong>${sessionNewDate}</p>
+  <p><strong>Status:</strong> ${status}</p>
+
+</div>
+  `
+  const footer = `If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
+  return { title, header, paragraph, footer }
 }
 export const sessionReminderPayload = ({
   name,
@@ -141,6 +227,20 @@ export const payoutRequestPayload = ({
 
   <p>Here are the details of the request:</p>
   <p><strong>Requested Amount:</strong> ${amount}</p>`
+  const footer = `<p>If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
+  return { title, header, paragraph, footer }
+}
+export const payoutRequestStatusPayload = ({
+  name,
+  status,
+}: {
+  name: string
+  status: string
+}) => {
+  const title = "Payout Request Status Updated!"
+  const header = `You pending payout request status become ${status}!`
+  const paragraph = `Hello ${name},
+  <p>We wanted to inform you that the status of your payout request has been updated.`
   const footer = `<p>If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
   return { title, header, paragraph, footer }
 }

@@ -3,10 +3,16 @@ import routes from "./routes"
 import logger from "./utils/logger"
 import connectDB from "./connect/connectDB"
 const PORT = process.env.PORT || 3000
-const test = async () => {}
+process.on("uncaughtException", (err) => {
+  console.log("UNCAUGHT EXCEPTION!")
+  console.log(err)
+})
+process.on("unhandledRejection", (err: any) => {
+  logger.error("UNHANDLED REJECTION!")
+  logger.error(err)
+})
 app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`)
   await connectDB()
   routes(app)
-  await test()
 })

@@ -1,6 +1,6 @@
 import { FindOptions, Transaction } from "sequelize"
 import AppError from "../utils/AppError"
-import { Model, Sequelize } from "sequelize-typescript"
+import { Model } from "sequelize-typescript"
 
 export interface ModelClass {
   new (): Model

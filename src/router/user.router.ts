@@ -23,12 +23,25 @@ import {
   getUserSessionReq,
   updateSessionReqDate,
 } from "../controller/sessionReq.controller"
+import { protectTeacher } from "../controller/teacher.controller"
+import { restrictTo } from "../controller/auth.controller"
+import { RoleType } from "../db/models/teacher.model"
+import validate from "../middleware/validate"
+import { createUserSchema } from "../schema/user.schema"
 
 const userRouter = Router()
 
 userRouter.use("/auth", authRouter)
 
-userRouter.route("/").post(createUser).get(getAllUsers)
+userRouter
+  .route("/")
+  .post(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    validate(createUserSchema),
+    createUser
+  )
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllUsers)
 userRouter
   .route("/me")
   .get(protectUser, setUserIdToParams, getUser)

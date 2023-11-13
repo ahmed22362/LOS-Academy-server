@@ -23,9 +23,10 @@ export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
     let planId = req.body.planId
-    const successLink: string = `${req.protocol}://${req.get(
-      "host"
-    )}/?session_id={CHECKOUT_SESSION_ID}`
+    // const successLink: string = `${req.protocol}://${req.get(
+    //   "host"
+    // )}/?session_id={CHECKOUT_SESSION_ID}`
+    const successLink: string = `https://los-academy.vercel.app/student_profile`
     const failLink: string = `${req.protocol}://${req.get("host")}/`
     // check if there is active subscription
     const previousSubscription = await checkPreviousUserSubreption({ userId })

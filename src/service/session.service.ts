@@ -15,7 +15,10 @@ import Teacher from "../db/models/teacher.model"
 import User from "../db/models/user.model"
 import { getUserAttr } from "../controller/user.controller"
 import { getTeacherAtt } from "../controller/teacher.controller"
-import { scheduleSessionReminderMailJob } from "../utils/scheduler"
+import {
+  scheduleSessionReminderMailJob,
+  scheduleSessionStartReminderMailJob,
+} from "../utils/scheduler"
 import logger from "../utils/logger"
 
 export interface IInfoBody {
@@ -88,14 +91,13 @@ export async function createFreeSessionService({
   if (!session) {
     throw new AppError(400, "Can't create free session!")
   }
-  const reminderTime = new Date(session.sessionDate)
-  reminderTime.setMinutes(reminderTime.getMinutes() - 30)
-  logger.info(reminderTime.toUTCString())
+  scheduleSessionStartReminderMailJob({
+    sessionId: session.id,
+    sessionDate: session.sessionDate,
+  })
   scheduleSessionReminderMailJob({
-    userId,
-    teacherId,
-    sessionDate: reminderTime,
-    sessionTitle: `session-${session.id}`,
+    sessionDate: session.sessionDate,
+    sessionId: session.id,
   })
   return session
 }
@@ -137,13 +139,13 @@ export async function createPaidSessionsService({
     if (!session) {
       throw new AppError(400, "Can't create paid session!")
     }
-    const reminderTime = new Date(session.sessionDate)
-    reminderTime.setMinutes(reminderTime.getMinutes() - 30)
     scheduleSessionReminderMailJob({
-      userId,
-      teacherId,
-      sessionDate: reminderTime,
-      sessionTitle: `session-${session.id}`,
+      sessionDate: session.sessionDate,
+      sessionId: session.id,
+    })
+    scheduleSessionStartReminderMailJob({
+      sessionId: session.id,
+      sessionDate: session.sessionDate,
     })
     sessions.push(session as Session)
   }
@@ -600,6 +602,14 @@ function generateSessions({
 }) {
   const sessions: ISessionBody[] = []
   const milSecToWeek = 7 * 24 * 60 * 60 * 1000
+  if (sessionsPerWeek !== sessionDates.length) {
+    throw new AppError(
+      400,
+      `Your request has dates that is not equal to your sessions per week plan 
+      your session per week is:${sessionsPerWeek} 
+      you dates you provided length:${sessionDates.length}and are ${sessionDates}`
+    )
+  }
   for (let session = 0; session < sessionCount; session++) {
     const weekIndex = Math.floor(session / sessionsPerWeek)
     const date = sessionDates[session % sessionsPerWeek]

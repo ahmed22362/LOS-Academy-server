@@ -13,7 +13,7 @@ import { planCreateInput } from "../controller/plan.controller"
 import AppError from "../utils/AppError"
 const STANDARD_CURRENCY_USD = "usd"
 const STANDARD_SESSION_MIN_PRICE = 0.5 // minute price is .5$
-const STRIPE_PRODUCT_ID = "prod_OsxQ3q3vRj8fhT"
+const STRIPE_PRODUCT_ID = "prod_OsxQ3q3vRj8fhT" // replace it to get if from course!
 
 interface IPlanCreateData {
   currency: string

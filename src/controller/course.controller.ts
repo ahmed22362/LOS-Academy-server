@@ -39,7 +39,6 @@ export const getAllCourses = catchAsync(
       .json({ status: "success", length: courses.length, data: courses })
   }
 )
-
 export const getCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
@@ -62,7 +61,6 @@ export const updateCourse = catchAsync(
     res.status(200).json({ status: "success", data: course })
   }
 )
-
 export const deleteCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
@@ -73,6 +71,8 @@ export const deleteCourse = catchAsync(
     await deleteStripeProduct({
       productId: course.stripeProductId,
     })
-    res.status(200).json({ status: "success", data: course })
+    res
+      .status(200)
+      .json({ status: "success", message: "course deleted successfully" })
   }
 )
