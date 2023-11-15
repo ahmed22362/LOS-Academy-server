@@ -343,6 +343,7 @@ export async function getUserUpcomingSessionService({
     userId,
     status: SessionStatus.PENDING,
     pageSize: 1,
+    upcoming: true,
   })
   return session
 }
@@ -371,6 +372,7 @@ export async function getTeacherUpcomingSessionService({
     teacherId,
     status: SessionStatus.PENDING,
     pageSize: 1,
+    upcoming: true,
   })
   return session
 }
@@ -465,11 +467,13 @@ async function generateGetterUserSessions({
   status,
   page,
   pageSize,
+  upcoming,
 }: {
   userId: string
   status?: SessionStatus
   page?: number
   pageSize?: number
+  upcoming?: boolean
 }) {
   const sessionInfo = await getUserSessionInfoService({
     userId,
@@ -477,10 +481,16 @@ async function generateGetterUserSessions({
   })
   const sessionInfoIds = sessionInfo.map((info) => info.id)
   const where: WhereOptions = {
-    sessionInfoId: { [Op.in]: sessionInfoIds },
+    sessionInfoId: {
+      [Op.in]: sessionInfoIds,
+    },
   }
   if (status) {
     where.status = status
+  }
+  if (upcoming) {
+    const currentDate = new Date()
+    where.sessionDate = { [Op.gte]: { currentDate } }
   }
   let limit
   let offset
@@ -508,11 +518,13 @@ async function generateGetterTeacherSessions({
   status,
   page,
   pageSize,
+  upcoming,
 }: {
   teacherId: string
   status?: SessionStatus
   page?: number
   pageSize?: number
+  upcoming?: boolean
 }) {
   const sessionInfo = await getTeacherSessionInfoService({
     teacherId,
@@ -524,6 +536,10 @@ async function generateGetterTeacherSessions({
   }
   if (status) {
     where.status = status
+  }
+  if (upcoming) {
+    const currentDate = new Date()
+    where.sessionDate = { [Op.gte]: { currentDate } }
   }
   let limit
   let offset
