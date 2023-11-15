@@ -20,6 +20,7 @@ export interface ITeacherInput extends Teacher {
 export enum RoleType {
   TEACHER = "teacher",
   ADMIN = "admin",
+  USER = "user",
 }
 @Table({
   tableName: "teacher",

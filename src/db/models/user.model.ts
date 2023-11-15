@@ -12,12 +12,13 @@ import crypto from "crypto"
 
 import FreeSession from "./sessionReq.model"
 
-export interface IUserInput extends User {
+export interface IUserInput {
   name: string
   email: string
-  password: string
+  password?: string
   phone: string
   age: number
+  remainSessions?: number
 }
 
 export enum Gender {

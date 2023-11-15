@@ -4,8 +4,10 @@ import {
   createTeacher,
   deleteTeacher,
   getAdminBalance,
+  getAllSessionRescheduleRequests,
   getAllTeachers,
-  getMySessionRescheduleRequests,
+  getReceivedSessionRescheduleRequests,
+  getSessionRescheduleRequests,
   getTeacher,
   getTeacherAllSessions,
   getTeacherAllStudents,
@@ -26,6 +28,11 @@ import {
   loginTeacherSchema,
 } from "../schema/teacher.schema"
 import { RoleType } from "../db/models/teacher.model"
+import {
+  teacherRequestSessionReschedule,
+  updateStatusSessionReschedule,
+} from "../controller/session.controller"
+import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 const teacherRouter = Router()
 
 teacherRouter
@@ -75,8 +82,29 @@ teacherRouter
   .route("/myStudents")
   .get(protectTeacher, setUserOrTeacherId, getTeacherAllStudents)
 teacherRouter
-  .route("/myRescheduleRequests")
-  .get(protectTeacher, setUserOrTeacherId, getMySessionRescheduleRequests)
+  .route("/requestReschedule")
+  .post(protectTeacher, setUserOrTeacherId, teacherRequestSessionReschedule)
+  .get(protectTeacher, setUserOrTeacherId, getSessionRescheduleRequests)
+teacherRouter
+  .route("/receivedRescheduleRequests")
+  .get(protectTeacher, setUserOrTeacherId, getReceivedSessionRescheduleRequests)
+teacherRouter
+  .route("/allRescheduleRequests")
+  .get(protectTeacher, setUserOrTeacherId, getAllSessionRescheduleRequests)
+teacherRouter
+  .route("/acceptReschedule")
+  .post(
+    protectTeacher,
+    setUserOrTeacherId,
+    updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED)
+  )
+teacherRouter
+  .route("/declineReschedule")
+  .post(
+    protectTeacher,
+    setUserOrTeacherId,
+    updateStatusSessionReschedule(RescheduleRequestStatus.DECLINED)
+  )
 teacherRouter.get("/checkJWT", checkJWT)
 
 teacherRouter

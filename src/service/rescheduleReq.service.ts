@@ -5,36 +5,38 @@ import RescheduleRequest, {
 import AppError from "../utils/AppError"
 import { updateModelService } from "./factory.services"
 import {
-  getOneSessionDetailsService,
   getTeacherAllSessionsService,
   getUserAllSessionsService,
   teacherOwnThisSession,
   updateSessionService,
   userOwnThisSession,
 } from "./session.service"
-import Session from "../db/models/session.model"
+import Session, { SessionStatus } from "../db/models/session.model"
 import SessionInfo from "../db/models/sessionInfo.model"
 import User from "../db/models/user.model"
-import {
-  getTeacherSessionInfoService,
-  getUserSessionInfoService,
-} from "./sessionInfo.service"
 import { getUserAttr } from "../controller/user.controller"
-import { scheduleSessionRescheduleRequestUpdateMailJob } from "../utils/scheduler"
+import { RoleType } from "../db/models/teacher.model"
+import { sequelize } from "../db/sequelize"
 
 export async function createRescheduleRequestService({
   sessionId,
-  newDate,
+  newDateEndRange,
+  newDateStartRange,
   oldDate,
+  requestedBy,
 }: {
   sessionId: number
-  newDate: Date
+  newDateEndRange: Date
+  newDateStartRange: Date
   oldDate: Date
+  requestedBy: RoleType
 }) {
   const reqBody = {
-    sessionId: sessionId,
-    oldDate: oldDate,
-    newDate: newDate,
+    sessionId,
+    oldDate,
+    newDateEndRange,
+    newDateStartRange,
+    requestedBy,
   }
   const rescheduleRequest = await RescheduleRequest.create(reqBody as any)
   if (!rescheduleRequest) {
@@ -49,7 +51,7 @@ export async function getOneRescheduleRequestService({ id }: { id: number }) {
   }
   return request
 }
-export async function getOneRescheduleRequestServiceWithUserDetails({
+export async function getOneRescheduleRequestServiceWithUserDetailsService({
   requestId,
 }: {
   requestId: number
@@ -83,19 +85,25 @@ export async function getOneRescheduleRequestServiceWithUserDetails({
 export async function updateRescheduleRequestService({
   requestId,
   status,
+  newDate,
   transaction,
 }: {
   requestId: number
   status: RescheduleRequestStatus
+  newDate?: Date
   transaction?: Transaction
 }) {
+  const reqBody: any = { status }
+  if (newDate) {
+    reqBody.newDate = newDate
+  }
   const updatedRequest = await updateModelService({
     ModelClass: RescheduleRequest,
     id: requestId,
-    updatedData: { status },
+    updatedData: reqBody,
     transaction,
   })
-  return updatedRequest
+  return updatedRequest as RescheduleRequest
 }
 export async function getAllRescheduleRequestsService({
   findOptions,
@@ -135,41 +143,80 @@ export async function getAllRescheduleRequestsWithUserService() {
     ],
   })
 }
-export async function requestRescheduleService({
+export async function userRequestRescheduleService({
   sessionId,
   userId,
-  newDate,
+  newDateEndRange,
+  newDateStartRange,
 }: {
   sessionId: number
   userId: string
-  newDate: Date
+  newDateEndRange: Date
+  newDateStartRange: Date
 }) {
   const { session, exist } = await userOwnThisSession({ userId, sessionId })
   if (!exist) {
     throw new AppError(
-      401,
-      "can't request reschedule for session that is not yours"
+      403,
+      "Can't request session reschedule for session that is not yours!"
     )
   }
   const rescheduleRequest = createRescheduleRequestService({
     sessionId,
-    newDate,
-    oldDate: session.sessionDate,
+    newDateEndRange,
+    newDateStartRange,
+    oldDate: session!.sessionDate,
+    requestedBy: RoleType.USER,
   })
   return rescheduleRequest
 }
-export async function acceptOrDeclineRescheduleRequestService({
+export async function teacherRequestRescheduleService({
+  sessionId,
+  teacherId,
+  newDateEndRange,
+  newDateStartRange,
+}: {
+  sessionId: number
+  teacherId: string
+  newDateEndRange: Date
+  newDateStartRange: Date
+}) {
+  const { session, exist } = await teacherOwnThisSession({
+    teacherId,
+    sessionId,
+  })
+  if (!exist) {
+    throw new AppError(
+      403,
+      "Can't request session reschedule for session that is not yours!"
+    )
+  }
+  const rescheduleRequest = createRescheduleRequestService({
+    sessionId,
+    newDateEndRange,
+    newDateStartRange,
+    oldDate: session!.sessionDate,
+    requestedBy: RoleType.TEACHER,
+  })
+  return rescheduleRequest
+}
+export async function teacherAcceptOrDeclineRescheduleRequestService({
   requestId,
   teacherId,
   status,
+  newDate,
 }: {
   requestId: number
   teacherId: string
   status: RescheduleRequestStatus
+  newDate?: Date
 }) {
   const rescheduleRequest = await getOneRescheduleRequestService({
     id: requestId,
   })
+  if (rescheduleRequest.requestedBy === RoleType.TEACHER) {
+    throw new AppError(403, "can't update status of request that you asked!")
+  }
   if (rescheduleRequest.status !== RescheduleRequestStatus.PENDING) {
     throw new AppError(400, "Already responded to!")
   }
@@ -181,9 +228,96 @@ export async function acceptOrDeclineRescheduleRequestService({
   if (!exist) {
     throw new AppError(401, "can't accept request for session is not yours")
   }
+  console.log({
+    newDate,
+    endDate: rescheduleRequest.newDateEndRange,
+    startDate: rescheduleRequest.newDateStartRange,
+  })
+  if (
+    status === RescheduleRequestStatus.APPROVED &&
+    !(
+      (newDate as Date) <= rescheduleRequest.newDateEndRange &&
+      (newDate as Date) >= rescheduleRequest.newDateStartRange
+    )
+  ) {
+    throw new AppError(
+      400,
+      `please provide date that in the range or the reschedule request in between ${rescheduleRequest.newDateStartRange} and ${rescheduleRequest.newDateEndRange}`
+    )
+  }
+  const transaction = await sequelize.transaction()
+  try {
+    const updatedRequest = await updateRescheduleRequestService({
+      requestId,
+      status,
+      newDate,
+      transaction,
+    })
+    if (status === RescheduleRequestStatus.DECLINED) {
+      return updatedRequest
+    }
+    // update session
+    const updatedSession = await updateSessionService({
+      sessionId: rescheduleRequest.sessionId,
+      updatedData: {
+        sessionDate: updatedRequest!.newDate,
+        teacherAttended: false,
+        userAttended: false,
+        meetingLink: null,
+        transaction,
+      } as any,
+    })
+    await transaction.commit()
+    return updatedSession as Session
+  } catch (error: any) {
+    await transaction.rollback()
+    throw new AppError(400, `Error updating request :${error.message}`)
+  }
+}
+export async function userAcceptOrDeclineRescheduleRequestService({
+  requestId,
+  userId,
+  status,
+  newDate,
+}: {
+  requestId: number
+  userId: string
+  status: RescheduleRequestStatus
+  newDate?: Date
+}) {
+  const rescheduleRequest = await getOneRescheduleRequestService({
+    id: requestId,
+  })
+  if (rescheduleRequest.requestedBy === RoleType.USER) {
+    throw new AppError(403, "can't update status of request that you asked!")
+  }
+  if (rescheduleRequest.status !== RescheduleRequestStatus.PENDING) {
+    throw new AppError(400, "Already responded to!")
+  }
+  // to check if the teacher has this session to accept the request
+  const { exist, session } = await userOwnThisSession({
+    userId,
+    sessionId: rescheduleRequest.sessionId,
+  })
+  if (!exist) {
+    throw new AppError(401, "can't accept request for session is not yours")
+  }
+  if (
+    status === RescheduleRequestStatus.APPROVED &&
+    !(
+      (newDate as Date) <= rescheduleRequest.newDateEndRange &&
+      (newDate as Date) >= rescheduleRequest.newDateStartRange
+    )
+  ) {
+    throw new AppError(
+      400,
+      `please provide date that in the range or the reschedule request in between ${rescheduleRequest.newDateStartRange} and ${rescheduleRequest.newDateEndRange}`
+    )
+  }
   const updatedRequest = await updateRescheduleRequestService({
     requestId,
     status,
+    newDate,
   })
   if (status === RescheduleRequestStatus.DECLINED) {
     return updatedRequest
@@ -193,6 +327,7 @@ export async function acceptOrDeclineRescheduleRequestService({
     sessionId: rescheduleRequest.sessionId,
     updatedData: {
       sessionDate: rescheduleRequest.newDate,
+      sessionStartTime: rescheduleRequest.newDate.toUTCString().split("T")[1],
       teacherAttended: false,
       userAttended: false,
       meetingLink: null,
@@ -200,7 +335,7 @@ export async function acceptOrDeclineRescheduleRequestService({
   })
   return updatedSession as Session
 }
-export async function getPendingRequestBySessionId({
+export async function getPendingRequestBySessionIdService({
   sessionId,
 }: {
   sessionId: number
@@ -210,30 +345,61 @@ export async function getPendingRequestBySessionId({
   })
   return request
 }
-export async function getUserRescheduleRequests({
+export async function getUserAllRescheduleRequestsService({
+  userId,
+  requestedBy,
+}: {
+  userId: string
+  requestedBy?: RoleType
+}) {
+  const sessionsObj = await getUserAllSessionsService({
+    userId,
+    status: SessionStatus.PENDING,
+  })
+  const sessionsIds: number[] = Object.values(sessionsObj)
+    .flatMap((session) => session)
+    .map((session) => session.id)
+  let where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
+  if (requestedBy) {
+    where.requestedBy = requestedBy
+  }
+  const rescheduleRequests = await RescheduleRequest.findAll({
+    where,
+  })
+  return rescheduleRequests
+}
+export async function getUserReceivedRescheduleRequestsService({
   userId,
 }: {
   userId: string
 }) {
-  const sessionsObj = await getUserAllSessionsService({ userId })
-  const sessionsIds: number[] = Object.values(sessionsObj)
-    .flatMap((session) => session)
-    .map((session) => session.id)
-  const rescheduleRequests = await RescheduleRequest.findAll({
-    where: { sessionId: { [Op.in]: sessionsIds } },
+  return getUserAllRescheduleRequestsService({
+    userId,
+    requestedBy: RoleType.TEACHER,
   })
-  return rescheduleRequests
 }
-export async function getTeacherRescheduleRequests({
+export async function getUserRescheduleRequestsService({
+  userId,
+}: {
+  userId: string
+}) {
+  return getUserAllRescheduleRequestsService({
+    userId,
+    requestedBy: RoleType.USER,
+  })
+}
+export async function getTeacherAllRescheduleRequestsService({
   teacherId,
   page,
   pageSize,
   status,
+  requestedBy,
 }: {
   teacherId: string
   page?: number
   pageSize?: number
   status?: RescheduleRequestStatus
+  requestedBy?: RoleType
 }) {
   let limit
   let offset
@@ -245,7 +411,7 @@ export async function getTeacherRescheduleRequests({
     .map((session) => session.id)
   const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
   if (status) where.status = status
-
+  if (requestedBy) where.requestedBy = requestedBy
   const rescheduleRequests = await RescheduleRequest.findAll({
     where,
     limit,
@@ -265,4 +431,42 @@ export async function getTeacherRescheduleRequests({
     ],
   })
   return rescheduleRequests
+}
+export async function getTeacherReceivedRescheduleRequestsService({
+  teacherId,
+  page,
+  pageSize,
+  status,
+}: {
+  teacherId: string
+  page?: number
+  pageSize?: number
+  status?: RescheduleRequestStatus
+}) {
+  return getTeacherAllRescheduleRequestsService({
+    teacherId,
+    requestedBy: RoleType.USER,
+    page,
+    pageSize,
+    status,
+  })
+}
+export async function getTeacherRescheduleRequestsService({
+  teacherId,
+  page,
+  pageSize,
+  status,
+}: {
+  teacherId: string
+  page?: number
+  pageSize?: number
+  status?: RescheduleRequestStatus
+}) {
+  return getTeacherAllRescheduleRequestsService({
+    teacherId,
+    requestedBy: RoleType.TEACHER,
+    page,
+    pageSize,
+    status,
+  })
 }

@@ -16,6 +16,8 @@ export interface planCreateInput {
   sessionsPerWeek: number
   title: string
   type: PlanType
+  recommended: boolean
+  discount: number
 }
 export const getPlanAtt = [
   "title",
@@ -27,14 +29,23 @@ export const getPlanAtt = [
 ]
 export const createPlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionsCount, sessionDuration, title, sessionsPerWeek, type } =
-      req.body
+    const {
+      sessionsCount,
+      sessionDuration,
+      title,
+      sessionsPerWeek,
+      type,
+      recommended,
+      discount,
+    } = req.body
     const body: planCreateInput = {
       sessionDuration,
       sessionsCount,
       sessionsPerWeek,
       title,
       type,
+      recommended,
+      discount,
     }
     const plan = await createPlanService({ data: body })
     if (!plan) {
@@ -64,7 +75,7 @@ export const getPlans = catchAsync(
 )
 export const updatePlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { totalDuration, totalSession, active, title } = req.body
+    const { totalDuration, totalSession, active, title, discount } = req.body
     const id = req.params.id
     const data = {
       totalDuration,

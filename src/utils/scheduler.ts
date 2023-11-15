@@ -5,6 +5,7 @@ import { getTeacherByIdService } from "../service/teacher.service"
 import logger from "./logger"
 import { getOneSessionDetailsService } from "../service/session.service"
 import { getOneRescheduleRequestService } from "../service/rescheduleReq.service"
+import { RoleType } from "../db/models/teacher.model"
 
 export function scheduleVerifyMailJob({
   to,
@@ -200,27 +201,38 @@ export function scheduleSessionStartReminderMailJob({
 export function scheduleSessionRescheduleRequestMailJob({
   sessionId,
   sessionOldDate,
-  sessionNewDate,
+  newDateStartRange,
+  newDateEndRange,
+  requestedBy,
 }: {
   sessionId: number
   sessionOldDate: Date
-  sessionNewDate: Date
+  newDateStartRange: Date
+  newDateEndRange: Date
+  requestedBy: RoleType
 }) {
   try {
     logger.info("in session reschedule request mail schedule!")
     const date = new Date(new Date().getTime() + 10000)
+    let email: string, name: string
     const job = schedule.scheduleJob(
       `Session #${sessionId}`,
       date,
       async () => {
         const session = await getOneSessionDetailsService({ sessionId })
-        await new Mail(
-          session.SessionInfo.teacher!.email,
-          session.SessionInfo.teacher!.name
-        ).sendSessionRescheduleRequestMail({
-          userName: session.SessionInfo.user!.name,
+        if (requestedBy === RoleType.USER) {
+          email = session.SessionInfo.teacher!.email
+          name = session.SessionInfo.teacher!.name
+        }
+        if (requestedBy === RoleType.TEACHER) {
+          email = session.SessionInfo.user!.email
+          name = session.SessionInfo.user!.name
+        }
+        await new Mail(email, name).sendSessionRescheduleRequestMail({
+          receiverName: session.SessionInfo.user!.name,
           sessionOldDate,
-          sessionNewDate,
+          newDateStartRange,
+          newDateEndRange,
         })
         logger.info("One time session reschedule request mail executed!")
         // Delete job
@@ -238,14 +250,17 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
   sessionId,
   rescheduleRequestId,
   status,
+  requestedBy,
 }: {
   rescheduleRequestId: number
   sessionId: number
   status: string
+  requestedBy: RoleType
 }) {
   try {
     logger.info("in session reschedule request status update mail schedule!")
     const date = new Date(new Date().getTime() + 10000)
+    let email: string, name: string
     const job = schedule.scheduleJob(
       `Reschedule Request #${sessionId}`,
       date,
@@ -254,14 +269,24 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
         const rescheduleRequest = await getOneRescheduleRequestService({
           id: rescheduleRequestId,
         })
+        if (requestedBy === RoleType.TEACHER) {
+          email = session.SessionInfo.teacher!.email
+          name = session.SessionInfo.teacher!.name
+        }
+        if (requestedBy === RoleType.USER) {
+          email = session.SessionInfo.user!.email
+          name = session.SessionInfo.user!.name
+        }
         await new Mail(
           session.SessionInfo.user!.email,
           session.SessionInfo.user!.name
         ).sendSessionRescheduleRequestUpdateMail({
           status,
-          userName: session.SessionInfo.user!.name,
+          receiverName: session.SessionInfo.user!.name,
+          newDateStartRange: rescheduleRequest.newDateStartRange,
+          newDateEndRange: rescheduleRequest.newDateEndRange,
           sessionOldDate: rescheduleRequest.oldDate,
-          sessionNewDate: rescheduleRequest.newDate,
+          sessionNewDate: session.sessionDate,
         })
         logger.info("One time session reminder mail executed!")
         // Delete job
@@ -338,5 +363,5 @@ export function rescheduleReminderJob({
 }) {
   const jobs = schedule.scheduledJobs
   const job = jobs[`session #${sessionId}`]
-  job.reschedule(newDate.toISOString())
+  if (job) job.reschedule(newDate.toISOString())
 }

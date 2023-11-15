@@ -29,8 +29,14 @@ import {
   getUserUpcomingSessionService,
 } from "../service/session.service"
 import { verifyToken } from "../utils/jwt"
-import { getUserRescheduleRequests } from "../service/rescheduleReq.service"
+import {
+  getUserAllRescheduleRequestsService,
+  getUserReceivedRescheduleRequestsService,
+  getUserRescheduleRequestsService,
+} from "../service/rescheduleReq.service"
 import { SubscriptionStatus } from "../db/models/subscription.model"
+import { getTeacherByIdService } from "../service/teacher.service"
+import { RoleType } from "../db/models/teacher.model"
 export const setUserOrTeacherId = (
   req: IRequestWithUser,
   res: Response,
@@ -122,6 +128,12 @@ export const updateUser = catchAsync(
     const id = req.params.id
     const { name, email, phone, age, gender } = req.body
     const body = { name, email, phone, age, gender } as IUserInput
+    if (req.body.teacherId) {
+      const teacher = await getTeacherByIdService({ id: req.body.teacherId })
+      if (teacher.role === RoleType.ADMIN && req.body.remainSessions) {
+        body.remainSessions = req.body.remainSessions
+      }
+    }
     const user = await updateUserService({ userId: id, updatedData: body })
     if (!user) {
       return next(new AppError(404, "Can't find user to update!"))
@@ -256,7 +268,35 @@ export const getUserSessions = catchAsync(
 export const getMySessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
-    const rescheduleRequests = await getUserRescheduleRequests({ userId })
+    const rescheduleRequests = await getUserRescheduleRequestsService({
+      userId,
+    })
+    res.status(200).json({
+      status: "success",
+      length: rescheduleRequests.length,
+      data: rescheduleRequests,
+    })
+  }
+)
+export const getReceivedSessionRescheduleRequests = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.body.userId
+    const rescheduleRequests = await getUserReceivedRescheduleRequestsService({
+      userId,
+    })
+    res.status(200).json({
+      status: "success",
+      length: rescheduleRequests.length,
+      data: rescheduleRequests,
+    })
+  }
+)
+export const getAllSessionRescheduleRequests = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.body.userId
+    const rescheduleRequests = await getUserAllRescheduleRequestsService({
+      userId,
+    })
     res.status(200).json({
       status: "success",
       length: rescheduleRequests.length,

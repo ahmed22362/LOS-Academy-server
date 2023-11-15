@@ -19,8 +19,11 @@ import {
 } from "../service/session.service"
 import { verifyToken } from "../utils/jwt"
 import { getStripeBalance } from "../service/stripe.service"
-import { getTeacherRescheduleRequests } from "../service/rescheduleReq.service"
-import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
+import {
+  getTeacherAllRescheduleRequestsService,
+  getTeacherReceivedRescheduleRequestsService,
+  getTeacherRescheduleRequestsService,
+} from "../service/rescheduleReq.service"
 
 export const getTeacherAtt = [
   "id",
@@ -215,13 +218,71 @@ export const getAdminBalance = catchAsync(
     res.status(200).json({ status: "success", balance: balance.available })
   }
 )
-export const getMySessionRescheduleRequests = catchAsync(
+export const getSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
-    const status = req.query.status
-    const rescheduleRequests = await getTeacherRescheduleRequests({
+    const { status } = req.query
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
+    const rescheduleRequests = await getTeacherRescheduleRequestsService({
       teacherId,
       status: status as any,
+      page: nPage,
+      pageSize: nLimit,
+    })
+    res.status(200).json({
+      status: "success",
+      length: rescheduleRequests.length,
+      data: rescheduleRequests,
+    })
+  }
+)
+export const getReceivedSessionRescheduleRequests = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
+    const rescheduleRequests =
+      await getTeacherReceivedRescheduleRequestsService({
+        teacherId,
+        page: nPage,
+        pageSize: nLimit,
+      })
+    res.status(200).json({
+      status: "success",
+      length: rescheduleRequests.length,
+      data: rescheduleRequests,
+    })
+  }
+)
+export const getAllSessionRescheduleRequests = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
+
+    const rescheduleRequests = await getTeacherAllRescheduleRequestsService({
+      teacherId,
+      page: nPage,
+      pageSize: nLimit,
     })
     res.status(200).json({
       status: "success",

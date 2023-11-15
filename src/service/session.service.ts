@@ -311,15 +311,18 @@ export async function getUserAllSessionsService({
   userId,
   page,
   pageSize,
+  status,
 }: {
   userId: string
   page?: number
   pageSize?: number
+  status?: SessionStatus
 }) {
   const sessions = await generateGetterUserSessions({
     userId,
     page,
     pageSize,
+    status,
   })
   return sessions
 }
@@ -557,6 +560,7 @@ async function generateGetterTeacherSessions({
       where,
       limit,
       offset,
+      order: [["sessionDate", "ASC"]],
     },
   })
   return sessions

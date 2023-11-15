@@ -4,7 +4,6 @@ import {
   acceptSessionReq,
   getAllSessionsReq,
   getOneSessionReq,
-  updateSessionReqDate,
 } from "../controller/sessionReq.controller"
 import freeSessionRouter from "./session.free.router"
 import paidSessionRouter from "./session.paid.router"
@@ -12,16 +11,12 @@ import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
 import {
   generateSessionLink,
   getAllRescheduleRequests,
-  getAllSessions,
   getAllSessionsByStatus,
   getOneSessionInfo,
-  requestSessionReschedule,
   updateSessionAttendance,
   updateSessionStatus,
-  updateStatusSessionReschedule,
 } from "../controller/session.controller"
 import { restrictTo } from "../controller/auth.controller"
-import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import { RoleType } from "../db/models/teacher.model"
 const sessionRouter = Router()
 
@@ -47,23 +42,8 @@ sessionRouter
   .route("/assignTeacher")
   .post(protectTeacher, restrictTo(RoleType.ADMIN), acceptSessionReq)
 sessionRouter
-  .route("/request-reschedule")
-  .post(protectUser, setUserOrTeacherId, requestSessionReschedule)
+  .route("/rescheduleRequests")
   .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllRescheduleRequests)
-sessionRouter
-  .route("/accept-reschedule")
-  .post(
-    protectTeacher,
-    setUserOrTeacherId,
-    updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED)
-  )
-sessionRouter
-  .route("/decline-reschedule")
-  .post(
-    protectTeacher,
-    setUserOrTeacherId,
-    updateStatusSessionReschedule(RescheduleRequestStatus.DECLINED)
-  )
 sessionRouter
   .route("/:id")
   .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo)

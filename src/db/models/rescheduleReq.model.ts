@@ -9,6 +9,7 @@ import {
   Table,
 } from "sequelize-typescript"
 import Session from "./session.model"
+import { RoleType } from "./teacher.model"
 
 export enum RescheduleRequestStatus {
   PENDING = "pending",
@@ -39,7 +40,19 @@ export default class RescheduleRequest extends Model<RescheduleRequest> {
   oldDate!: Date
 
   @Column({ type: DataType.DATE, allowNull: false })
+  newDateStartRange!: Date
+
+  @Column({ type: DataType.DATE, allowNull: false })
+  newDateEndRange!: Date
+
+  @Column({ type: DataType.DATE })
   newDate!: Date
+
+  @Column({
+    type: DataType.ENUM({ values: Object.values(RoleType) }),
+    defaultValue: RoleType.USER,
+  })
+  requestedBy!: RoleType
 
   @Column({
     type: DataType.ENUM({ values: Object.values(RescheduleRequestStatus) }),

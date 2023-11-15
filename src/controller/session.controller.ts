@@ -16,10 +16,12 @@ import { sequelize } from "../db/sequelize"
 import AppError from "../utils/AppError"
 import { IRequestWithUser } from "./auth.controller"
 import {
-  acceptOrDeclineRescheduleRequestService,
   getAllRescheduleRequestsService,
-  getPendingRequestBySessionId,
-  requestRescheduleService,
+  getPendingRequestBySessionIdService,
+  teacherAcceptOrDeclineRescheduleRequestService,
+  teacherRequestRescheduleService,
+  userAcceptOrDeclineRescheduleRequestService,
+  userRequestRescheduleService,
 } from "../service/rescheduleReq.service"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import Session, { SessionStatus } from "../db/models/session.model"
@@ -28,7 +30,7 @@ import { updateUserRemainSessionService } from "../service/user.service"
 import SessionInfo from "../db/models/sessionInfo.model"
 import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
-import Teacher from "../db/models/teacher.model"
+import Teacher, { RoleType } from "../db/models/teacher.model"
 import { getTeacherAtt } from "./teacher.controller"
 import {
   rescheduleReminderJob,
@@ -210,6 +212,12 @@ export const updateSessionStatus = catchAsync(
         transaction: t,
       })
       if (status === SessionStatus.TAKEN) {
+        if (!session.studentAttended) {
+          throw new AppError(
+            400,
+            "Can't update session to taken if the student attend!"
+          )
+        }
         await updateTeacherBalance({
           teacherId,
           numOfSessions: 1,
@@ -237,11 +245,20 @@ export const updateSessionStatus = catchAsync(
     }
   }
 )
-export const requestSessionReschedule = catchAsync(
+export const userRequestSessionReschedule = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, sessionId, newDate } = req.body
-    checkDateFormat(newDate)
-    const previousRequest = await getPendingRequestBySessionId({ sessionId })
+    const { userId, sessionId, newDateEndRange, newDateStartRange } = req.body
+    checkDateFormat(newDateEndRange)
+    checkDateFormat(newDateStartRange)
+    if (newDateStartRange > newDateEndRange) {
+      throw new AppError(
+        400,
+        "Please provide start date that is less than end date"
+      )
+    }
+    const previousRequest = await getPendingRequestBySessionIdService({
+      sessionId,
+    })
     if (previousRequest) {
       return next(
         new AppError(
@@ -250,14 +267,60 @@ export const requestSessionReschedule = catchAsync(
         )
       )
     }
-    const rescheduleReq = await requestRescheduleService({
+    const rescheduleReq = await userRequestRescheduleService({
       sessionId,
       userId,
-      newDate,
+      newDateEndRange,
+      newDateStartRange,
     })
     scheduleSessionRescheduleRequestMailJob({
+      requestedBy: RoleType.USER as RoleType,
       sessionId,
-      sessionNewDate: rescheduleReq.newDate,
+      newDateStartRange: rescheduleReq.newDateStartRange,
+      newDateEndRange: rescheduleReq.newDateEndRange,
+      sessionOldDate: rescheduleReq.oldDate,
+    })
+    res.status(200).json({
+      status: "success",
+      message: "Reschedule Requested successfully!",
+      data: rescheduleReq,
+    })
+  }
+)
+export const teacherRequestSessionReschedule = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { teacherId, sessionId, newDateEndRange, newDateStartRange } =
+      req.body
+    checkDateFormat(newDateEndRange)
+    checkDateFormat(newDateStartRange)
+    if (newDateStartRange > newDateEndRange) {
+      throw new AppError(
+        400,
+        "Please provide start date that is less than end date"
+      )
+    }
+    const previousRequest = await getPendingRequestBySessionIdService({
+      sessionId,
+    })
+    if (previousRequest) {
+      return next(
+        new AppError(
+          400,
+          "Can't request another reschedule before the previous request has response"
+        )
+      )
+    }
+    const rescheduleReq = await teacherRequestRescheduleService({
+      sessionId,
+      teacherId,
+      newDateEndRange,
+      newDateStartRange,
+    })
+    scheduleSessionRescheduleRequestMailJob({
+      requestedBy: RoleType.TEACHER,
+      sessionId,
+      newDateStartRange: rescheduleReq.newDateStartRange,
+      newDateEndRange: rescheduleReq.newDateEndRange,
       sessionOldDate: rescheduleReq.oldDate,
     })
     res.status(200).json({
@@ -308,20 +371,38 @@ export const updateStatusSessionReschedule = (
   status: RescheduleRequestStatus
 ) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { teacherId, rescheduleRequestId } = req.body
-    const rescheduledSession = await acceptOrDeclineRescheduleRequestService({
-      requestId: rescheduleRequestId,
-      teacherId,
-      status,
-    })
+    const { teacherId, userId, rescheduleRequestId, newDate } = req.body
+    let requestedFrom
+    let rescheduledSession
+    if (teacherId) {
+      rescheduledSession = await teacherAcceptOrDeclineRescheduleRequestService(
+        {
+          requestId: rescheduleRequestId,
+          teacherId,
+          status,
+          newDate: new Date(newDate),
+        }
+      )
+      requestedFrom = RoleType.TEACHER
+    } else if (userId) {
+      rescheduledSession = await userAcceptOrDeclineRescheduleRequestService({
+        requestId: rescheduleRequestId,
+        userId,
+        status,
+        newDate,
+      })
+      requestedFrom = RoleType.USER
+    }
+
     scheduleSessionRescheduleRequestUpdateMailJob({
+      requestedBy: requestedFrom as RoleType,
       rescheduleRequestId,
-      sessionId: rescheduledSession?.id,
+      sessionId: rescheduledSession!.id,
       status,
     })
     if (status === RescheduleRequestStatus.APPROVED) {
       rescheduleReminderJob({
-        sessionId: rescheduledSession?.id,
+        sessionId: rescheduledSession!.id,
         newDate: (rescheduledSession as Session).sessionDate,
       })
     }

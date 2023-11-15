@@ -181,18 +181,21 @@ class Mail {
     }
   }
   async sendSessionRescheduleRequestMail({
-    userName,
+    receiverName,
     sessionOldDate,
-    sessionNewDate,
+    newDateStartRange,
+    newDateEndRange,
   }: {
-    userName: string
+    receiverName: string
     sessionOldDate: Date
-    sessionNewDate: Date
+    newDateStartRange: Date
+    newDateEndRange: Date
   }) {
     const { title, paragraph, header, footer } = sessionReschedulePayload({
-      teacherName: this.name,
-      userName,
-      sessionNewDate: sessionNewDate.toUTCString(),
+      senderName: this.name,
+      receiverName,
+      newDateStartRange: newDateStartRange.toUTCString(),
+      newDateEndRange: newDateEndRange.toUTCString(),
       sessionOldDate: sessionOldDate.toUTCString(),
     })
     const sessionRescheduleTemplate = generateGenericEmail({
@@ -211,29 +214,36 @@ class Mail {
     }
   }
   async sendSessionRescheduleRequestUpdateMail({
-    userName,
+    receiverName,
     sessionOldDate,
+    newDateEndRange,
+    newDateStartRange,
     sessionNewDate,
     status,
   }: {
-    userName: string
+    receiverName: string
     sessionOldDate: Date
+    newDateStartRange: Date
+    newDateEndRange: Date
     sessionNewDate: Date
     status: string
   }) {
-    const { title, paragraph, header, footer } = sessionRescheduleStatusPayload(
-      {
-        userName,
-        sessionNewDate: sessionNewDate.toUTCString(),
+    const { title, paragraph, header, footer, mailAdds } =
+      sessionRescheduleStatusPayload({
+        senderName: this.name,
+        receiverName,
+        newDateEndRange: newDateEndRange.toUTCString(),
+        newDateStartRange: newDateStartRange.toUTCString(),
+        newDate: sessionNewDate.toUTCString(),
         sessionOldDate: sessionOldDate.toUTCString(),
         status,
-      }
-    )
+      })
     const sessionRescheduleTemplate = generateGenericEmail({
       title,
       paragraph,
       header,
       footer,
+      mailAdds,
     })
     const info = await this.send(
       sessionRescheduleTemplate,

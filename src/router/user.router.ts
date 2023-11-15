@@ -7,6 +7,7 @@ import {
   getMyHistorySessions,
   getMySessionRescheduleRequests,
   getMySubscription,
+  getReceivedSessionRescheduleRequests,
   getUser,
   getUserRemainSessions,
   getUserSessions,
@@ -28,6 +29,13 @@ import { restrictTo } from "../controller/auth.controller"
 import { RoleType } from "../db/models/teacher.model"
 import validate from "../middleware/validate"
 import { createUserSchema } from "../schema/user.schema"
+import {
+  getAllRescheduleRequests,
+  updateSessionStatus,
+  updateStatusSessionReschedule,
+  userRequestSessionReschedule,
+} from "../controller/session.controller"
+import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 
 const userRouter = Router()
 
@@ -58,6 +66,30 @@ userRouter.get(
   setUserOrTeacherId,
   getUserSessionReq
 )
+userRouter
+  .route("/requestReschedule")
+  .post(protectUser, setUserOrTeacherId, userRequestSessionReschedule)
+  .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests)
+userRouter
+  .route("/receivedRescheduleRequests")
+  .get(protectUser, setUserOrTeacherId, getReceivedSessionRescheduleRequests)
+userRouter
+  .route("/allRescheduleRequests")
+  .get(protectUser, setUserOrTeacherId, getAllRescheduleRequests)
+userRouter
+  .route("/acceptReschedule")
+  .post(
+    protectUser,
+    setUserOrTeacherId,
+    updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED)
+  )
+userRouter
+  .route("/declineReschedule")
+  .post(
+    protectUser,
+    setUserOrTeacherId,
+    updateStatusSessionReschedule(RescheduleRequestStatus.DECLINED)
+  )
 userRouter.patch(
   "/mySessionReq/:id",
   protectUser,
@@ -84,9 +116,9 @@ userRouter.get(
 )
 userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
 userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports)
-userRouter
-  .route("/myRescheduleRequests")
-  .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests)
+// userRouter
+//   .route("/myRescheduleRequests")
+//   .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests)
 userRouter.get("/updateMyPlan", protectUser, updateUserPlan)
 userRouter.get("/checkJWT", checkJWT)
 userRouter.route("/:id").patch(updateUser).delete(deleteUser).get(getUser)
