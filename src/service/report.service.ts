@@ -98,15 +98,15 @@ export async function getUserOrTeacherReportsService({
   }
   const sessionInfoIds = sessionInfos.map((si) => si.id)
   const sessions = await getSessionInfosSessions(sessionInfoIds)
-  const reportIds = sessions.map((s) => s.id)
+  const sessionsId = sessions.map((s) => s.id)
   let limit
   let offset
   if (pageSize) limit = pageSize
   if (page && pageSize) offset = page * pageSize
   const reports = await sessionReport.findAll({
     where: {
-      id: {
-        [Op.in]: reportIds,
+      sessionId: {
+        [Op.in]: sessionsId,
       },
     },
     include: { model: Session, attributes: ["sessionDate"] },
