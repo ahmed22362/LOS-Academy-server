@@ -58,6 +58,8 @@ export const createSubscription = catchAsync(
           sessionsPerWeek,
           title: "custom plan",
           type: PlanType.CUSTOM,
+          recommended: false,
+          discount: 0,
         },
       })
       planId = plan.id

@@ -97,7 +97,6 @@ export async function getUserOrTeacherReportsService({
     throw new AppError(404, "please provide user or teacher id")
   }
   const sessionInfoIds = sessionInfos.map((si) => si.id)
-
   const sessions = await getSessionInfosSessions(sessionInfoIds)
   const reportIds = sessions.map((s) => s.id)
   let limit
