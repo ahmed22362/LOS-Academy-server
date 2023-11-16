@@ -19,6 +19,7 @@ export interface IUserInput {
   phone: string
   age: number
   remainSessions?: number
+  gender: Gender
 }
 
 export enum Gender {
