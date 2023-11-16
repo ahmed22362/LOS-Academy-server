@@ -27,7 +27,7 @@ async function createUserService({
   userData: IUserInput
 }): Promise<User | null> {
   try {
-    const newUser = await User.create(userData)
+    const newUser = await User.create(userData as any)
     return newUser
   } catch (error: any) {
     console.error("Error creating user:", error.message)
