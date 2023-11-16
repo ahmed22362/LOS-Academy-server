@@ -4,6 +4,7 @@ import { setUserOrTeacherId } from "../controller/user.controller"
 import {
   createPayoutRequest,
   getAllPayoutRequests,
+  getMyPayoutRequests,
   getOnePayoutRequest,
   updateAmountPayoutRequest,
   updateStatusPayoutRequestService,
@@ -17,6 +18,12 @@ payoutRouter.patch(
   protectTeacher,
   restrictTo(RoleType.ADMIN),
   updateStatusPayoutRequestService
+)
+payoutRouter.get(
+  "/teacherPayout",
+  protectTeacher,
+  restrictTo(RoleType.ADMIN),
+  getMyPayoutRequests
 )
 payoutRouter
   .route("/")

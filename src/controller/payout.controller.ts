@@ -9,6 +9,7 @@ import {
   createPayoutRequestService,
   getAllPayoutRequestService,
   getOnePayoutRequestService,
+  getTeacherPayoutRequestsService,
   updatePayoutRequestService,
 } from "../service/payout.service"
 import { PayoutRequestStatus } from "../db/models/payoutReq.model"
@@ -56,6 +57,27 @@ export const getAllPayoutRequests = catchAsync(
     res
       .status(200)
       .json({ status: "success", length: requests.length, data: requests })
+  }
+)
+export const getMyPayoutRequests = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    let teacherId = req.body.teacherId
+    if (!teacherId) teacherId = req.query.teacherId
+    const status = req.query.status
+    const payouts = await getTeacherPayoutRequestsService({
+      teacherId,
+      status: status as string,
+    })
+    res.status(200).json({ status: "success", data: payouts })
+  }
+)
+export const getTeacherPayoutRequests = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.query.teacherId
+    const payouts = await getTeacherPayoutRequestsService({
+      teacherId: teacherId as string,
+    })
+    res.status(200).json({ status: "success", data: payouts })
   }
 )
 export const getOnePayoutRequest = catchAsync(

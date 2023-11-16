@@ -33,6 +33,7 @@ import {
   updateStatusSessionReschedule,
 } from "../controller/session.controller"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
+import { getMyPayoutRequests } from "../controller/payout.controller"
 const teacherRouter = Router()
 
 teacherRouter
@@ -81,6 +82,9 @@ teacherRouter
 teacherRouter
   .route("/myStudents")
   .get(protectTeacher, setUserOrTeacherId, getTeacherAllStudents)
+teacherRouter
+  .route("/myPayouts")
+  .get(protectTeacher, setUserOrTeacherId, getMyPayoutRequests)
 teacherRouter
   .route("/requestReschedule")
   .post(protectTeacher, setUserOrTeacherId, teacherRequestSessionReschedule)

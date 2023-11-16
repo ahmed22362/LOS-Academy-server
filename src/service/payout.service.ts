@@ -1,4 +1,4 @@
-import { FindOptions, Transaction } from "sequelize"
+import { FindOptions, Transaction, WhereOptions } from "sequelize"
 import { getTeacherAtt } from "../controller/teacher.controller"
 import PayOutRequest, {
   PayoutRequestStatus,
@@ -82,4 +82,16 @@ export async function deletePayoutRequestService({
 }) {
   const payout = await getOnePayoutRequestService({ requestId })
   await payout.destroy()
+}
+export async function getTeacherPayoutRequestsService({
+  teacherId,
+  status,
+}: {
+  teacherId: string
+  status?: string
+}) {
+  const where: WhereOptions = { teacherId }
+  if (status) where.status = status
+  const payouts = await PayOutRequest.findAll({ where })
+  return payouts
 }
