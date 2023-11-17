@@ -214,7 +214,7 @@ export function scheduleSessionRescheduleRequestMailJob({
   try {
     logger.info("in session reschedule request mail schedule!")
     const date = new Date(new Date().getTime() + 10000)
-    let email: string, name: string
+    let email: string, name: string, receiverName: string
     const job = schedule.scheduleJob(
       `Session #${sessionId}`,
       date,
@@ -223,13 +223,15 @@ export function scheduleSessionRescheduleRequestMailJob({
         if (requestedBy === RoleType.USER) {
           email = session.SessionInfo.teacher!.email
           name = session.SessionInfo.teacher!.name
+          receiverName = session.SessionInfo.user!.name
         }
         if (requestedBy === RoleType.TEACHER) {
           email = session.SessionInfo.user!.email
           name = session.SessionInfo.user!.name
+          receiverName = session.SessionInfo.teacher!.name
         }
         await new Mail(email, name).sendSessionRescheduleRequestMail({
-          receiverName: session.SessionInfo.user!.name,
+          receiverName,
           sessionOldDate,
           newDateStartRange,
           newDateEndRange,

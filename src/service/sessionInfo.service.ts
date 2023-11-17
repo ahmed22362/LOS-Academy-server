@@ -1,4 +1,9 @@
-import { FindOptions, IncludeOptions, Transaction } from "sequelize"
+import {
+  FindOptions,
+  IncludeOptions,
+  Transaction,
+  WhereOptions,
+} from "sequelize"
 import SessionInfo from "../db/models/sessionInfo.model"
 import AppError from "../utils/AppError"
 import {
@@ -39,11 +44,11 @@ export async function checkUniqueUserAndTeacher({
   teacherId: string
   userId: string
 }) {
-  const session = await getOneModelByService({
+  const sessionInfo = await getOneModelByService({
     Model: SessionInfo,
     findOptions: { where: { userId, teacherId } },
   })
-  if (session) {
+  if (sessionInfo) {
     throw new AppError(
       400,
       "The User and Teacher together had free session before"
@@ -66,6 +71,17 @@ export async function getSessionInfoService({
     throw new AppError(404, "can't find sessionInfo with this id!")
   }
   return sessionInfo as SessionInfo
+}
+export async function getOneSessionInfoServiceBy({
+  where,
+}: {
+  where: WhereOptions
+}) {
+  const sessionInfo = await SessionInfo.findOne({
+    where,
+    order: [["updatedAt", "DESC"]],
+  })
+  return sessionInfo
 }
 export async function getTeacherSessionInfoService({
   teacherId,

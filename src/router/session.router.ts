@@ -13,8 +13,11 @@ import {
   getAllRescheduleRequests,
   getAllSessionsByStatus,
   getOneSessionInfo,
+  replaceSessionInfoTeacher,
   updateSessionAttendance,
   updateSessionStatus,
+  userContinueWithTeacher,
+  userPlaceHisSessions,
 } from "../controller/session.controller"
 import { restrictTo } from "../controller/auth.controller"
 import { RoleType } from "../db/models/teacher.model"
@@ -39,8 +42,17 @@ sessionRouter
   .route("/status")
   .post(protectTeacher, setUserOrTeacherId, updateSessionStatus)
 sessionRouter
+  .route("/continueWithTeacher")
+  .post(protectUser, setUserOrTeacherId, userContinueWithTeacher)
+sessionRouter
+  .route("/placeSessionDates")
+  .post(protectUser, setUserOrTeacherId, userPlaceHisSessions)
+sessionRouter
   .route("/assignTeacher")
   .post(protectTeacher, restrictTo(RoleType.ADMIN), acceptSessionReq)
+sessionRouter
+  .route("/replaceTeacher")
+  .post(protectTeacher, restrictTo(RoleType.ADMIN), replaceSessionInfoTeacher)
 sessionRouter
   .route("/rescheduleRequests")
   .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllRescheduleRequests)

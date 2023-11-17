@@ -13,6 +13,7 @@ import Session from "./session.model"
 export enum GradeOptions {
   EXCELLENT = "excellent",
   GOOD = "good",
+  VERY_GOOD = "very good",
   AVERAGE = "average",
   BELOW_AVERAGE = "below average",
 }

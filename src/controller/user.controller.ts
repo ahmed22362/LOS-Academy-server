@@ -65,6 +65,7 @@ export const getUserAttr = [
   "age",
   "gender",
   "verified",
+  "sessionPlaced",
 ]
 
 export const loginUser = login(User)

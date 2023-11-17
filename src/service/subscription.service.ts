@@ -108,7 +108,7 @@ export async function getSubscriptionByUserId({ userId }: { userId: string }) {
     Model: Subscription,
     findOptions: { where: { userId }, include: Plan },
   })
-  return subscription
+  return subscription as Subscription
 }
 export async function getSubscriptionBy({
   findOptions,
@@ -185,7 +185,17 @@ export async function checkPreviousUserSubreption({
     previousSubscription.status !== SubscriptionStatus.ACTIVE
   ) {
     return previousSubscription
-  } else return null
+  } else if (
+    previousSubscription &&
+    previousSubscription.status === SubscriptionStatus.ACTIVE
+  ) {
+    throw new AppError(
+      400,
+      "Can't subscribe again you already subscribe to an active subscription"
+    )
+  } else {
+    return null
+  }
 }
 export async function handelCheckoutSessionCompleted(
   checkoutSession: Stripe.Checkout.Session

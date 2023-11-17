@@ -52,7 +52,6 @@ export async function getTeachersService({
 }) {
   return await getModelsService({ ModelClass: Teacher, findOptions })
 }
-
 export async function updateTeacherService({
   updatedData,
   teacherId,

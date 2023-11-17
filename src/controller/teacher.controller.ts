@@ -12,6 +12,7 @@ import AppError from "../utils/AppError"
 import Teacher, { ITeacherInput } from "../db/models/teacher.model"
 import { decodedToken, login, protect } from "./auth.controller"
 import {
+  getOneSessionService,
   getTeacherAllSessionsService,
   getTeacherRemainSessionsService,
   getTeacherTakenSessionsService,
@@ -24,6 +25,10 @@ import {
   getTeacherReceivedRescheduleRequestsService,
   getTeacherRescheduleRequestsService,
 } from "../service/rescheduleReq.service"
+import {
+  getSessionInfoService,
+  updateSessionInfoService,
+} from "../service/sessionInfo.service"
 
 export const getTeacherAtt = [
   "id",
@@ -125,6 +130,35 @@ export const updateTeacher = catchAsync(
     })
   }
 )
+export const updateMeTeacher = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id
+    const { name, email, phone, password } = req.body
+    const body = {
+      name,
+      email,
+      phone,
+      password,
+    } as ITeacherInput
+    const teacher = await updateTeacherService({
+      teacherId: id,
+      updatedData: body,
+    })
+    if (!teacher) {
+      return next(
+        new AppError(
+          404,
+          "No Data has changed the teacher is not found or entered data is wrong"
+        )
+      )
+    }
+    res.status(200).json({
+      status: "success",
+      message: "teacher updated successfully",
+      data: teacher,
+    })
+  }
+)
 export const getTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
@@ -167,7 +201,6 @@ export const getTeacherUpcomingSession = catchAsync(
       .json({ status: "success", length: sessions.length, data: sessions })
   }
 )
-
 export const getTeacherAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId

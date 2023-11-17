@@ -17,7 +17,7 @@ export interface planCreateInput {
   title: string
   type: PlanType
   recommended: boolean
-  discount: number
+  discount?: number
 }
 export const getPlanAtt = [
   "title",

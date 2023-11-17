@@ -56,7 +56,8 @@ export async function createPlanService({ data }: { data: planCreateInput }) {
   }
   const stripePlan = await createStripePrice(stripeBody)
   planBody.stripePriceId = stripePlan.id
-  return await createModelService({ ModelClass: Plan, data: planBody })
+  const newPlan = await createModelService({ ModelClass: Plan, data: planBody })
+  return newPlan
 }
 export async function getPlansService({
   findOptions,

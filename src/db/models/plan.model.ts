@@ -67,15 +67,17 @@ export default class Plan extends Model {
   recommended!: boolean
 
   @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
-  @Column({
     type: DataType.DOUBLE,
     allowNull: true,
   })
-  discount!: number
+  discount?: number
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
   stripePriceId!: string
+
   @Column({
     type: DataType.ENUM({ values: Object.values(PlanType) }),
     defaultValue: PlanType.CUSTOM,

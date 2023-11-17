@@ -6,6 +6,7 @@ import {
   generateMeetingLinkAndUpdateSession,
   getAllSessionsServiceByStatus,
   getOneSessionDetailsService,
+  getOneSessionService,
   getTeacherAllSessionsService,
   teacherOwnThisSession,
   updateSessionStatusService,
@@ -24,9 +25,15 @@ import {
   userRequestRescheduleService,
 } from "../service/rescheduleReq.service"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
-import Session, { SessionStatus } from "../db/models/session.model"
+import Session, { SessionStatus, SessionType } from "../db/models/session.model"
 import { updateTeacherBalance } from "../service/teacher.service"
-import { updateUserRemainSessionService } from "../service/user.service"
+import {
+  checkUserSubscription,
+  getUserByIdService,
+  sessionPerWeekEqualDates,
+  updateUserRemainSessionService,
+  updateUserService,
+} from "../service/user.service"
 import SessionInfo from "../db/models/sessionInfo.model"
 import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
@@ -37,6 +44,12 @@ import {
   scheduleSessionRescheduleRequestMailJob,
   scheduleSessionRescheduleRequestUpdateMailJob,
 } from "../utils/scheduler"
+import {
+  createSessionInfoService,
+  getOneSessionInfoServiceBy,
+  getSessionInfoService,
+  updateSessionInfoService,
+} from "../service/sessionInfo.service"
 
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -84,6 +97,24 @@ export const getOneSessionInfo = catchAsync(
     res.status(200).json({ status: "success", data: session })
   }
 )
+export const replaceSessionInfoTeacher = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { sessionId, teacherId } = req.body
+    const session = await getOneSessionService({ sessionId })
+    const sessionInfo = await getSessionInfoService({
+      id: session.sessionInfoId,
+    })
+    const updatedSessionInfo = await updateSessionInfoService({
+      id: sessionInfo.id,
+      updatedData: { teacherId },
+    })
+    res.status(200).json({
+      status: "success",
+      message: "Session info updated successfully and the teacher has changed",
+      data: updatedSessionInfo,
+    })
+  }
+)
 export const createPaidSessionAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const {
@@ -98,12 +129,16 @@ export const createPaidSessionAdmin = catchAsync(
 
     const t = await sequelize.transaction()
     try {
-      const session = createPaidSessionsService({
+      const sessionInfo = await createSessionInfoService({
         userId,
         teacherId,
+        sessionReqId,
+        transaction: t,
+      })
+      const session = createPaidSessionsService({
+        sessionInfoId: sessionInfo.id,
         sessionCount,
         sessionDates,
-        sessionReqId,
         sessionDuration,
         sessionsPerWeek,
         transaction: t,
@@ -218,16 +253,18 @@ export const updateSessionStatus = catchAsync(
             "Can't update session to taken if the student attend!"
           )
         }
-        await updateTeacherBalance({
-          teacherId,
-          numOfSessions: 1,
-          transaction: t,
-        })
-        await updateUserRemainSessionService({
-          userId: session.SessionInfo.userId as string,
-          amountOfSessions: -1,
-          transaction: t,
-        })
+        if (session.type === SessionType.PAID) {
+          await updateTeacherBalance({
+            teacherId,
+            numOfSessions: 1,
+            transaction: t,
+          })
+          await updateUserRemainSessionService({
+            userId: session.SessionInfo.userId as string,
+            amountOfSessions: -1,
+            transaction: t,
+          })
+        }
       }
       await t.commit()
       const updatedSession = await getOneSessionDetailsService({
@@ -416,3 +453,84 @@ export const updateStatusSessionReschedule = (
       data: rescheduledSession,
     })
   })
+export const userContinueWithTeacher = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { sessionId } = req.body
+    const session = await getOneSessionService({ sessionId })
+    const sessionInfoUpdated = await updateSessionInfoService({
+      id: session.sessionInfoId,
+      updatedData: { willContinue: true },
+    })
+    res.status(200).json({
+      status: "success",
+      message: `The user chose to continue with that teacher now choose plan and pay for it after the plan \n 
+        go and choose the date for your sessions`,
+      data: sessionInfoUpdated,
+    })
+  }
+)
+export const userPlaceHisSessions = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userId, sessionDates } = req.body
+    const sessionInfo = await getOneSessionInfoServiceBy({
+      where: { userId, willContinue: true },
+    })
+    if (!sessionInfo) {
+      throw new AppError(
+        403,
+        "Can't place session dates the user didn't choose to continue with any teacher! you can request paid session"
+      )
+    }
+    const user = await getUserByIdService({ userId })
+    if (user.sessionPlaced) {
+      throw new AppError(
+        403,
+        "You already placed your session wait for the next month or contact your admin"
+      )
+    }
+    const subscription = await checkUserSubscription({ userId })
+    if (!Array.isArray(sessionDates)) {
+      throw new AppError(400, "Please provide sessionDates as list or array!")
+    }
+    await sessionPerWeekEqualDates({
+      userId,
+      sessionDatesLength: sessionDates.length,
+    })
+
+    const transaction = await sequelize.transaction()
+    try {
+      await updateTeacherBalance({
+        teacherId: sessionInfo.teacherId!,
+        numOfSessions: 1,
+        transaction,
+      })
+      const newSessionDates: Date[] = []
+      for (let date of sessionDates) {
+        checkDateFormat(date)
+        newSessionDates.push(new Date(date))
+      }
+      const paidSessions = await createPaidSessionsService({
+        sessionInfoId: sessionInfo.id,
+        sessionDates: newSessionDates,
+        sessionCount: subscription.plan.sessionsCount,
+        sessionDuration: subscription.plan.sessionDuration,
+        sessionsPerWeek: subscription.plan.sessionsPerWeek,
+        transaction,
+      })
+      await updateUserService({
+        userId,
+        updatedData: { sessionPlaced: true },
+        transaction,
+      })
+      await transaction.commit()
+      res.status(201).json({
+        status: "success",
+        message: "the user placed his session successfully!",
+        data: paidSessions,
+      })
+    } catch (error: any) {
+      await transaction.rollback()
+      throw new AppError(400, `Error Placed Session: ${error.message}`)
+    }
+  }
+)

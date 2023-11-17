@@ -15,7 +15,6 @@ import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
 import { getPlanAtt } from "./plan.controller"
 import { SubscriptionStatus } from "../db/models/subscription.model"
-import { updateUserRemainSessionService } from "../service/user.service"
 import { sequelize } from "../db/sequelize"
 import AppError from "../utils/AppError"
 
@@ -59,7 +58,6 @@ export const createSubscription = catchAsync(
           title: "custom plan",
           type: PlanType.CUSTOM,
           recommended: false,
-          discount: 0,
         },
       })
       planId = plan.id

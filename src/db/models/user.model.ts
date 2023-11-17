@@ -119,13 +119,16 @@ export default class User extends Model<User> {
   verified!: boolean
 
   @Column({ type: DataType.STRING, allowNull: true })
-  OTPToken!: string | null
+  OTPToken?: string | null
 
   @Column({
     type: DataType.DATE,
     allowNull: true,
   })
-  OTPexpireAt!: Date | null
+  OTPexpireAt?: Date | null
+
+  @Column({ type: DataType.BOOLEAN, defaultValue: false, allowNull: false })
+  sessionPlaced!: boolean
 
   @HasMany(() => FreeSession)
   sessions!: FreeSession[]

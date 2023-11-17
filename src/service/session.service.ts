@@ -60,30 +60,19 @@ export interface ISessionDetails {
 }
 
 export async function createFreeSessionService({
-  userId,
-  teacherId,
+  sessionInfoId,
   sessionDate,
-  sessionReqId,
   transaction,
 }: {
-  userId: string
-  teacherId: string
+  sessionInfoId: number
   sessionDate: Date
-  sessionReqId: number
   transaction?: Transaction
 }) {
   const start_time = sessionDate.toISOString().split("T")[1]
-  const sessionInfo = await createSessionInfoService({
-    userId,
-    teacherId,
-    sessionReqId,
-    transaction,
-  })
-
   const sessionBody: any = {
     sessionDate,
     sessionDuration: FREE_SESSION_DURATION,
-    sessionInfoId: sessionInfo.id,
+    sessionInfoId,
     type: SessionType.FREE,
     sessionStartTime: start_time,
   }
@@ -102,35 +91,25 @@ export async function createFreeSessionService({
   return session
 }
 export async function createPaidSessionsService({
-  userId,
-  teacherId,
+  sessionInfoId,
   sessionDates,
-  sessionReqId,
   sessionDuration,
   sessionCount,
   sessionsPerWeek,
   transaction,
 }: {
-  userId: string
-  teacherId: string
+  sessionInfoId: number
   sessionDates: Date[]
-  sessionReqId: number
   sessionDuration: number
   sessionCount: number
   sessionsPerWeek: number
   transaction?: Transaction
 }): Promise<Session[]> {
-  const sessionInfo = await createSessionInfoService({
-    userId,
-    teacherId,
-    sessionReqId,
-    transaction,
-  })
   let sessions: Session[] = []
   const sessionsBody = generateSessions({
     sessionCount,
     sessionDuration,
-    sessionInfoId: sessionInfo.id,
+    sessionInfoId,
     sessionDates,
     sessionsPerWeek,
   })
@@ -293,6 +272,17 @@ export async function getOneSessionDetailsService({
   })
   if (!session) {
     throw new AppError(404, "can't find session with this id!")
+  }
+  return session
+}
+export async function getOneSessionService({
+  sessionId,
+}: {
+  sessionId: number
+}) {
+  const session = await Session.findByPk(sessionId)
+  if (!session) {
+    throw new AppError(404, "There is no session with this id!")
   }
   return session
 }

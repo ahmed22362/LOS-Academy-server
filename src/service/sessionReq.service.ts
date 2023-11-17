@@ -13,7 +13,10 @@ import {
   createFreeSessionService,
   createPaidSessionsService,
 } from "./session.service"
-import { checkUniqueUserAndTeacher } from "./sessionInfo.service"
+import {
+  checkUniqueUserAndTeacher,
+  createSessionInfoService,
+} from "./sessionInfo.service"
 import { sequelize } from "../db/sequelize"
 export const DATE_PATTERN: RegExp =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
@@ -96,15 +99,19 @@ export async function acceptSessionRequestService({
   })
   const userId = sessionReq.userId
   await checkUniqueUserAndTeacher({ teacherId, userId })
-  if (sessionReq.type === SessionType.FREE) {
-    const t = await sequelize.transaction()
-    try {
+  const t = await sequelize.transaction()
+  try {
+    const sessionInfo = await createSessionInfoService({
+      userId,
+      teacherId,
+      sessionReqId,
+      transaction: t,
+    })
+    if (sessionReq.type === SessionType.FREE) {
       const firstDate = sessionReq.sessionDates[0]
       const freeSession = await createFreeSessionService({
-        userId,
-        teacherId,
+        sessionInfoId: sessionInfo.id,
         sessionDate: firstDate,
-        sessionReqId,
         transaction: t,
       })
       await updateSessionRequestService({
@@ -114,21 +121,13 @@ export async function acceptSessionRequestService({
       })
       await t.commit()
       return freeSession
-    } catch (error: any) {
-      await t.rollback()
-      throw new AppError(400, `Error Request free session ${error.message}`)
-    }
-  } else if (sessionReq.type === SessionType.PAID) {
-    const subscribePlan = await getUserSubscriptionPlan({
-      userId: sessionReq.userId,
-    })
-    const t = await sequelize.transaction()
-    try {
+    } else if (sessionReq.type === SessionType.PAID) {
+      const subscribePlan = await getUserSubscriptionPlan({
+        userId: sessionReq.userId,
+      })
       const paidSessions = await createPaidSessionsService({
-        userId,
-        teacherId,
+        sessionInfoId: sessionInfo.id,
         sessionDates: sessionReq.sessionDates,
-        sessionReqId,
         sessionCount: subscribePlan.plan.sessionsCount,
         sessionDuration: subscribePlan.plan.sessionDuration,
         sessionsPerWeek: subscribePlan.plan.sessionsPerWeek,
@@ -141,15 +140,12 @@ export async function acceptSessionRequestService({
       })
       await t.commit()
       return paidSessions
-    } catch (error: any) {
-      await t.rollback()
-      throw new AppError(
-        400,
-        `Error While request paid session ${error.message}`
-      )
+    } else {
+      throw new AppError(400, "Can't define the type of the session!")
     }
-  } else {
-    throw new AppError(400, "Can't define the type of the session!")
+  } catch (error: any) {
+    await t.rollback()
+    throw new AppError(400, `Error While request paid session ${error.message}`)
   }
 }
 export async function updateSessionRequestService({

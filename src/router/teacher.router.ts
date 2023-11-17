@@ -16,9 +16,13 @@ import {
   getTeacherUpcomingSession,
   loginTeacher,
   protectTeacher,
+  updateMeTeacher,
   updateTeacher,
 } from "../controller/teacher.controller"
-import { setUserOrTeacherId } from "../controller/user.controller"
+import {
+  setUserIdToParams,
+  setUserOrTeacherId,
+} from "../controller/user.controller"
 import { getTeacherReports } from "../controller/report.controller"
 import { restrictTo } from "../controller/auth.controller"
 import validate from "../middleware/validate"
@@ -35,6 +39,11 @@ import {
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import { getMyPayoutRequests } from "../controller/payout.controller"
 const teacherRouter = Router()
+
+teacherRouter
+  .route("/me")
+  .get(protectTeacher, setUserIdToParams, getTeacher)
+  .patch(protectTeacher, setUserIdToParams, updateMeTeacher)
 
 teacherRouter
   .route("/")

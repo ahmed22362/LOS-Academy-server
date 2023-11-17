@@ -107,15 +107,18 @@ async function getUserByResetTokenService({
 async function updateUserService({
   userId,
   updatedData,
+  transaction,
 }: {
   userId: string
   updatedData: Partial<User>
+  transaction?: Transaction
 }): Promise<User | null> {
   try {
     const [affectedCount, affectedRows] = await User.update(updatedData, {
       where: { id: userId },
       returning: true,
       individualHooks: true,
+      transaction,
     })
     if (affectedRows.length === 0) {
       // No user found to update
@@ -140,6 +143,10 @@ async function updateUserRemainSessionService({
   transaction?: Transaction
 }) {
   const user = await getUserByIdService({ userId })
+  // to indicate if the user take placed his session or not so he can't placed again
+  // make it false again because he payed so he has the apportunety to place session again
+  user.sessionPlaced = false
+  await user.save()
   return await user.increment(
     { remainSessions: amountOfSessions },
     { transaction }
@@ -189,6 +196,7 @@ async function checkUserSubscription({ userId }: { userId: string }) {
       "user must subscribe to plan first to request paid session!"
     )
   }
+  return subscription
 }
 export async function sessionPerWeekEqualDates({
   userId,
