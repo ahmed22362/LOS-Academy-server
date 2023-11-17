@@ -50,7 +50,8 @@ export default class MonthlyReport extends Model {
     type: DataType.STRING,
     allowNull: false,
   })
-  sessionInfoId!: string
+  userId!: string
+
   @BelongsTo(() => User)
   user!: User
 }

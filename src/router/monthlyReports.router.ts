@@ -1,0 +1,35 @@
+import { Router } from "express"
+import {
+  createMonthlyReport,
+  deleteMonthlyReport,
+  getAllMonthlyReports,
+  getMonthlyReport,
+  getUserMonthlyReport,
+  updateMonthlyReport,
+} from "../controller/monthlyReport.controller"
+import validate from "../middleware/validate"
+import {
+  protectUser,
+  setUserIdToParams,
+  setUserOrTeacherId,
+} from "../controller/user.controller"
+import { restrictTo } from "../controller/auth.controller"
+import { RoleType } from "../db/models/teacher.model"
+import { protectTeacher } from "../controller/teacher.controller"
+
+const monthlyReportRouter = Router()
+
+monthlyReportRouter
+  .route("/")
+  .post(protectTeacher, createMonthlyReport)
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllMonthlyReports)
+monthlyReportRouter
+  .route("/user")
+  .get(protectUser, setUserOrTeacherId, getUserMonthlyReport)
+monthlyReportRouter
+  .route("/:id")
+  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateMonthlyReport)
+  .get(getMonthlyReport)
+  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteMonthlyReport)
+
+export default monthlyReportRouter

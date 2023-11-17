@@ -7,10 +7,6 @@ import {
   getFeedBackService,
   updateFeedBackService,
 } from "../service/feedback.service"
-import {
-  deleteStripeProduct,
-  updateStripeProduct,
-} from "../service/stripe.service"
 
 export const createFeedBack = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
