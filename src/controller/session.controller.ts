@@ -234,6 +234,12 @@ export const updateSessionStatus = catchAsync(
           new AppError(401, "you can't update session that is not yours")
         )
       }
+      if (!session.studentAttended && status !== SessionStatus.ABSENT) {
+        throw new AppError(
+          400,
+          "user must attend before you can update the session status!"
+        )
+      }
       if (
         session.status !== SessionStatus.PENDING &&
         session.status !== SessionStatus.ONGOING
@@ -247,12 +253,6 @@ export const updateSessionStatus = catchAsync(
         transaction: t,
       })
       if (status === SessionStatus.TAKEN) {
-        if (!session.studentAttended) {
-          throw new AppError(
-            400,
-            "Can't update session to taken if the student attend!"
-          )
-        }
         if (session.type === SessionType.PAID) {
           await updateTeacherBalance({
             teacherId,
@@ -272,8 +272,7 @@ export const updateSessionStatus = catchAsync(
       })
       res.status(200).json({
         status: "success",
-        message:
-          "session status updated successfully and the teacher take his money and the user remain sessions decreased by one!",
+        message: "session status updated successfully",
         data: updatedSession,
       })
     } catch (error: any) {
