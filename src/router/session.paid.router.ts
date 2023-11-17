@@ -9,6 +9,7 @@ import {
 import { SessionType } from "../db/models/session.model"
 import { restrictTo } from "../controller/auth.controller"
 import { createPaidSessionAdmin } from "../controller/session.controller"
+import { RoleType } from "../db/models/teacher.model"
 const paidSessionRouter = Router()
 
 paidSessionRouter
@@ -27,5 +28,5 @@ paidSessionRouter
 
 paidSessionRouter
   .route("/")
-  .post(protectTeacher, restrictTo("admin"), createPaidSessionAdmin)
+  .post(protectTeacher, restrictTo(RoleType.ADMIN), createPaidSessionAdmin)
 export default paidSessionRouter

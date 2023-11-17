@@ -11,16 +11,17 @@ import {
   updateReport,
 } from "../controller/report.controller"
 import { restrictTo } from "../controller/auth.controller"
+import { RoleType } from "../db/models/teacher.model"
 const reportRouter = Router()
 
 reportRouter.route("/user").get(protectTeacher, getUserReports)
 reportRouter
   .route("/teacher")
-  .get(protectTeacher, restrictTo("admin"), getTeacherReports)
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getTeacherReports)
 reportRouter
   .route("/")
   .post(protectTeacher, setUserOrTeacherId, createReport)
-  .get(protectTeacher, restrictTo("admin"), getAllReports)
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllReports)
 reportRouter
   .route("/:id")
   .patch(protectTeacher, setUserOrTeacherId, updateReport)
