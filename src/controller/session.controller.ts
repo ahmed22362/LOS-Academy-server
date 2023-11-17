@@ -190,10 +190,11 @@ export const generateSessionLink = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const sessionId = req.body.sessionId
     const teacherId = req.body.teacherId
-    const sessions = await getTeacherAllSessionsService({ teacherId })
-    const allSessions = Object.values(sessions).flatMap((sessions) => sessions)
-    const allSessionsIds = allSessions.map((session) => session.id)
-    if (!allSessionsIds.includes(sessionId)) {
+    const { session, exist } = await teacherOwnThisSession({
+      teacherId,
+      sessionId,
+    })
+    if (!exist) {
       return next(
         new AppError(
           401,
@@ -201,9 +202,8 @@ export const generateSessionLink = catchAsync(
         )
       )
     }
-    const session = allSessions.find((s) => s.id === sessionId)
     if (!(session?.teacherAttended && session.studentAttended)) {
-      next(
+      return next(
         new AppError(
           400,
           `Can't generate link teacher and student must attend, TeacherAttend?: ${session?.teacherAttended}, StudentAttend?: ${session?.studentAttended}`
