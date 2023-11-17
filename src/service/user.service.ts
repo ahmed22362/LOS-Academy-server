@@ -213,6 +213,20 @@ export async function sessionPerWeekEqualDates({
     )
   }
 }
+export async function checkIfUserPlacedHisSessionBefore({
+  userId,
+}: {
+  userId: string
+}) {
+  const user = await getUserByIdService({ userId })
+  if (user.sessionPlaced) {
+    throw new AppError(
+      403,
+      `Can't place user session user already placed his session for this month!
+       Wait for the next month or contact your admin`
+    )
+  }
+}
 export {
   createUserService,
   updateUserService,

@@ -8,7 +8,11 @@ import {
   getModelByIdService,
   getOneModelByService,
 } from "./factory.services"
-import { getUserByIdService, getUserSubscriptionPlan } from "./user.service"
+import {
+  getUserByIdService,
+  getUserSubscriptionPlan,
+  updateUserService,
+} from "./user.service"
 import {
   createFreeSessionService,
   createPaidSessionsService,
@@ -136,6 +140,11 @@ export async function acceptSessionRequestService({
       await updateSessionRequestService({
         id: sessionReqId,
         updateBody: { status: SessionStatus.TAKEN },
+        transaction: t,
+      })
+      await updateUserService({
+        userId,
+        updatedData: { sessionPlaced: true },
         transaction: t,
       })
       await t.commit()

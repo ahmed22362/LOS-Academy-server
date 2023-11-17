@@ -13,6 +13,7 @@ import {
 } from "../service/sessionReq.service"
 import { SessionStatus, SessionType } from "../db/models/session.model"
 import {
+  checkIfUserPlacedHisSessionBefore,
   checkUserSubscription,
   sessionPerWeekEqualDates,
 } from "../service/user.service"
@@ -34,6 +35,7 @@ export const requestSession = (type: SessionType) =>
     if (type === SessionType.FREE) {
       await checkPreviousReq({ userId, type: SessionType.FREE })
     } else if (type === SessionType.PAID) {
+      await checkIfUserPlacedHisSessionBefore({ userId })
       await checkPreviousReq({ userId, type: SessionType.PAID })
       await checkUserSubscription({ userId })
       await sessionPerWeekEqualDates({
