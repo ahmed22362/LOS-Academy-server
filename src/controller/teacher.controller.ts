@@ -12,9 +12,11 @@ import AppError from "../utils/AppError"
 import Teacher, { ITeacherInput } from "../db/models/teacher.model"
 import { decodedToken, login, protect } from "./auth.controller"
 import {
+  getAdminSessionsStatisticsService,
   getOneSessionService,
   getTeacherAllSessionsService,
   getTeacherRemainSessionsService,
+  getTeacherSessionsStatisticsService,
   getTeacherTakenSessionsService,
   getTeacherUpcomingSessionService,
 } from "../service/session.service"
@@ -322,6 +324,13 @@ export const getAllSessionRescheduleRequests = catchAsync(
       length: rescheduleRequests.length,
       data: rescheduleRequests,
     })
+  }
+)
+export const getMySessionsStats = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { teacherId } = req.body
+    const stats = await getTeacherSessionsStatisticsService({ teacherId })
+    res.status(200).json({ status: "success", data: stats })
   }
 )
 export const loginTeacher = login(Teacher)

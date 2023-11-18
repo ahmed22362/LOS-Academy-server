@@ -20,6 +20,7 @@ import {
   scheduleSessionStartReminderMailJob,
 } from "../utils/scheduler"
 import logger from "../utils/logger"
+import { TEN_MINUTES_IN_MILLISECONDS } from "../controller/session.controller"
 
 export interface IInfoBody {
   userId: string
@@ -291,7 +292,7 @@ export async function getUserAllTakenSessionsService({
 }: {
   userId: string
 }) {
-  const sessions = await generateGetterUserSessions({
+  const sessions = await allUserSessionsService({
     userId,
     status: SessionStatus.TAKEN,
   })
@@ -308,7 +309,7 @@ export async function getUserAllSessionsService({
   pageSize?: number
   status?: SessionStatus
 }) {
-  const sessions = await generateGetterUserSessions({
+  const sessions = await allUserSessionsService({
     userId,
     page,
     pageSize,
@@ -321,7 +322,7 @@ export async function getUserRemainSessionsService({
 }: {
   userId: string
 }) {
-  const sessions = await generateGetterUserSessions({
+  const sessions = await allUserSessionsService({
     userId,
     status: SessionStatus.PENDING,
   })
@@ -332,7 +333,7 @@ export async function getUserUpcomingSessionService({
 }: {
   userId: string
 }) {
-  const session = await generateGetterUserSessions({
+  const session = await allUserSessionsService({
     userId,
     status: SessionStatus.PENDING,
     pageSize: 1,
@@ -344,15 +345,18 @@ export async function getTeacherAllSessionsService({
   teacherId,
   page,
   pageSize,
+  status,
 }: {
   teacherId: string
   page?: number
   pageSize?: number
+  status?: SessionStatus
 }) {
-  const session = await generateGetterTeacherSessions({
+  const session = await allTeacherSessionsService({
     teacherId,
     page,
     pageSize,
+    status,
   })
   return session
 }
@@ -361,7 +365,7 @@ export async function getTeacherUpcomingSessionService({
 }: {
   teacherId: string
 }) {
-  const session = await generateGetterTeacherSessions({
+  const session = await allTeacherSessionsService({
     teacherId,
     status: SessionStatus.PENDING,
     pageSize: 1,
@@ -374,7 +378,7 @@ export async function getTeacherRemainSessionsService({
 }: {
   teacherId: string
 }) {
-  const sessions = await generateGetterTeacherSessions({
+  const sessions = await allTeacherSessionsService({
     teacherId,
     status: SessionStatus.PENDING,
   })
@@ -385,7 +389,7 @@ export async function getTeacherTakenSessionsService({
 }: {
   teacherId: string
 }) {
-  const sessions = await generateGetterTeacherSessions({
+  const sessions = await allTeacherSessionsService({
     teacherId,
     status: SessionStatus.TAKEN,
   })
@@ -455,7 +459,43 @@ export async function generateMeetingLinkAndUpdateSession({
   })
   return updatedSession
 }
-async function generateGetterUserSessions({
+export async function getSessionInfosSessions(sessionInfoIds: number[]) {
+  const sessions = await Session.findAll({
+    where: {
+      sessionInfoId: {
+        [Op.in]: sessionInfoIds,
+      },
+    },
+  })
+  return sessions
+}
+export async function getTeacherSessionsStatisticsService({
+  teacherId,
+}: {
+  teacherId: string
+}) {
+  const sessionInfo = await getTeacherSessionInfoService({
+    teacherId,
+  })
+  const sessionInfoIds = sessionInfo.map((info) => info.id)
+  const stats = await Session.count({
+    attributes: ["status"],
+    group: "status",
+    where: { sessionInfoId: { [Op.in]: sessionInfoIds } },
+  })
+  console.log(stats)
+  return stats
+}
+export async function getAdminSessionsStatisticsService() {
+  const sessionStats = await Session.count({
+    attributes: ["status"],
+    group: "status",
+  })
+  return sessionStats
+}
+// helper functions
+
+async function allUserSessionsService({
   userId,
   status,
   page,
@@ -506,7 +546,7 @@ async function generateGetterUserSessions({
   })
   return sessions
 }
-async function generateGetterTeacherSessions({
+async function allTeacherSessionsService({
   teacherId,
   status,
   page,
@@ -555,16 +595,7 @@ async function generateGetterTeacherSessions({
   })
   return sessions
 }
-export async function getSessionInfosSessions(sessionInfoIds: number[]) {
-  const sessions = await Session.findAll({
-    where: {
-      sessionInfoId: {
-        [Op.in]: sessionInfoIds,
-      },
-    },
-  })
-  return sessions
-}
+
 export async function teacherOwnThisSession({
   teacherId,
   sessionId,
@@ -640,4 +671,38 @@ function generateSessions({
     })
   }
   return sessions
+}
+export function isSessionWithinTimeRange(sessionDate: Date): boolean {
+  const currentTime: Date = new Date()
+  const timeRangeStart: Date = new Date(
+    currentTime.getTime() - TEN_MINUTES_IN_MILLISECONDS
+  )
+  return timeRangeStart.getTime() <= sessionDate.getTime()
+}
+export function isSessionAfterItsTimeRange(
+  sessionDate: Date,
+  sessionDuration: number
+): boolean {
+  const currentTime: Date = new Date()
+  const timeRangeStart: Date = new Date(
+    currentTime.getMinutes() + sessionDuration
+  )
+  return timeRangeStart.getTime() >= sessionDate.getTime()
+}
+export async function isThereOngoingSessionForTheSameTeacher({
+  teacherId,
+}: {
+  teacherId: string
+}) {
+  const sessions = await getTeacherAllSessionsService({
+    teacherId,
+    status: SessionStatus.ONGOING,
+  })
+  if (sessions.length >= 0) {
+    throw new AppError(
+      400,
+      "Can't update session to be ongoing while there is another ongoing one!"
+    )
+  }
+  return false
 }

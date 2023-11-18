@@ -34,7 +34,18 @@ const payload = {
       path: ["passwordConfirmation"],
     }),
 }
-
+export const updateMeSchema = z.object({
+  body: z.object({
+    name: z.optional(z.string()),
+    phone: z.optional(z.string()),
+    email: z.optional(z.string().email("Not a valid mail")),
+    gender: z.optional(z.enum(["male", "female"])),
+    age: z.optional(z.number()),
+    password: z.optional(
+      z.string().min(6, "Password too short - should be 6 chars minimum")
+    ),
+  }),
+})
 export const createTeacherSchema = z.object({ ...payload })
 export const loginTeacherSchema = z.object({
   body: z.object({

@@ -4,10 +4,13 @@ import {
   checkDateFormat,
   createPaidSessionsService,
   generateMeetingLinkAndUpdateSession,
+  getAdminSessionsStatisticsService,
   getAllSessionsServiceByStatus,
   getOneSessionDetailsService,
   getOneSessionService,
-  getTeacherAllSessionsService,
+  isSessionAfterItsTimeRange,
+  isSessionWithinTimeRange,
+  isThereOngoingSessionForTheSameTeacher,
   teacherOwnThisSession,
   updateSessionStatusService,
   updateSessionStudentAttendanceService,
@@ -50,6 +53,7 @@ import {
   getSessionInfoService,
   updateSessionInfoService,
 } from "../service/sessionInfo.service"
+export const TEN_MINUTES_IN_MILLISECONDS = 10 * 60 * 1000
 
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -245,6 +249,27 @@ export const updateSessionStatus = catchAsync(
         session.status !== SessionStatus.ONGOING
       ) {
         return next(new AppError(400, "Session already updated!"))
+      }
+      if (status === SessionStatus.ONGOING) {
+        await isThereOngoingSessionForTheSameTeacher({ teacherId })
+        if (!isSessionWithinTimeRange(session.sessionDate)) {
+          throw new AppError(
+            400,
+            "Can't update session to be ongoing were it's time didn't come! you can always request a reschedule"
+          )
+        }
+      }
+      if (
+        status === SessionStatus.ABSENT &&
+        !isSessionAfterItsTimeRange(
+          session.sessionDate,
+          session.sessionDuration
+        )
+      ) {
+        throw new AppError(
+          400,
+          "You have to wait till the session duration end to update the student as absent"
+        )
       }
       await updateSessionStatusService({
         id: sessionId,
@@ -531,5 +556,11 @@ export const userPlaceHisSessions = catchAsync(
       await transaction.rollback()
       throw new AppError(400, `Error Placed Session: ${error.message}`)
     }
+  }
+)
+export const getAdminSessionStats = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const sessionStats = await getAdminSessionsStatisticsService()
+    res.status(200).json({ status: "success", data: sessionStats })
   }
 )

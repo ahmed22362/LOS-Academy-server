@@ -6,6 +6,7 @@ import {
   getAdminBalance,
   getAllSessionRescheduleRequests,
   getAllTeachers,
+  getMySessionsStats,
   getReceivedSessionRescheduleRequests,
   getSessionRescheduleRequests,
   getTeacher,
@@ -30,6 +31,7 @@ import {
   createTeacherSchema,
   isTeacherIdExist,
   loginTeacherSchema,
+  updateMeSchema,
 } from "../schema/teacher.schema"
 import { RoleType } from "../db/models/teacher.model"
 import {
@@ -43,7 +45,12 @@ const teacherRouter = Router()
 teacherRouter
   .route("/me")
   .get(protectTeacher, setUserIdToParams, getTeacher)
-  .patch(protectTeacher, setUserIdToParams, updateMeTeacher)
+  .patch(
+    protectTeacher,
+    setUserIdToParams,
+    validate(updateMeSchema),
+    updateMeTeacher
+  )
 
 teacherRouter
   .route("/")
@@ -94,6 +101,9 @@ teacherRouter
 teacherRouter
   .route("/myPayouts")
   .get(protectTeacher, setUserOrTeacherId, getMyPayoutRequests)
+teacherRouter
+  .route("/myStatistics")
+  .get(protectTeacher, setUserOrTeacherId, getMySessionsStats)
 teacherRouter
   .route("/requestReschedule")
   .post(protectTeacher, setUserOrTeacherId, teacherRequestSessionReschedule)

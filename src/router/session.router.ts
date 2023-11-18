@@ -10,6 +10,7 @@ import paidSessionRouter from "./session.paid.router"
 import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
 import {
   generateSessionLink,
+  getAdminSessionStats,
   getAllRescheduleRequests,
   getAllSessionsByStatus,
   getOneSessionInfo,
@@ -24,6 +25,9 @@ import { RoleType } from "../db/models/teacher.model"
 const sessionRouter = Router()
 
 sessionRouter.route("/session-requests").get(protectTeacher, getAllSessionsReq)
+sessionRouter
+  .route("/statistics")
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAdminSessionStats)
 sessionRouter
   .route("/request/:id")
   .get(protectTeacher, setUserOrTeacherId, getOneSessionReq)

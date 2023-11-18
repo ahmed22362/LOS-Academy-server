@@ -17,6 +17,7 @@ import User from "../db/models/user.model"
 import { getUserAttr } from "../controller/user.controller"
 import { RoleType } from "../db/models/teacher.model"
 import { sequelize } from "../db/sequelize"
+import logger from "../utils/logger"
 
 export async function createRescheduleRequestService({
   sessionId,
@@ -352,13 +353,12 @@ export async function getUserAllRescheduleRequestsService({
   userId: string
   requestedBy?: RoleType
 }) {
-  const sessionsObj = await getUserAllSessionsService({
+  const sessions = await getUserAllSessionsService({
     userId,
     status: SessionStatus.PENDING,
   })
-  const sessionsIds: number[] = Object.values(sessionsObj)
-    .flatMap((session) => session)
-    .map((session) => session.id)
+  const sessionsIds: number[] = sessions.map((session) => session.id)
+  logger.info(sessionsIds)
   let where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
   if (requestedBy) {
     where.requestedBy = requestedBy
@@ -405,10 +405,8 @@ export async function getTeacherAllRescheduleRequestsService({
   let offset
   if (pageSize) limit = pageSize
   if (page && pageSize) offset = page * pageSize
-  const sessionsObj = await getTeacherAllSessionsService({ teacherId })
-  const sessionsIds: number[] = Object.values(sessionsObj)
-    .flatMap((session) => session)
-    .map((session) => session.id)
+  const sessions = await getTeacherAllSessionsService({ teacherId })
+  const sessionsIds: number[] = sessions.map((session) => session.id)
   const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
   if (status) where.status = status
   if (requestedBy) where.requestedBy = requestedBy
