@@ -11,12 +11,18 @@ import {
 } from "../controller/payout.controller"
 import { restrictTo } from "../controller/auth.controller"
 import { RoleType } from "../db/models/teacher.model"
+import validate from "../middleware/validate"
+import {
+  createPayoutRequestSchema,
+  updatePayoutStatusSchema,
+} from "../schema/payout.schema"
 const payoutRouter = Router()
 
 payoutRouter.patch(
   "/status",
   protectTeacher,
   restrictTo(RoleType.ADMIN),
+  validate(updatePayoutStatusSchema),
   updateStatusPayoutRequestService
 )
 payoutRouter.get(
@@ -27,7 +33,12 @@ payoutRouter.get(
 )
 payoutRouter
   .route("/")
-  .post(protectTeacher, setUserOrTeacherId, createPayoutRequest)
+  .post(
+    protectTeacher,
+    setUserOrTeacherId,
+    validate(createPayoutRequestSchema),
+    createPayoutRequest
+  )
   .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllPayoutRequests)
 
 payoutRouter

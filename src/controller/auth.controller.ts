@@ -109,6 +109,7 @@ export const signup = catchAsync(async function (
     remainSessions: newUser.remainSessions,
     availableFreeSession: newUser.availableFreeSession,
     verified: newUser.verified,
+    sessionPlaced: newUser.sessionPlaced,
   }
   await createAndSendConfirmMail(newUser, req)
   res.status(201).json({
@@ -152,6 +153,7 @@ export const login = (Model: ModelClass) =>
         remainSessions: model.remainSessions,
         availableFreeSession: model.availableFreeSession,
         verified: model.verified,
+        sessionPlaced: model.sessionPlaced,
       }
       return createSendToken({ user: userRes as User, statusCode: 202, res })
     }

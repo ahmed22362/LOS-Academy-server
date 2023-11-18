@@ -16,12 +16,17 @@ import {
 import { restrictTo } from "../controller/auth.controller"
 import { RoleType } from "../db/models/teacher.model"
 import { protectTeacher } from "../controller/teacher.controller"
+import { createMonthlyReportSchema } from "../schema/monthlyReport.shcema"
 
 const monthlyReportRouter = Router()
 
 monthlyReportRouter
   .route("/")
-  .post(protectTeacher, createMonthlyReport)
+  .post(
+    protectTeacher,
+    validate(createMonthlyReportSchema),
+    createMonthlyReport
+  )
   .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllMonthlyReports)
 monthlyReportRouter
   .route("/user")

@@ -9,12 +9,19 @@ import {
 import { restrictTo } from "../controller/auth.controller"
 import { protectTeacher } from "../controller/teacher.controller"
 import { RoleType } from "../db/models/teacher.model"
+import validate from "../middleware/validate"
+import { createStandardPlanSchema } from "../schema/plan.schema"
 const planRouter = Router()
 
 planRouter
   .route("/")
   .get(getPlans)
-  .post(protectTeacher, restrictTo(RoleType.ADMIN), createPlan)
+  .post(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    validate(createStandardPlanSchema),
+    createPlan
+  )
 
 planRouter
   .route("/:id")

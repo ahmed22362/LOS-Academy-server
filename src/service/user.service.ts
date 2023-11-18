@@ -19,6 +19,7 @@ export interface UserResponse {
   availableFreeSession: number
   remainSessions: number
   verified: boolean
+  sessionPlaced: boolean
 }
 
 async function createUserService({

@@ -13,6 +13,8 @@ import {
 } from "../controller/material.controller"
 import { restrictTo } from "../controller/auth.controller"
 import { RoleType } from "../db/models/teacher.model"
+import validate from "../middleware/validate"
+import { createMaterialSchema } from "../schema/material.schema"
 const materialRouter = Router()
 
 const upload = memoryMulter
@@ -28,6 +30,7 @@ materialRouter
     protectTeacher,
     setUserOrTeacherId,
     uploadToB2,
+    validate(createMaterialSchema),
     createMaterial
   )
   .get(protectTeacher, getAllMaterial)

@@ -10,12 +10,18 @@ import validate from "../middleware/validate"
 import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
 import { restrictTo } from "../controller/auth.controller"
 import { RoleType } from "../db/models/teacher.model"
+import { createFeedbackSchema } from "../schema/feedback.schema"
 
 const feedBackRouter = Router()
 
 feedBackRouter
   .route("/")
-  .post(protectUser, setUserOrTeacherId, createFeedBack)
+  .post(
+    protectUser,
+    setUserOrTeacherId,
+    validate(createFeedbackSchema),
+    createFeedBack
+  )
   .get(getAllFeedBacks)
 feedBackRouter
   .route("/:id")
