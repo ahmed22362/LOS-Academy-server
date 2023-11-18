@@ -1,23 +1,33 @@
 import { z } from "zod"
 
-const customPlanSchema = z.object({
-  sessionDuration: z.number({
-    required_error: "sessionDuration is required",
-  }),
-  sessionsCount: z.number({
-    required_error:
-      "sessionCount is required it's the total count in the month",
-  }),
-  sessionsPerWeek: z.number({
-    required_error:
-      "sessionsPerWeek is required it's the session per week the user will be take",
-  }),
+const sessionDuration = z.number({
+  required_error: "SessionDuration must be provided",
 })
-const standardPlanSchema = z.object({
-  priceId: z.number({ required_error: "please enter the standard price id" }),
+const sessionsCount = z.number({
+  required_error: "SessionsCount must be provided",
 })
-const compositeSchema = customPlanSchema.merge(standardPlanSchema)
+const sessionsPerWeek = z.number({
+  required_error: "SessionsPerWeek must be provided",
+})
+const planId = z.number()
 
-export const createSubscriptionSchema = z.object({
-  body: compositeSchema.partial(),
+export const createCustomSubscriptionSchema = z.object({
+  body: z
+    .object({
+      sessionDuration,
+      sessionsCount,
+      sessionsPerWeek,
+      planId,
+    })
+    .partial()
+    .refine(
+      (data) =>
+        data.planId ||
+        (data.sessionDuration !== undefined &&
+          data.sessionsCount !== undefined &&
+          data.sessionsPerWeek !== undefined),
+      {
+        message: `Either planId or Custom must be provided custom plan contains "sessionDuration,sessionsCount,sessionsPerWeek"`,
+      }
+    ),
 })

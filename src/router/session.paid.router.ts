@@ -10,11 +10,22 @@ import { SessionType } from "../db/models/session.model"
 import { restrictTo } from "../controller/auth.controller"
 import { createPaidSessionAdmin } from "../controller/session.controller"
 import { RoleType } from "../db/models/teacher.model"
+import validate from "../middleware/validate"
+import {
+  acceptSessionRequestSchema,
+  createSessionByAdminSchema,
+  createSessionRequestSchema,
+} from "../schema/session.schema"
 const paidSessionRouter = Router()
 
 paidSessionRouter
   .route("/request")
-  .post(protectUser, setUserOrTeacherId, requestSession(SessionType.PAID))
+  .post(
+    protectUser,
+    setUserOrTeacherId,
+    validate(createSessionRequestSchema),
+    requestSession(SessionType.PAID)
+  )
 paidSessionRouter
   .route("/available")
   .get(
@@ -24,9 +35,19 @@ paidSessionRouter
   )
 paidSessionRouter
   .route("/accept")
-  .post(protectTeacher, setUserOrTeacherId, acceptSessionReq)
+  .post(
+    protectTeacher,
+    setUserOrTeacherId,
+    validate(acceptSessionRequestSchema),
+    acceptSessionReq
+  )
 
 paidSessionRouter
   .route("/")
-  .post(protectTeacher, restrictTo(RoleType.ADMIN), createPaidSessionAdmin)
+  .post(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    validate(createSessionByAdminSchema),
+    createPaidSessionAdmin
+  )
 export default paidSessionRouter

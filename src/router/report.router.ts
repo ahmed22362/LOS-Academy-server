@@ -12,6 +12,8 @@ import {
 } from "../controller/report.controller"
 import { restrictTo } from "../controller/auth.controller"
 import { RoleType } from "../db/models/teacher.model"
+import validate from "../middleware/validate"
+import { createReportSchema } from "../schema/report.schema"
 const reportRouter = Router()
 
 reportRouter.route("/user").get(protectTeacher, getUserReports)
@@ -20,7 +22,12 @@ reportRouter
   .get(protectTeacher, restrictTo(RoleType.ADMIN), getTeacherReports)
 reportRouter
   .route("/")
-  .post(protectTeacher, setUserOrTeacherId, createReport)
+  .post(
+    protectTeacher,
+    setUserOrTeacherId,
+    validate(createReportSchema),
+    createReport
+  )
   .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllReports)
 reportRouter
   .route("/:id")

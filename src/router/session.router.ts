@@ -22,6 +22,16 @@ import {
 } from "../controller/session.controller"
 import { restrictTo } from "../controller/auth.controller"
 import { RoleType } from "../db/models/teacher.model"
+import validate from "../middleware/validate"
+import {
+  assignTeacherSchema,
+  generateLinkSchema,
+  replaceSessionInfoTeacherSchema,
+  requireEitherTeacherOrUser,
+  updateSessionStatusSchema,
+  userContinueWithTeacherSchema,
+  userPlacedSessionDatesSchema,
+} from "../schema/session.schema"
 const sessionRouter = Router()
 
 sessionRouter.route("/session-requests").get(protectTeacher, getAllSessionsReq)
@@ -35,28 +45,68 @@ sessionRouter.use("/free", freeSessionRouter)
 sessionRouter.use("/paid", paidSessionRouter)
 sessionRouter
   .route("/updateUserAttendance")
-  .post(protectUser, setUserOrTeacherId, updateSessionAttendance)
+  .post(
+    protectUser,
+    setUserOrTeacherId,
+    validate(requireEitherTeacherOrUser),
+    updateSessionAttendance
+  )
 sessionRouter
   .route("/updateTeacherAttendance")
-  .post(protectTeacher, setUserOrTeacherId, updateSessionAttendance)
+  .post(
+    protectTeacher,
+    setUserOrTeacherId,
+    validate(requireEitherTeacherOrUser),
+    updateSessionAttendance
+  )
 sessionRouter
   .route("/generateLink")
-  .post(protectTeacher, setUserOrTeacherId, generateSessionLink)
+  .post(
+    protectTeacher,
+    setUserOrTeacherId,
+    validate(generateLinkSchema),
+    generateSessionLink
+  )
 sessionRouter
   .route("/status")
-  .post(protectTeacher, setUserOrTeacherId, updateSessionStatus)
+  .post(
+    protectTeacher,
+    setUserOrTeacherId,
+    validate(updateSessionStatusSchema),
+    updateSessionStatus
+  )
 sessionRouter
   .route("/continueWithTeacher")
-  .post(protectUser, setUserOrTeacherId, userContinueWithTeacher)
+  .post(
+    protectUser,
+    setUserOrTeacherId,
+    validate(userContinueWithTeacherSchema),
+    userContinueWithTeacher
+  )
 sessionRouter
   .route("/placeSessionDates")
-  .post(protectUser, setUserOrTeacherId, userPlaceHisSessions)
+  .post(
+    protectUser,
+    setUserOrTeacherId,
+    validate(userPlacedSessionDatesSchema),
+    userPlaceHisSessions
+  )
 sessionRouter
   .route("/assignTeacher")
-  .post(protectTeacher, restrictTo(RoleType.ADMIN), acceptSessionReq)
+  .post(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    validate(assignTeacherSchema),
+    acceptSessionReq
+  )
 sessionRouter
   .route("/replaceTeacher")
-  .post(protectTeacher, restrictTo(RoleType.ADMIN), replaceSessionInfoTeacher)
+  .post(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    validate(replaceSessionInfoTeacherSchema),
+    replaceSessionInfoTeacher
+  )
 sessionRouter
   .route("/rescheduleRequests")
   .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllRescheduleRequests)

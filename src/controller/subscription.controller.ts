@@ -4,6 +4,7 @@ import {
   checkPreviousUserSubreption,
   createStripeSubscriptionService,
   createSubscriptionService,
+  deleteSubscriptionService,
   getAllSubscriptionsService,
   handelSubscriptionPayed,
   handelSubscriptionPayedManually,
@@ -133,6 +134,16 @@ export const getAllUsersSubscriptions = catchAsync(
       status: "success",
       length: subscriptions.length,
       data: subscriptions,
+    })
+  }
+)
+export const deleteSubscription = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id
+    await deleteSubscriptionService({ subscriptionId: +id })
+    res.status(200).json({
+      status: "success",
+      message: "subscription deleted successfully!",
     })
   }
 )

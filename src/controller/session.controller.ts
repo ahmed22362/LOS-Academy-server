@@ -53,6 +53,7 @@ import {
   getSessionInfoService,
   updateSessionInfoService,
 } from "../service/sessionInfo.service"
+import { createSessionRequestService } from "../service/sessionReq.service"
 export const TEN_MINUTES_IN_MILLISECONDS = 10 * 60 * 1000
 
 export const getAllSessions = catchAsync(
@@ -121,30 +122,47 @@ export const replaceSessionInfoTeacher = catchAsync(
 )
 export const createPaidSessionAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const {
-      userId,
-      teacherId,
-      sessionDates,
-      sessionReqId,
-      sessionDuration,
-      sessionCount,
-      sessionsPerWeek,
-    } = req.body
+    let { sessionInfoId, userId, teacherId, sessionDates, sessionDuration } =
+      req.body
+    let sessionReqId
+    const newSessionDates: Date[] = []
 
+    for (let date of sessionDates) {
+      checkDateFormat(date)
+      newSessionDates.push(new Date(date))
+    }
+    if (newSessionDates.length > 1) {
+      throw new AppError(
+        400,
+        "you can only create one session per time provide one date"
+      )
+    }
     const t = await sequelize.transaction()
     try {
-      const sessionInfo = await createSessionInfoService({
-        userId,
-        teacherId,
-        sessionReqId,
-        transaction: t,
-      })
+      if (!sessionInfoId) {
+        const sessionReq = await createSessionRequestService({
+          body: {
+            userId,
+            sessionDates: newSessionDates,
+            type: SessionType.NOT_ASSIGN,
+          },
+          transaction: t,
+        })
+        sessionReqId = sessionReq.id
+        const sessionInfo = await createSessionInfoService({
+          userId,
+          teacherId,
+          sessionReqId,
+          transaction: t,
+        })
+        sessionInfoId = sessionInfo.id
+      }
       const session = createPaidSessionsService({
-        sessionInfoId: sessionInfo.id,
-        sessionCount,
+        sessionInfoId,
+        sessionCount: 1,
         sessionDates,
         sessionDuration,
-        sessionsPerWeek,
+        sessionsPerWeek: 1,
         transaction: t,
       })
       await t.commit()
@@ -178,6 +196,8 @@ export const updateSessionAttendance = async (
         attend: true,
         transaction: t,
       })
+    } else {
+      throw new AppError(400, "Can't define which user signed in!")
     }
     await t.commit()
     res
@@ -192,8 +212,7 @@ export const updateSessionAttendance = async (
 }
 export const generateSessionLink = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sessionId = req.body.sessionId
-    const teacherId = req.body.teacherId
+    const { sessionId, teacherId } = req.body
     const { session, exist } = await teacherOwnThisSession({
       teacherId,
       sessionId,

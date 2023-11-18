@@ -1,10 +1,21 @@
 import { z } from "zod"
 
-const payload = z.object({
-  sessionsCount: z.number(),
-  sessionDuration: z.number(),
-  title: z.string(),
-  sessionsPerWeek: z.number(),
-  type: z.string(),
+const planId = z.number({ required_error: "please provide plan Id" })
+const sessionsCount = z.number({
+  required_error: "please provide sessionCount",
 })
-const createPlan = z.object({ body: payload })
+const sessionDuration = z.number({
+  required_error: "please provide sessionDuration",
+})
+const sessionsPerWeek = z.number({
+  required_error: "Please provide SessionsPerWeek",
+})
+
+export const createStandardPlanSchema = z.object({
+  sessionsCount,
+  sessionDuration,
+  title: z.string({
+    required_error: "please provide title for this plan to show in home page",
+  }),
+  sessionsPerWeek,
+})

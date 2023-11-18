@@ -281,6 +281,7 @@ export const getSessionRescheduleRequests = catchAsync(
 export const getReceivedSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
+    const status = req.query.status
     let page = req.query.page
     let limit = req.query.limit
     let nPage
@@ -294,6 +295,7 @@ export const getReceivedSessionRescheduleRequests = catchAsync(
         teacherId,
         page: nPage,
         pageSize: nLimit,
+        status: status as any,
       })
     res.status(200).json({
       status: "success",
@@ -305,6 +307,7 @@ export const getReceivedSessionRescheduleRequests = catchAsync(
 export const getAllSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
+    const status = req.query.status
     let page = req.query.page
     let limit = req.query.limit
     let nPage
@@ -318,6 +321,7 @@ export const getAllSessionRescheduleRequests = catchAsync(
       teacherId,
       page: nPage,
       pageSize: nLimit,
+      status: status as any,
     })
     res.status(200).json({
       status: "success",

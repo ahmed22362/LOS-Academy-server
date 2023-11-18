@@ -4,6 +4,7 @@ import Subscription, {
 } from "../db/models/subscription.model"
 import {
   createModelService,
+  deleteModelService,
   getAllModelsByService,
   getModelByIdService,
   getOneModelByService,
@@ -282,4 +283,11 @@ export async function handelSubscriptionUpdated(
   } else {
     await membership.update({ status: subscription.status })
   }
+}
+export async function deleteSubscriptionService({
+  subscriptionId,
+}: {
+  subscriptionId: number
+}) {
+  await deleteModelService({ ModelClass: Subscription, id: subscriptionId })
 }
