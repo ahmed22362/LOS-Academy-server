@@ -19,6 +19,7 @@ import { getPlanAtt } from "./plan.controller"
 import { SubscriptionStatus } from "../db/models/subscription.model"
 import { sequelize } from "../db/sequelize"
 import AppError from "../utils/AppError"
+import logger from "../utils/logger"
 
 export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -43,6 +44,12 @@ export const createSubscription = catchAsync(
         planId: previousSubscription.plan.id,
       }))
     ) {
+      logger.info({
+        sessionDuration,
+        sessionsCount,
+        sessionsPerWeek,
+        previousSubscription,
+      })
       const stripeCheckSession = await createStripeSubscriptionService({
         body: {
           userId: previousSubscription.userId,

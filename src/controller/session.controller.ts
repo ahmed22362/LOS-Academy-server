@@ -188,8 +188,7 @@ export const updateSessionAttendance = async (
         attend: true,
         transaction: t,
       })
-    }
-    if (req.teacher) {
+    } else if (req.teacher) {
       await updateSessionTeacherAttendanceService({
         sessionId,
         teacherId: req.teacher.id,

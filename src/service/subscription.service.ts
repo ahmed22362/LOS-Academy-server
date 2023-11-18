@@ -210,10 +210,11 @@ export async function ThePreviousSubscriptionIsTheSame({
   planId: number
 }) {
   const plan = await Plan.findByPk(planId)
+  logger.info(plan)
   if (
-    (plan?.sessionDuration !== sessionDuration ||
-      plan.sessionsCount !== sessionsCount,
-    plan?.sessionsPerWeek !== sessionsPerWeek)
+    plan?.sessionDuration !== sessionDuration ||
+    plan.sessionsCount !== sessionsCount ||
+    plan?.sessionsPerWeek !== sessionsPerWeek
   ) {
     return false
   }
