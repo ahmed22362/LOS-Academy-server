@@ -198,6 +198,27 @@ export async function checkPreviousUserSubreption({
     return null
   }
 }
+export async function ThePreviousSubscriptionIsTheSame({
+  sessionDuration,
+  sessionsCount,
+  sessionsPerWeek,
+  planId,
+}: {
+  sessionDuration: number
+  sessionsCount: number
+  sessionsPerWeek: number
+  planId: number
+}) {
+  const plan = await Plan.findByPk(planId)
+  if (
+    (plan?.sessionDuration !== sessionDuration ||
+      plan.sessionsCount !== sessionsCount,
+    plan?.sessionsPerWeek !== sessionsPerWeek)
+  ) {
+    return false
+  }
+  return true
+}
 export async function handelCheckoutSessionCompleted(
   checkoutSession: Stripe.Checkout.Session
 ) {

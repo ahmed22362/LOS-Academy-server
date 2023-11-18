@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
+  ThePreviousSubscriptionIsTheSame,
   checkPreviousUserSubreption,
   createStripeSubscriptionService,
   createSubscriptionService,
@@ -23,6 +24,9 @@ export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
     let planId = req.body.planId
+    const sessionDuration = req.body.sessionDuration
+    const sessionsCount = req.body.sessionsCount
+    const sessionsPerWeek = req.body.sessionsPerWeek
     // const successLink: string = `${req.protocol}://${req.get(
     //   "host"
     // )}/?session_id={CHECKOUT_SESSION_ID}`
@@ -30,7 +34,15 @@ export const createSubscription = catchAsync(
     const failLink: string = `${req.protocol}://${req.get("host")}/`
     // check if there is active subscription
     const previousSubscription = await checkPreviousUserSubreption({ userId })
-    if (previousSubscription) {
+    if (
+      previousSubscription &&
+      (await ThePreviousSubscriptionIsTheSame({
+        sessionDuration,
+        sessionsCount,
+        sessionsPerWeek,
+        planId: previousSubscription.plan.id,
+      }))
+    ) {
       const stripeCheckSession = await createStripeSubscriptionService({
         body: {
           userId: previousSubscription.userId,
@@ -48,9 +60,6 @@ export const createSubscription = catchAsync(
         .json({ status: "success", data: stripeCheckSession })
     }
     if (!planId) {
-      const sessionDuration = req.body.sessionDuration
-      const sessionsCount = req.body.sessionsCount
-      const sessionsPerWeek = req.body.sessionsPerWeek
       const plan = await createPlanService({
         data: {
           sessionDuration,
