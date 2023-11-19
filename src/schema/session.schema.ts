@@ -35,7 +35,7 @@ export const generateLinkSchema = z.object({
   body: z.object({ sessionId, teacherId }),
 })
 export const updateSessionStatusSchema = z.object({
-  body: z.object({ sessionId, teacherId, SessionStatusSchema }),
+  body: z.object({ sessionId, teacherId, status: SessionStatusSchema }),
 })
 export const userContinueWithTeacherSchema = z.object({
   body: z.object({ sessionId }),

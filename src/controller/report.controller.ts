@@ -22,6 +22,9 @@ export const createReport = catchAsync(
       arabic,
       islamic,
       quran,
+      arabicComment,
+      islamicComment,
+      quranComment,
       comment,
       teacherId,
       grade,
@@ -42,7 +45,18 @@ export const createReport = catchAsync(
     }
 
     const report = await createReportService({
-      body: { arabic, islamic, quran, comment, grade, sessionId, title },
+      body: {
+        arabic,
+        islamic,
+        quran,
+        comment,
+        grade,
+        sessionId,
+        title,
+        arabicComment,
+        islamicComment,
+        quranComment,
+      },
     })
     res.status(201).json({
       status: "success",

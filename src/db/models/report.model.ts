@@ -36,9 +36,15 @@ export default class Report extends Model {
   @Column({ type: DataType.TEXT, allowNull: true })
   arabic?: string | null
   @Column({ type: DataType.TEXT, allowNull: true })
+  arabicComment?: string | null
+  @Column({ type: DataType.TEXT, allowNull: true })
   islamic?: string | null
   @Column({ type: DataType.TEXT, allowNull: true })
+  islamicComment?: string | null
+  @Column({ type: DataType.TEXT, allowNull: true })
   quran?: string | null
+  @Column({ type: DataType.TEXT, allowNull: true })
+  quranComment?: string | null
 
   @Column({
     type: DataType.ENUM({ values: Object.values(GradeOptions) }),

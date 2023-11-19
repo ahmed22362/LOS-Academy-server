@@ -14,6 +14,9 @@ interface IReportBody {
   arabic?: string
   quran?: string
   islamic?: string
+  arabicComment?: string
+  quranComment?: string
+  islamicComment?: string
   comment?: string
   grade: GradeOptions
   sessionId: number
