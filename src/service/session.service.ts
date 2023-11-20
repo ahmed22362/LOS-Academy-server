@@ -5,7 +5,6 @@ import AppError from "../utils/AppError"
 import { deleteModelService, updateModelService } from "./factory.services"
 import { DATE_PATTERN, FREE_SESSION_DURATION } from "./sessionReq.service"
 import {
-  createSessionInfoService,
   getTeacherSessionInfoService,
   getUserSessionInfoService,
 } from "./sessionInfo.service"
@@ -19,8 +18,7 @@ import {
   scheduleSessionReminderMailJob,
   scheduleSessionStartReminderMailJob,
 } from "../utils/scheduler"
-import logger from "../utils/logger"
-import { TEN_MINUTES_IN_MILLISECONDS } from "../controller/session.controller"
+import { THREE_MINUTES_IN_MILLISECONDS } from "../controller/session.controller"
 
 export interface IInfoBody {
   userId: string
@@ -697,9 +695,9 @@ function generateSessions({
 export function isSessionWithinTimeRange(sessionDate: Date): boolean {
   const currentTime: Date = new Date()
   const timeRangeStart: Date = new Date(
-    currentTime.getTime() - TEN_MINUTES_IN_MILLISECONDS
+    sessionDate.getTime() - THREE_MINUTES_IN_MILLISECONDS
   )
-  return timeRangeStart.getTime() <= sessionDate.getTime()
+  return timeRangeStart.getTime() <= currentTime.getTime()
 }
 export function isSessionAfterItsTimeRange(
   sessionDate: Date,
@@ -720,7 +718,7 @@ export async function isThereOngoingSessionForTheSameTeacher({
     teacherId,
     status: SessionStatus.ONGOING,
   })
-  if (sessions.length >= 0) {
+  if (sessions.length > 0) {
     throw new AppError(
       400,
       "Can't update session to be ongoing while there is another ongoing one!"

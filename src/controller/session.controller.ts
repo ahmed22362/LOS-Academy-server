@@ -54,7 +54,7 @@ import {
   updateSessionInfoService,
 } from "../service/sessionInfo.service"
 import { createSessionRequestService } from "../service/sessionReq.service"
-export const TEN_MINUTES_IN_MILLISECONDS = 10 * 60 * 1000
+export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000
 
 const DEFAULT_COURSES = ["arabic"]
 export const getAllSessions = catchAsync(
@@ -267,9 +267,11 @@ export const updateSessionStatus = catchAsync(
         )
       }
       if (!session.studentAttended && status !== SessionStatus.ABSENT) {
-        throw new AppError(
-          400,
-          "user must attend before you can update the session status!"
+        return next(
+          new AppError(
+            400,
+            "user must attend before you can update the session status!"
+          )
         )
       }
       if (
@@ -281,9 +283,11 @@ export const updateSessionStatus = catchAsync(
       if (status === SessionStatus.ONGOING) {
         await isThereOngoingSessionForTheSameTeacher({ teacherId })
         if (!isSessionWithinTimeRange(session.sessionDate)) {
-          throw new AppError(
-            400,
-            "Can't update session to be ongoing were it's time didn't come! you can always request a reschedule"
+          return next(
+            new AppError(
+              400,
+              "Can't update session to be ongoing were it's time didn't come! you can always request a reschedule"
+            )
           )
         }
       }
@@ -294,9 +298,11 @@ export const updateSessionStatus = catchAsync(
           session.sessionDuration
         )
       ) {
-        throw new AppError(
-          400,
-          "You have to wait till the session duration end to update the student as absent"
+        return next(
+          new AppError(
+            400,
+            "You have to wait till the session duration end to update the student as absent"
+          )
         )
       }
       await updateSessionStatusService({
@@ -306,6 +312,14 @@ export const updateSessionStatus = catchAsync(
         transaction: t,
       })
       if (status === SessionStatus.TAKEN) {
+        if (session.status !== SessionStatus.ONGOING) {
+          return next(
+            new AppError(
+              403,
+              "Can't update session to be taken that is never started!"
+            )
+          )
+        }
         if (session.type === SessionType.PAID) {
           await updateTeacherBalance({
             teacherId,
@@ -338,10 +352,18 @@ export const userRequestSessionReschedule = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId, sessionId, newDatesOptions } = req.body
     const session = await getOneSessionService({ sessionId })
+    if (!canRescheduleSession(session.sessionDate)) {
+      return next(
+        new AppError(
+          403,
+          "Cant Request a reschedule before 10 minutes of the session!"
+        )
+      )
+    }
     if (!Array.isArray(newDatesOptions)) {
       return next(new AppError(400, "please provide newDatesOptions as list!"))
     }
-    newDatesOptions.forEach((date) => {
+    newDatesOptions.forEach((date: string) => {
       checkDateFormat(date)
       if (new Date(date) <= session.sessionDate) {
         return next(
@@ -385,6 +407,14 @@ export const teacherRequestSessionReschedule = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId, sessionId, newDatesOptions } = req.body
     const session = await getOneSessionService({ sessionId })
+    if (!canRescheduleSession(session.sessionDate)) {
+      return next(
+        new AppError(
+          403,
+          "Cant Request a reschedule before 10 minutes of the session!"
+        )
+      )
+    }
     if (!Array.isArray(newDatesOptions)) {
       return next(new AppError(400, "please provide newDatesOptions as list!"))
     }
@@ -610,3 +640,14 @@ export const getAdminSessionStats = catchAsync(
     res.status(200).json({ status: "success", data: sessionStats })
   }
 )
+// Constants
+const MS_IN_DAY = 1000 * 60 * 60 * 24
+// Validation function
+function canRescheduleSession(sessionDate: Date) {
+  const currentDate = new Date()
+
+  const diffInMs = sessionDate.getTime() - currentDate.getTime()
+  const diffInDays = Math.ceil(diffInMs / MS_IN_DAY)
+
+  return diffInDays >= 10
+}

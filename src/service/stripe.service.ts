@@ -109,49 +109,20 @@ export async function deleteStripeProduct({
     throw new AppError(400, `Error While Deleting product!: ${error.message}`)
   }
 }
-
-export async function createCheckOutSession({
-  customerId,
-  priceId,
-}: {
-  customerId: string
-  priceId: string
-}) {
-  const params: Stripe.SubscriptionCreateParams = {
-    customer: customerId,
-    items: [
-      {
-        price: priceId,
-      },
-    ],
-    payment_behavior: "default_incomplete",
-    expand: ["latest_invoice.payment_intent"],
-  }
-  try {
-    const session = await stripe.subscriptions.create(params)
-    return session
-  } catch (error: any) {
-    throw new AppError(
-      400,
-      `Error While Creating subscriptions!: ${error.message}`
-    )
-  }
-}
-
 export async function createStripeSession({
   priceId,
   customerId,
   success_url,
   cancel_url,
+  coupon,
 }: {
   priceId: string
   customerId: string
   success_url: string
   cancel_url: string
+  coupon?: string
 }) {
-  const successLink: string = `http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}`
   //   const failLink: string = `${req.protocol}://${req.get("host")}/success`
-  const failLink: string = `http://localhost:3000/cancel`
   //   const successLink: string = `${req.protocol}://${req.get("host")}/success`
 
   const params: Stripe.Checkout.SessionCreateParams = {
@@ -160,6 +131,7 @@ export async function createStripeSession({
     customer: customerId,
     success_url,
     cancel_url,
+    discounts: [{ coupon }],
   }
   try {
     const session = await stripe.checkout.sessions.create(params)
@@ -171,7 +143,6 @@ export async function createStripeSession({
     )
   }
 }
-
 export async function createStripeBillingPortal(customerId: string) {
   try {
     const portal = await stripe.billingPortal.sessions.create({
@@ -185,7 +156,6 @@ export async function createStripeBillingPortal(customerId: string) {
     )
   }
 }
-
 export async function getStripeSubscription(id: string) {
   try {
     const subscribe = await stripe.subscriptions.retrieve(id)
@@ -205,4 +175,13 @@ export const createWebhook = (rawBody: any, sig: string) => {
 export async function getStripeBalance() {
   const balance = await stripe.balance.retrieve()
   return balance
+}
+export async function createStripeCouponOnce({
+  percent_off,
+}: {
+  percent_off: number
+}) {
+  const params: Stripe.CouponCreateParams = { percent_off, duration: "once" }
+  const coupon = await stripe.coupons.create(params)
+  return coupon
 }

@@ -44,12 +44,6 @@ export const createSubscription = catchAsync(
         planId: previousSubscription.plan.id,
       }))
     ) {
-      logger.info({
-        sessionDuration,
-        sessionsCount,
-        sessionsPerWeek,
-        previousSubscription,
-      })
       const stripeCheckSession = await createStripeSubscriptionService({
         body: {
           userId: previousSubscription.userId,

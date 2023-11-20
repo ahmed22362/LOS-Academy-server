@@ -10,7 +10,11 @@ import {
   getOneModelByService,
 } from "./factory.services"
 import { getPlanService } from "./plan.service"
-import { createStripeSession, getStripeSubscription } from "./stripe.service"
+import {
+  createStripeCouponOnce,
+  createStripeSession,
+  getStripeSubscription,
+} from "./stripe.service"
 import {
   getUserByIdService,
   getUserByService,
@@ -51,11 +55,16 @@ export async function createStripeSubscriptionService({
 }) {
   const user = await getUserByIdService({ userId: body.userId })
   const plan = await getPlanService({ id: body.planId })
+  let coupon
+  if (plan.discount && plan.discount > 0) {
+    coupon = await createStripeCouponOnce({ percent_off: plan.discount })
+  }
   const stripeSession = await createStripeSession({
     priceId: plan.stripePriceId,
     customerId: user!.customerId as string,
     success_url: body.success_url as string,
     cancel_url: body.cancel_url as string,
+    coupon: coupon?.id,
   })
   return stripeSession
 }
