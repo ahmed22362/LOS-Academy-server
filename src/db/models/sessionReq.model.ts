@@ -41,10 +41,9 @@ export default class SessionReq extends Model<SessionReq> {
   sessionDates!: Date[]
 
   @Column({
-    type: DataType.TIME,
-    allowNull: false,
+    type: DataType.ARRAY(DataType.STRING),
   })
-  sessionStartTime!: string
+  courses!: string[]
 
   @Column({
     type: DataType.ENUM({ values: Object.values(SessionStatus) }),

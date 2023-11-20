@@ -21,22 +21,19 @@ import logger from "../utils/logger"
 
 export async function createRescheduleRequestService({
   sessionId,
-  newDateEndRange,
-  newDateStartRange,
+  newDatesOptions,
   oldDate,
   requestedBy,
 }: {
   sessionId: number
-  newDateEndRange: Date
-  newDateStartRange: Date
+  newDatesOptions: Date[]
   oldDate: Date
   requestedBy: RoleType
 }) {
   const reqBody = {
     sessionId,
     oldDate,
-    newDateEndRange,
-    newDateStartRange,
+    newDatesOptions,
     requestedBy,
   }
   const rescheduleRequest = await RescheduleRequest.create(reqBody as any)
@@ -147,13 +144,11 @@ export async function getAllRescheduleRequestsWithUserService() {
 export async function userRequestRescheduleService({
   sessionId,
   userId,
-  newDateEndRange,
-  newDateStartRange,
+  newDatesOptions,
 }: {
   sessionId: number
   userId: string
-  newDateEndRange: Date
-  newDateStartRange: Date
+  newDatesOptions: Date[]
 }) {
   const { session, exist } = await userOwnThisSession({ userId, sessionId })
   if (!exist) {
@@ -164,8 +159,7 @@ export async function userRequestRescheduleService({
   }
   const rescheduleRequest = createRescheduleRequestService({
     sessionId,
-    newDateEndRange,
-    newDateStartRange,
+    newDatesOptions,
     oldDate: session!.sessionDate,
     requestedBy: RoleType.USER,
   })
@@ -174,13 +168,11 @@ export async function userRequestRescheduleService({
 export async function teacherRequestRescheduleService({
   sessionId,
   teacherId,
-  newDateEndRange,
-  newDateStartRange,
+  newDatesOptions,
 }: {
   sessionId: number
   teacherId: string
-  newDateEndRange: Date
-  newDateStartRange: Date
+  newDatesOptions: Date[]
 }) {
   const { session, exist } = await teacherOwnThisSession({
     teacherId,
@@ -194,8 +186,7 @@ export async function teacherRequestRescheduleService({
   }
   const rescheduleRequest = createRescheduleRequestService({
     sessionId,
-    newDateEndRange,
-    newDateStartRange,
+    newDatesOptions,
     oldDate: session!.sessionDate,
     requestedBy: RoleType.TEACHER,
   })
@@ -229,21 +220,15 @@ export async function teacherAcceptOrDeclineRescheduleRequestService({
   if (!exist) {
     throw new AppError(401, "can't accept request for session is not yours")
   }
-  console.log({
-    newDate,
-    endDate: rescheduleRequest.newDateEndRange,
-    startDate: rescheduleRequest.newDateStartRange,
-  })
+  const newSessionDate = new Date(newDate as Date)
   if (
     status === RescheduleRequestStatus.APPROVED &&
-    !(
-      (newDate as Date) <= rescheduleRequest.newDateEndRange &&
-      (newDate as Date) >= rescheduleRequest.newDateStartRange
-    )
+    !rescheduleRequest.newDatesOptions.includes(newSessionDate)
   ) {
+    const dateStr = rescheduleRequest.newDatesOptions.join(", ")
     throw new AppError(
       400,
-      `please provide date that in the range or the reschedule request in between ${rescheduleRequest.newDateStartRange} and ${rescheduleRequest.newDateEndRange}`
+      `please provide date that in the range or the reschedule request in: ${dateStr}`
     )
   }
   const transaction = await sequelize.transaction()
@@ -303,16 +288,16 @@ export async function userAcceptOrDeclineRescheduleRequestService({
   if (!exist) {
     throw new AppError(401, "can't accept request for session is not yours")
   }
+  const newSessionDate = new Date(newDate as Date)
   if (
     status === RescheduleRequestStatus.APPROVED &&
-    !(
-      (newDate as Date) <= rescheduleRequest.newDateEndRange &&
-      (newDate as Date) >= rescheduleRequest.newDateStartRange
-    )
+    !rescheduleRequest.newDatesOptions.includes(newSessionDate)
   ) {
+    const dateStr = rescheduleRequest.newDatesOptions.join(", ")
+
     throw new AppError(
       400,
-      `please provide date that in the range or the reschedule request in between ${rescheduleRequest.newDateStartRange} and ${rescheduleRequest.newDateEndRange}`
+      `please provide date that in the range or the reschedule request in: ${dateStr}`
     )
   }
   const updatedRequest = await updateRescheduleRequestService({

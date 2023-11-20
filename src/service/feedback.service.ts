@@ -1,4 +1,6 @@
+import { getUserAttr } from "../controller/user.controller"
 import FeedBack from "../db/models/feedback.model"
+import User from "../db/models/user.model"
 import AppError from "../utils/AppError"
 import {
   createModelService,
@@ -10,7 +12,7 @@ import {
 
 interface createFeedBackBody {
   userId: string
-  feedBack: string
+  feedback: string
 }
 export async function createFeedBackService({
   body,
@@ -18,18 +20,18 @@ export async function createFeedBackService({
   body: createFeedBackBody
 }) {
   try {
-    const feedBack = await createModelService({
+    const feedback = await createModelService({
       ModelClass: FeedBack,
       data: body,
     })
-    if (!feedBack) {
-      throw new AppError(400, "Can't Create feedBack!")
+    if (!feedback) {
+      throw new AppError(400, "Can't Create feedback!")
     }
-    return feedBack
+    return feedback
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While creating product or feedBack!: ${error.message}`
+      `Error While creating product or feedback!: ${error.message}`
     )
   }
 }
@@ -41,17 +43,18 @@ export async function getAllFeedBacksService({
   limit?: number
 }) {
   try {
-    const feedBacks = await getModelsService({
+    const feedbacks = await getModelsService({
       ModelClass: FeedBack,
       page,
       limit,
+      findOptions: { include: [{ model: User, attributes: getUserAttr }] },
     })
-    if (!feedBacks) {
-      throw new AppError(400, `Error while retrieving feedBack`)
+    if (!feedbacks) {
+      throw new AppError(400, `Error while retrieving feedback`)
     }
-    return feedBacks
+    return feedbacks
   } catch (error: any) {
-    throw new AppError(400, `Error while retrieving feedBack: ${error.message}`)
+    throw new AppError(400, `Error while retrieving feedback: ${error.message}`)
   }
 }
 export async function updateFeedBackService({
@@ -74,5 +77,6 @@ export async function getFeedBackService({ id }: { id: number }) {
   return (await getModelByIdService({
     ModelClass: FeedBack,
     Id: id,
+    findOptions: { include: { model: User, attributes: getUserAttr } },
   })) as FeedBack
 }

@@ -12,6 +12,7 @@ import {
   getTeacher,
   getTeacherAllSessions,
   getTeacherAllStudents,
+  getTeacherOngoingSession,
   getTeacherRemainSessions,
   getTeacherTakenSessions,
   getTeacherUpcomingSession,
@@ -91,6 +92,15 @@ teacherRouter
     setUserOrTeacherId,
     validate(isTeacherIdExist),
     getTeacherUpcomingSession
+  )
+
+teacherRouter
+  .route("/ongoingSession")
+  .get(
+    protectTeacher,
+    setUserOrTeacherId,
+    validate(isTeacherIdExist),
+    getTeacherOngoingSession
   )
 teacherRouter
   .route("/myReports")

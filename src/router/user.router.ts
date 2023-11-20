@@ -114,10 +114,25 @@ userRouter.get(
   setUserOrTeacherId,
   getUserUpcomingSession
 )
+userRouter.get(
+  "/ongoingSession",
+  protectUser,
+  setUserOrTeacherId,
+  getUserUpcomingSession
+)
 userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
 userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports)
 userRouter.get("/updateMyPlan", protectUser, updateUserPlan)
 userRouter.get("/checkJWT", checkJWT)
-userRouter.route("/:id").patch(updateUser).delete(deleteUser).get(getUser)
+userRouter
+  .route("/:id")
+  .patch(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    setUserOrTeacherId,
+    updateUser
+  )
+  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteUser)
+  .get(protectTeacher, getUser)
 
 export default userRouter

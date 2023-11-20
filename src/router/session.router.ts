@@ -115,5 +115,10 @@ sessionRouter
   .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo)
 sessionRouter
   .route("/")
-  .get(protectTeacher, setUserOrTeacherId, getAllSessionsByStatus)
+  .get(
+    protectTeacher,
+    setUserOrTeacherId,
+    restrictTo(RoleType.ADMIN),
+    getAllSessionsByStatus
+  )
 export default sessionRouter

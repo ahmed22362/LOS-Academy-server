@@ -30,13 +30,13 @@ export interface ICreateReq {
   userId: string
   sessionDates: Date[]
   type: SessionType
-  sessionStartTime?: string
+  courses: string[]
 }
 
 export interface IUpdateReq {
   sessionDates?: Date[]
   status?: SessionStatus
-  sessionStartTime?: string
+  courses?: string[]
 }
 export async function createSessionRequestService({
   body,
@@ -45,7 +45,6 @@ export async function createSessionRequestService({
   body: ICreateReq
   transaction?: Transaction
 }) {
-  body.sessionStartTime = body.sessionDates[0].toISOString().split("T")[1] // select only the time
   const sessionReq = await SessionReq.create(body as any, { transaction })
   if (!sessionReq) {
     throw new AppError(400, "Error Creating Request!")

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
+  createCourseBody,
   createCourseService,
   deleteCourseService,
   getAllCoursesService,
@@ -11,11 +12,15 @@ import {
   deleteStripeProduct,
   updateStripeProduct,
 } from "../service/stripe.service"
+import AppError from "../utils/AppError"
 
 export const createCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { title, description } = req.body
-    const course = await createCourseService({ body: { title, description } })
+    const { title, description, details } = req.body
+    const body: createCourseBody = { title, description, details }
+    const course = await createCourseService({
+      body,
+    })
     res.status(201).json({
       status: "success",
       message: "course created successfully!",
@@ -43,16 +48,19 @@ export const getCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
     const course = await getCourseService({ id })
+    if (!course) {
+      return next(new AppError(404, "Can't find course with this id!"))
+    }
     res.status(200).json({ status: "success", data: course })
   }
 )
 export const updateCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const { title, description } = req.body
+    const { title, description, details } = req.body
     const course = await updateCourseService({
       id,
-      updatedData: { title, description },
+      updatedData: { title, description, details },
     })
     await updateStripeProduct({
       productId: course.stripeProductId,
@@ -67,9 +75,6 @@ export const deleteCourse = catchAsync(
     const course = await getCourseService({ id })
     await deleteCourseService({
       id: course?.id,
-    })
-    await deleteStripeProduct({
-      productId: course.stripeProductId,
     })
     res
       .status(200)

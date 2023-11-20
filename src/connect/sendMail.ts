@@ -183,19 +183,18 @@ class Mail {
   async sendSessionRescheduleRequestMail({
     receiverName,
     sessionOldDate,
-    newDateStartRange,
-    newDateEndRange,
+    newDatesOptions,
   }: {
     receiverName: string
     sessionOldDate: Date
-    newDateStartRange: Date
-    newDateEndRange: Date
+    newDatesOptions: Date[]
   }) {
     const { title, paragraph, header, footer } = sessionReschedulePayload({
       senderName: this.name,
       receiverName,
-      newDateStartRange: newDateStartRange.toUTCString(),
-      newDateEndRange: newDateEndRange.toUTCString(),
+      newDatesOptions: newDatesOptions.map((date) =>
+        date.toLocaleString("en-GB", { timeZone: "UTC" })
+      ),
       sessionOldDate: sessionOldDate.toUTCString(),
     })
     const sessionRescheduleTemplate = generateGenericEmail({
@@ -216,15 +215,13 @@ class Mail {
   async sendSessionRescheduleRequestUpdateMail({
     receiverName,
     sessionOldDate,
-    newDateEndRange,
-    newDateStartRange,
+    newDatesOptions,
     sessionNewDate,
     status,
   }: {
     receiverName: string
     sessionOldDate: Date
-    newDateStartRange: Date
-    newDateEndRange: Date
+    newDatesOptions: Date[]
     sessionNewDate: Date
     status: string
   }) {
@@ -232,10 +229,15 @@ class Mail {
       sessionRescheduleStatusPayload({
         senderName: this.name,
         receiverName,
-        newDateEndRange: newDateEndRange.toUTCString(),
-        newDateStartRange: newDateStartRange.toUTCString(),
-        newDate: sessionNewDate.toUTCString(),
-        sessionOldDate: sessionOldDate.toUTCString(),
+        newDatesOptions: newDatesOptions.map((date) =>
+          date.toLocaleString("en-GB", {
+            timeZone: "UTC",
+          })
+        ),
+        newDate: sessionNewDate.toLocaleString("en-GB", { timeZone: "UTC" }),
+        sessionOldDate: sessionOldDate.toLocaleString("en-GB", {
+          timeZone: "UTC",
+        }),
         status,
       })
     const sessionRescheduleTemplate = generateGenericEmail({

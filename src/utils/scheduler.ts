@@ -201,14 +201,12 @@ export function scheduleSessionStartReminderMailJob({
 export function scheduleSessionRescheduleRequestMailJob({
   sessionId,
   sessionOldDate,
-  newDateStartRange,
-  newDateEndRange,
+  newDatesOptions,
   requestedBy,
 }: {
   sessionId: number
   sessionOldDate: Date
-  newDateStartRange: Date
-  newDateEndRange: Date
+  newDatesOptions: Date[]
   requestedBy: RoleType
 }) {
   try {
@@ -233,8 +231,7 @@ export function scheduleSessionRescheduleRequestMailJob({
         await new Mail(email, name).sendSessionRescheduleRequestMail({
           receiverName,
           sessionOldDate,
-          newDateStartRange,
-          newDateEndRange,
+          newDatesOptions,
         })
         logger.info("One time session reschedule request mail executed!")
         // Delete job
@@ -285,9 +282,8 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
         ).sendSessionRescheduleRequestUpdateMail({
           status,
           receiverName: session.SessionInfo.user!.name,
-          newDateStartRange: rescheduleRequest.newDateStartRange,
-          newDateEndRange: rescheduleRequest.newDateEndRange,
-          sessionOldDate: rescheduleRequest.oldDate,
+          sessionOldDate: session.sessionDate,
+          newDatesOptions: rescheduleRequest.newDatesOptions,
           sessionNewDate: session.sessionDate,
         })
         logger.info("One time session reminder mail executed!")

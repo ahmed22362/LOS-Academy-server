@@ -8,10 +8,11 @@ import {
   getOneModelByService,
   updateModelService,
 } from "./factory.services"
-import { createStripePrice } from "./stripe.service"
+import { createStripePrice, updateStripeProduct } from "./stripe.service"
 import { planCreateInput } from "../controller/plan.controller"
 import AppError from "../utils/AppError"
-const STANDARD_CURRENCY_USD = "usd"
+import { sequelize } from "../db/sequelize"
+export const STANDARD_CURRENCY_USD = "usd"
 const STANDARD_SESSION_MIN_PRICE = 0.5 // minute price is .5$
 const STRIPE_PRODUCT_ID = "prod_OsxQ3q3vRj8fhT" // replace it to get if from course!
 
@@ -24,6 +25,7 @@ interface IPlanCreateData {
   stripePriceId?: string
   price: number
   type: PlanType
+  discount?: number
 }
 export async function createPlanService({ data }: { data: planCreateInput }) {
   const plan = await getPlanBy({
@@ -42,7 +44,7 @@ export async function createPlanService({ data }: { data: planCreateInput }) {
     data.sessionDuration * data.sessionsCount * STANDARD_SESSION_MIN_PRICE
   const stripeBody = {
     amount: price,
-    product: STRIPE_PRODUCT_ID,
+    product: { name: data.title ? data.title : "Custom Plan" },
     currency: STANDARD_CURRENCY_USD,
   }
   const planBody: IPlanCreateData = {
@@ -53,10 +55,11 @@ export async function createPlanService({ data }: { data: planCreateInput }) {
     title: data.title,
     price,
     type: data.type,
+    discount: data.discount,
   }
   const stripePlan = await createStripePrice(stripeBody)
   planBody.stripePriceId = stripePlan.id
-  const newPlan = await createModelService({ ModelClass: Plan, data: planBody })
+  const newPlan = await Plan.create(planBody as any)
   return newPlan
 }
 export async function getPlansService({
@@ -87,7 +90,12 @@ export async function updatePlanService({
   id: string | number
   updatedData: Partial<planCreateInput>
 }) {
-  return await updateModelService({ ModelClass: Plan, id, updatedData })
+  const updatedPlan = await updateModelService({
+    ModelClass: Plan,
+    id,
+    updatedData,
+  })
+  return updatedPlan
 }
 export async function deletePlanService({ id }: { id: string | number }) {
   return await deleteModelService({ ModelClass: Plan, id: id })
@@ -99,8 +107,7 @@ export async function getPlanService({ id }: { id: string | number }) {
   }
   return plan
 }
-
 export async function getPlanBy({ findOptions }: { findOptions: FindOptions }) {
   const plan = await getOneModelByService({ Model: Plan, findOptions })
-  return plan
+  return plan as Plan
 }

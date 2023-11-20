@@ -10,7 +10,6 @@ import {
 import Session from "../db/models/session.model"
 import SessionInfo from "../db/models/sessionInfo.model"
 interface IReportBody {
-  title: string
   arabic?: string
   quran?: string
   islamic?: string

@@ -21,7 +21,12 @@ subscriptionRouter
     validate(createCustomSubscriptionSchema),
     createSubscription
   )
-  .get(protectTeacher, setUserOrTeacherId, getAllUsersSubscriptions)
+  .get(
+    protectTeacher,
+    setUserOrTeacherId,
+    restrictTo(RoleType.ADMIN),
+    getAllUsersSubscriptions
+  )
 subscriptionRouter
   .route("/:id")
   .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateSubscription)

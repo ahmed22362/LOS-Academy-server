@@ -27,11 +27,6 @@ export default class Report extends Model {
     allowNull: false,
   })
   id!: number
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
-  title!: string
 
   @Column({ type: DataType.TEXT, allowNull: true })
   arabic?: string | null

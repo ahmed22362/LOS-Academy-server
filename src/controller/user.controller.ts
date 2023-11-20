@@ -25,6 +25,7 @@ import {
 import {
   getUserAllSessionsService,
   getUserAllTakenSessionsService,
+  getUserOngoingSessionService,
   getUserRemainSessionsService,
   getUserUpcomingSessionService,
 } from "../service/session.service"
@@ -131,8 +132,10 @@ export const updateUser = catchAsync(
     const body = { name, email, phone, age, gender } as IUserInput
     if (req.body.teacherId) {
       const teacher = await getTeacherByIdService({ id: req.body.teacherId })
-      if (teacher.role === RoleType.ADMIN && req.body.remainSessions) {
+      if (teacher.role === RoleType.ADMIN) {
         body.remainSessions = req.body.remainSessions
+        body.availableFreeSession = req.body.availableFreeSession
+        body.verified = req.body.verified
       }
     }
     const user = await updateUserService({ userId: id, updatedData: body })
@@ -243,6 +246,13 @@ export const getUserUpcomingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
     const session = await getUserUpcomingSessionService({ userId })
+    res.status(200).json({ status: "success", data: session })
+  }
+)
+export const getUserOngoingSession = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.body.userId
+    const session = await getUserOngoingSessionService({ userId })
     res.status(200).json({ status: "success", data: session })
   }
 )

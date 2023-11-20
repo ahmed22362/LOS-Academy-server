@@ -16,9 +16,11 @@ export interface ModelClass {
 async function createModelService({
   ModelClass,
   data,
+  transaction,
 }: {
   ModelClass: ModelClass
   data: any
+  transaction?: Transaction
 }) {
   try {
     const model = await ModelClass.create(data)

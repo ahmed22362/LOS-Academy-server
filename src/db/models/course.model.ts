@@ -28,6 +28,11 @@ export default class Course extends Model {
   description!: string
 
   @Column({
+    type: DataType.TEXT,
+  })
+  details!: string
+
+  @Column({
     type: DataType.STRING,
   })
   stripeProductId!: string

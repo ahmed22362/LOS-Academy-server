@@ -56,6 +56,7 @@ import {
 import { createSessionRequestService } from "../service/sessionReq.service"
 export const TEN_MINUTES_IN_MILLISECONDS = 10 * 60 * 1000
 
+const DEFAULT_COURSES = ["arabic"]
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     let page = req.query.page
@@ -126,9 +127,17 @@ export const createPaidSessionAdmin = catchAsync(
       req.body
     let sessionReqId
     const newSessionDates: Date[] = []
-
+    const currentDate = new Date()
     for (let date of sessionDates) {
       checkDateFormat(date)
+      if (new Date(date) <= currentDate) {
+        return next(
+          new AppError(
+            400,
+            "please provide date that is in the future not in the past!"
+          )
+        )
+      }
       newSessionDates.push(new Date(date))
     }
     if (newSessionDates.length > 1) {
@@ -142,6 +151,7 @@ export const createPaidSessionAdmin = catchAsync(
       if (!sessionInfoId) {
         const sessionReq = await createSessionRequestService({
           body: {
+            courses: DEFAULT_COURSES,
             userId,
             sessionDates: newSessionDates,
             type: SessionType.NOT_ASSIGN,
@@ -326,15 +336,22 @@ export const updateSessionStatus = catchAsync(
 )
 export const userRequestSessionReschedule = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, sessionId, newDateEndRange, newDateStartRange } = req.body
-    checkDateFormat(newDateEndRange)
-    checkDateFormat(newDateStartRange)
-    if (newDateStartRange > newDateEndRange) {
-      throw new AppError(
-        400,
-        "Please provide start date that is less than end date"
-      )
+    const { userId, sessionId, newDatesOptions } = req.body
+    const session = await getOneSessionService({ sessionId })
+    if (!Array.isArray(newDatesOptions)) {
+      return next(new AppError(400, "please provide newDatesOptions as list!"))
     }
+    newDatesOptions.forEach((date) => {
+      checkDateFormat(date)
+      if (new Date(date) <= session.sessionDate) {
+        return next(
+          new AppError(
+            400,
+            "please provide date that is after the session date not before it!"
+          )
+        )
+      }
+    })
     const previousRequest = await getPendingRequestBySessionIdService({
       sessionId,
     })
@@ -349,14 +366,12 @@ export const userRequestSessionReschedule = catchAsync(
     const rescheduleReq = await userRequestRescheduleService({
       sessionId,
       userId,
-      newDateEndRange,
-      newDateStartRange,
+      newDatesOptions,
     })
     scheduleSessionRescheduleRequestMailJob({
       requestedBy: RoleType.USER as RoleType,
       sessionId,
-      newDateStartRange: rescheduleReq.newDateStartRange,
-      newDateEndRange: rescheduleReq.newDateEndRange,
+      newDatesOptions,
       sessionOldDate: rescheduleReq.oldDate,
     })
     res.status(200).json({
@@ -368,16 +383,22 @@ export const userRequestSessionReschedule = catchAsync(
 )
 export const teacherRequestSessionReschedule = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { teacherId, sessionId, newDateEndRange, newDateStartRange } =
-      req.body
-    checkDateFormat(newDateEndRange)
-    checkDateFormat(newDateStartRange)
-    if (newDateStartRange > newDateEndRange) {
-      throw new AppError(
-        400,
-        "Please provide start date that is less than end date"
-      )
+    const { teacherId, sessionId, newDatesOptions } = req.body
+    const session = await getOneSessionService({ sessionId })
+    if (!Array.isArray(newDatesOptions)) {
+      return next(new AppError(400, "please provide newDatesOptions as list!"))
     }
+    newDatesOptions.forEach((date) => {
+      checkDateFormat(date)
+      if (new Date(date) <= session.sessionDate) {
+        return next(
+          new AppError(
+            400,
+            "please provide date that is after the session date not before it!"
+          )
+        )
+      }
+    })
     const previousRequest = await getPendingRequestBySessionIdService({
       sessionId,
     })
@@ -392,14 +413,12 @@ export const teacherRequestSessionReschedule = catchAsync(
     const rescheduleReq = await teacherRequestRescheduleService({
       sessionId,
       teacherId,
-      newDateEndRange,
-      newDateStartRange,
+      newDatesOptions,
     })
     scheduleSessionRescheduleRequestMailJob({
       requestedBy: RoleType.TEACHER,
       sessionId,
-      newDateStartRange: rescheduleReq.newDateStartRange,
-      newDateEndRange: rescheduleReq.newDateEndRange,
+      newDatesOptions,
       sessionOldDate: rescheduleReq.oldDate,
     })
     res.status(200).json({
@@ -547,8 +566,17 @@ export const userPlaceHisSessions = catchAsync(
         transaction,
       })
       const newSessionDates: Date[] = []
+      const currentDate = new Date()
       for (let date of sessionDates) {
         checkDateFormat(date)
+        if (new Date(date) < currentDate) {
+          return next(
+            new AppError(
+              400,
+              "please provide date that is in the future not in the past!"
+            )
+          )
+        }
         newSessionDates.push(new Date(date))
       }
       const paidSessions = await createPaidSessionsService({

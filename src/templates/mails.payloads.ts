@@ -115,23 +115,23 @@ export const sessionReschedulePayload = ({
   senderName,
   receiverName,
   sessionOldDate,
-  newDateStartRange,
-  newDateEndRange,
+  newDatesOptions,
 }: {
   senderName: string
   receiverName: string
   sessionOldDate: string
-  newDateStartRange: string
-  newDateEndRange: string
+  newDatesOptions: string[]
 }) => {
   const title = "Session Reschedule Request"
   const header = "Session Reschedule Request!"
+  const allDatesString = newDatesOptions.join(", ")
+
   const paragraph = `Hello ${receiverName},
   <p>We hope this message finds you well. A user has requested to reschedule their session with you. Here are the details:</p>
   <div style="margin-top: 20px; text-align: left;">
   <p><strong>User:</strong> ${senderName}</p>
   <p><strong>Current Session Date and Time:</strong> ${sessionOldDate}</p>
-  <p><strong>Proposed Rescheduled Date and Time:</strong> from ${newDateStartRange} to ${newDateEndRange}</p>
+  <p><strong>Proposed Rescheduled Date and Time:</strong> ${allDatesString} </p>
 </div>
   `
   const footer = `If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
@@ -179,31 +179,31 @@ export const sessionRescheduleStatusPayload = ({
   receiverName,
   senderName,
   sessionOldDate,
-  newDateStartRange,
-  newDateEndRange,
+  newDatesOptions,
   newDate,
 }: {
   status: string
   receiverName: string
   senderName: string
   sessionOldDate: string
-  newDateStartRange: string
-  newDateEndRange: string
+  newDatesOptions: string[]
   newDate: string
 }) => {
   const title = "Session Reschedule Status Update"
   const header = "Session Reschedule Status Updated!"
+  const allDatesString = newDatesOptions.join(", ")
+
   let paragraph = `Hello ${receiverName},
   <p>${senderName} has updated the status of your session reschedule request. Here are the details:</p>
   <div style="margin-top: 20px; text-align: left;">
   <p><strong>Original Session Date and Time:</strong> ${sessionOldDate}</p>
-  <p><strong>Proposed Rescheduled Date and Time:</strong>from ${newDateStartRange} to ${newDateEndRange}</p>
+  <p><strong>Proposed Rescheduled Date and Time:</strong>${allDatesString}</p>
   <p><strong>Status:</strong> ${status}</p>
 </div>
   `
   let mailAdds
   if (status === RescheduleRequestStatus.APPROVED) {
-    paragraph += `<p>And the <strong>new Date</strong> of the session is ${newDate}</p> `
+    paragraph += `<h3>And the <strong>new Date</strong> of the session is ${newDate}</h3> `
   }
   const footer = `If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
   return { title, header, paragraph, footer, mailAdds }

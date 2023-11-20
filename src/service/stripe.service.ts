@@ -40,21 +40,36 @@ export async function createStripePrice({
   currency,
 }: {
   amount: number
-  product: string
+  product: { name: string }
   currency: string
 }) {
   const params: Stripe.PriceCreateParams = {
     currency,
-    recurring: { interval: "month" },
+    recurring: { interval: "month", interval_count: 1 },
     active: true,
     unit_amount: amount * 100, // amount accept in cents,
-    product,
+    product_data: product,
   }
   try {
     const plan = await stripe.prices.create(params)
     return plan
   } catch (error: any) {
     throw new AppError(400, `Error While creating price: ${error.message}`)
+  }
+}
+export async function getStripePrice({ planId }: { planId: string }) {
+  try {
+    const plan = await stripe.plans.retrieve(planId)
+    return plan
+  } catch (error: any) {
+    throw new AppError(400, `Error While Retrieving plan: ${error.message}`)
+  }
+}
+export async function deleteStripePlan({ planId }: { planId: string }) {
+  try {
+    const plan = await stripe.plans.del(planId)
+  } catch (error: any) {
+    throw new AppError(400, `Error While deleting plan: ${error.message}`)
   }
 }
 export async function createStripeProduct({ name }: { name: string }) {

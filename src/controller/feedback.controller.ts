@@ -10,14 +10,14 @@ import {
 
 export const createFeedBack = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, feedBack } = req.body
-    const feedBackInstance = await createFeedBackService({
-      body: { userId, feedBack },
+    const { userId, feedback } = req.body
+    const feedbackInstance = await createFeedBackService({
+      body: { userId, feedback },
     })
     res.status(201).json({
       status: "success",
-      message: "feedBack created successfully!",
-      data: feedBackInstance,
+      message: "feedback created successfully!",
+      data: feedbackInstance,
     })
   }
 )
@@ -31,42 +31,42 @@ export const getAllFeedBacks = catchAsync(
       nPage = Number(page)
       nLimit = Number(limit)
     }
-    const feedBacks = await getAllFeedBacksService({
+    const feedbacks = await getAllFeedBacksService({
       page: nPage,
       limit: nLimit,
     })
     res
       .status(200)
-      .json({ status: "success", length: feedBacks.length, data: feedBacks })
+      .json({ status: "success", length: feedbacks.length, data: feedbacks })
   }
 )
 export const getFeedBack = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const feedBack = await getFeedBackService({ id: +id })
-    res.status(200).json({ status: "success", data: feedBack })
+    const feedback = await getFeedBackService({ id: +id })
+    res.status(200).json({ status: "success", data: feedback })
   }
 )
 export const updateFeedBack = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const { show, feedBack } = req.body
-    const feedBackInstance = await updateFeedBackService({
+    const { show, feedback } = req.body
+    const feedbackInstance = await updateFeedBackService({
       id: +id,
-      updatedData: { show },
+      updatedData: { show, feedback },
     })
-    res.status(200).json({ status: "success", data: feedBackInstance })
+    res.status(200).json({ status: "success", data: feedbackInstance })
   }
 )
 export const deleteFeedBack = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const feedBack = await getFeedBackService({ id: +id })
+    const feedback = await getFeedBackService({ id: +id })
     await deleteFeedBackService({
-      id: feedBack?.id,
+      id: feedback?.id,
     })
     res
       .status(200)
-      .json({ status: "success", message: "feedBack deleted successfully" })
+      .json({ status: "success", message: "feedback deleted successfully" })
   }
 )

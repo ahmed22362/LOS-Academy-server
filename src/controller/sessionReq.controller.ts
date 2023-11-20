@@ -28,7 +28,7 @@ import { scheduleSessionPlacedMailJob } from "../utils/scheduler"
 
 export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, sessionDates } = req.body
+    const { userId, sessionDates, courses } = req.body
     if (!Array.isArray(sessionDates)) {
       throw new AppError(400, "Please provide sessionDates as list or array!")
     }
@@ -44,16 +44,22 @@ export const requestSession = (type: SessionType) =>
       })
     }
     const newSessionDates: Date[] = []
-
+    const currentDate = new Date()
     for (let date of sessionDates) {
       checkDateFormat(date)
-      newSessionDates.push(new Date(date))
+      const sessionDate = new Date(date)
+      if (sessionDate < currentDate) {
+        return next(
+          new AppError(400, "Can't request session to have date in the past!")
+        )
+      }
+      newSessionDates.push(sessionDate)
     }
 
     const t = await sequelize.transaction()
     try {
       const requestSession = await createSessionRequestService({
-        body: { userId, sessionDates: newSessionDates, type },
+        body: { userId, sessionDates: newSessionDates, type, courses },
         transaction: t,
       })
       if (!requestSession) {
@@ -137,17 +143,27 @@ export const getOneSessionReq = catchAsync(
 )
 export const updateSessionReqDate = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionDates, sessionStartTime } = req.body
+    const { sessionDates, courses } = req.body
     const id = req.params.id
-    const body: IUpdateReq = { sessionDates, sessionStartTime }
+    const body: IUpdateReq = { sessionDates, courses }
     const newSessionDates: Date[] = []
+    const currentDate = new Date()
     if (sessionDates && !Array.isArray(sessionDates)) {
       throw new AppError(400, "Please provide dateList as list or array!")
     }
     if (sessionDates) {
       for (let date of sessionDates) {
         checkDateFormat(date)
-        newSessionDates.push(new Date(date))
+        const sessionDate = new Date(date)
+        if (sessionDate < currentDate) {
+          return next(
+            new AppError(
+              400,
+              "Can't Reschedule session to have date in the past!"
+            )
+          )
+        }
+        newSessionDates.push(sessionDate)
       }
     }
     const sessionRequest = await getOneSessionRequestService({ id: +id })

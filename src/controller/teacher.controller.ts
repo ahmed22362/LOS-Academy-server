@@ -15,6 +15,7 @@ import {
   getAdminSessionsStatisticsService,
   getOneSessionService,
   getTeacherAllSessionsService,
+  getTeacherOngoingSessionService,
   getTeacherRemainSessionsService,
   getTeacherSessionsStatisticsService,
   getTeacherTakenSessionsService,
@@ -198,6 +199,15 @@ export const getTeacherUpcomingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
     const sessions = await getTeacherUpcomingSessionService({ teacherId })
+    res
+      .status(200)
+      .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+export const getTeacherOngoingSession = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    const sessions = await getTeacherOngoingSessionService({ teacherId })
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })

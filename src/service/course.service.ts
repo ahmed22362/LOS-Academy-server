@@ -9,10 +9,11 @@ import {
   updateModelService,
 } from "./factory.services"
 
-interface createCourseBody {
+export interface createCourseBody {
   title: string
   description: string
   stripeProductId?: string
+  details: string
 }
 export async function createCourseService({
   body,
@@ -20,8 +21,6 @@ export async function createCourseService({
   body: createCourseBody
 }) {
   try {
-    const stripeProduct = await createStripeProduct({ name: body.title })
-    body.stripeProductId = stripeProduct.id
     const course = await createModelService({ ModelClass: Course, data: body })
     if (!course) {
       throw new AppError(400, "Can't Create course!")

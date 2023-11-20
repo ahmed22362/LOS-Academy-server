@@ -341,6 +341,17 @@ export async function getUserUpcomingSessionService({
   })
   return session
 }
+export async function getUserOngoingSessionService({
+  userId,
+}: {
+  userId: string
+}) {
+  const session = await allUserSessionsService({
+    userId,
+    status: SessionStatus.ONGOING,
+  })
+  return session
+}
 export async function getTeacherAllSessionsService({
   teacherId,
   page,
@@ -370,6 +381,17 @@ export async function getTeacherUpcomingSessionService({
     status: SessionStatus.PENDING,
     pageSize: 1,
     upcoming: true,
+  })
+  return session
+}
+export async function getTeacherOngoingSessionService({
+  teacherId,
+}: {
+  teacherId: string
+}) {
+  const session = await allTeacherSessionsService({
+    teacherId,
+    status: SessionStatus.ONGOING,
   })
   return session
 }

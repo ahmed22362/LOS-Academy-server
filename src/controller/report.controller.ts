@@ -28,7 +28,6 @@ export const createReport = catchAsync(
       comment,
       teacherId,
       grade,
-      title,
     } = req.body
     const exist = await teacherOwnThisSession({ teacherId, sessionId })
     if (!exist) {
@@ -52,7 +51,6 @@ export const createReport = catchAsync(
         comment,
         grade,
         sessionId,
-        title,
         arabicComment,
         islamicComment,
         quranComment,
@@ -67,8 +65,17 @@ export const createReport = catchAsync(
 )
 export const updateReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { arabic, islamic, quran, comment, teacherId, grade, title } =
-      req.body
+    const {
+      arabic,
+      islamic,
+      quran,
+      arabicComment,
+      islamicComment,
+      quranComment,
+      comment,
+      teacherId,
+      grade,
+    } = req.body
     const reportId = req.params.id
     const report = await getReportService({
       reportId: +reportId,
@@ -88,7 +95,16 @@ export const updateReport = catchAsync(
     }
     const updatedReport = await updateReportService({
       reportId: report.id,
-      updateBody: { arabic, islamic, quran, comment, grade, title },
+      updateBody: {
+        arabic,
+        islamic,
+        quran,
+        comment,
+        grade,
+        arabicComment,
+        islamicComment,
+        quranComment,
+      },
     })
     res.status(200).json({
       status: "success",

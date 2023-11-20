@@ -2,7 +2,7 @@ import { z } from "zod"
 // sessionsCount,sessionDuration,title,sessionsPerWeek,type,recommended,discount,
 
 const sessionsCount = z.number({
-  required_error: "please provide sessionCount",
+  required_error: "please provide sessionsCount",
 })
 const sessionDuration = z.number({
   required_error: "please provide sessionDuration",
@@ -19,10 +19,12 @@ const discount = z.number({
     "please enter if there is discount or not if there is no discount enter 0",
 })
 export const createStandardPlanSchema = z.object({
-  sessionsCount,
-  sessionDuration,
-  title,
-  recommended,
-  discount,
-  sessionsPerWeek,
+  body: z.object({
+    sessionsCount,
+    sessionDuration,
+    title,
+    recommended,
+    discount,
+    sessionsPerWeek,
+  }),
 })

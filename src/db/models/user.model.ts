@@ -19,6 +19,8 @@ export interface IUserInput {
   phone: string
   age: number
   remainSessions?: number
+  availableFreeSession?: number
+  verified?: boolean
   gender: Gender
 }
 
