@@ -11,6 +11,7 @@ import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
 import { restrictTo } from "../controller/auth.controller"
 import { RoleType } from "../db/models/teacher.model"
 import { createFeedbackSchema } from "../schema/feedback.schema"
+import { protectTeacher } from "../controller/teacher.controller"
 
 const feedBackRouter = Router()
 
@@ -25,8 +26,8 @@ feedBackRouter
   .get(getAllFeedBacks)
 feedBackRouter
   .route("/:id")
-  .patch(protectUser, restrictTo(RoleType.ADMIN), updateFeedBack)
+  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateFeedBack)
   .get(getFeedBack)
-  .delete(protectUser, restrictTo(RoleType.ADMIN), deleteFeedBack)
+  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteFeedBack)
 
 export default feedBackRouter

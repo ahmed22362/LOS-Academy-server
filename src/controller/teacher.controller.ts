@@ -103,8 +103,16 @@ export const deleteTeacher = catchAsync(
 export const updateTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const { name, sessionCost, email, phone, nationalId, role, password } =
-      req.body
+    const {
+      name,
+      sessionCost,
+      email,
+      phone,
+      nationalId,
+      role,
+      password,
+      balance,
+    } = req.body
     const body = {
       name,
       email,
@@ -113,6 +121,7 @@ export const updateTeacher = catchAsync(
       role,
       sessionCost,
       password,
+      balance,
     } as ITeacherInput
     const teacher = await updateTeacherService({
       teacherId: id,

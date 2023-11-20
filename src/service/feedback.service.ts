@@ -47,7 +47,10 @@ export async function getAllFeedBacksService({
       ModelClass: FeedBack,
       page,
       limit,
-      findOptions: { include: [{ model: User, attributes: getUserAttr }] },
+      findOptions: {
+        include: [{ model: User, attributes: getUserAttr }],
+        where: { show: true },
+      },
     })
     if (!feedbacks) {
       throw new AppError(400, `Error while retrieving feedback`)
@@ -77,6 +80,8 @@ export async function getFeedBackService({ id }: { id: number }) {
   return (await getModelByIdService({
     ModelClass: FeedBack,
     Id: id,
-    findOptions: { include: { model: User, attributes: getUserAttr } },
+    findOptions: {
+      include: { model: User, attributes: getUserAttr },
+    },
   })) as FeedBack
 }

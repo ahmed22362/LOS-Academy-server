@@ -12,5 +12,5 @@ export const createPayoutRequestSchema = z.object({
   body: z.object({ teacherId, amount }),
 })
 export const updatePayoutStatusSchema = z.object({
-  body: z.object({ status, payoutRequestId }),
+  body: z.object({ status, requestId: payoutRequestId }),
 })

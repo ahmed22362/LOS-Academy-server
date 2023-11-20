@@ -8,7 +8,7 @@ import {
 import { ulid } from "ulid"
 import bcrypt from "bcrypt"
 
-export interface ITeacherInput extends Teacher {
+export interface ITeacherInput {
   name: string
   nationalId: string
   email: string
@@ -16,6 +16,7 @@ export interface ITeacherInput extends Teacher {
   phone: string
   customerId?: string
   sessionCost: number
+  balance?: number
 }
 export enum RoleType {
   TEACHER = "teacher",

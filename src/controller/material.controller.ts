@@ -41,7 +41,6 @@ export const createMaterial = catchAsync(
         return material
       })
     )
-    console.log("this is withoud await ", materials)
     res.status(200).json({ status: "success", data: materials })
   }
 )

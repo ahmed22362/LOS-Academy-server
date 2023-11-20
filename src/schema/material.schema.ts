@@ -4,9 +4,15 @@ const teacherId = z.string({ required_error: "Please enter the teacherId" })
 const name = z.string({
   required_error: "please provide the name of the material",
 })
-const age = z.number({
-  required_error: "please provide the age the this material up to!",
-})
+const age = z.union([
+  z.string({
+    required_error: "please provide the age the this material up to!",
+  }),
+  z.number({
+    required_error: "please provide the age the this material up to!",
+  }),
+])
+
 const course = z.string({
   required_error: "please enter the course name that this material is for",
 })

@@ -7,6 +7,7 @@ import {
   getFeedBackService,
   updateFeedBackService,
 } from "../service/feedback.service"
+import AppError from "../utils/AppError"
 
 export const createFeedBack = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -44,6 +45,9 @@ export const getFeedBack = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
     const feedback = await getFeedBackService({ id: +id })
+    if (!feedback) {
+      return next(new AppError(404, "There is no feedback with this id!"))
+    }
     res.status(200).json({ status: "success", data: feedback })
   }
 )
