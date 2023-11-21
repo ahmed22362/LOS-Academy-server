@@ -20,7 +20,7 @@ export function scheduleVerifyMailJob({
     const mail = new Mail(to, name)
 
     logger.info("in send verify mail schedule!")
-    const date = new Date(new Date().getTime() + 10000)
+    const date = new Date(new Date().getTime() + 3000)
     const job = schedule.scheduleJob(date, async () => {
       await mail.sendVerifyMail({ link })
       logger.info("One time send verify mail executed!")
@@ -48,7 +48,7 @@ export function scheduleSuccessSubscriptionMailJob({
   try {
     const mail = new Mail(to, name)
     logger.info("in send subscription success mail schedule!")
-    const date = new Date(new Date().getTime() + 10000)
+    const date = new Date(new Date().getTime() + 3000)
     const job = schedule.scheduleJob(date, async () => {
       await mail.sendSubscriptionCreateMail({
         subscriptionAmount,
@@ -74,7 +74,7 @@ export function scheduleSubscriptionCanceledMailJob({
   try {
     const mail = new Mail(to, name)
     logger.info("in send subscription cancelled mail schedule!")
-    const date = new Date(new Date().getTime() + 10000)
+    const date = new Date(new Date().getTime() + 3000)
     const job = schedule.scheduleJob(date, async () => {
       await mail.sendSubscriptionCanceledMail()
       logger.info("One time send subscription cancelled executed!")
@@ -101,7 +101,7 @@ export function scheduleSessionPlacedMailJob({
 }) {
   try {
     logger.info("in send session placed mail schedule!")
-    const date = new Date(new Date().getTime() + 10000)
+    const date = new Date(new Date().getTime() + 3000)
     const job = schedule.scheduleJob(`Session`, date, async () => {
       await new Mail(userEmail, userName).sendSessionPlacesMail({
         sessionDate: sessionDate.toUTCString(),
@@ -211,7 +211,7 @@ export function scheduleSessionRescheduleRequestMailJob({
 }) {
   try {
     logger.info("in session reschedule request mail schedule!")
-    const date = new Date(new Date().getTime() + 10000)
+    const date = new Date(new Date().getTime() + 3000)
     let email: string, name: string, receiverName: string
     const job = schedule.scheduleJob(
       `Session #${sessionId}`,
@@ -258,7 +258,7 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
 }) {
   try {
     logger.info("in session reschedule request status update mail schedule!")
-    const date = new Date(new Date().getTime() + 10000)
+    const date = new Date(new Date().getTime() + 3000)
     let email: string, name: string
     const job = schedule.scheduleJob(
       `Reschedule Request #${sessionId}`,
@@ -307,7 +307,7 @@ export function schedulePayoutRequestMailJob({
 }) {
   try {
     logger.info("in payout request mail schedule!")
-    const date = new Date(new Date().getTime() + 10000)
+    const date = new Date(new Date().getTime() + 3000)
 
     const job = schedule.scheduleJob(date, async () => {
       await new Mail(
@@ -334,7 +334,7 @@ export function schedulePayoutStatusUpdateMailJob({
 }) {
   try {
     logger.info("in payout status updated mail schedule!")
-    const date = new Date(new Date().getTime() + 10000)
+    const date = new Date(new Date().getTime() + 3000)
 
     const job = schedule.scheduleJob(date, async () => {
       await new Mail(

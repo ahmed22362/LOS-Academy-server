@@ -30,7 +30,9 @@ export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { userId, sessionDates, courses } = req.body
     if (!Array.isArray(sessionDates)) {
-      throw new AppError(400, "Please provide sessionDates as list or array!")
+      return next(
+        new AppError(400, "Please provide sessionDates as list or array!")
+      )
     }
     if (type === SessionType.FREE) {
       await checkPreviousReq({ userId, type: SessionType.FREE })
@@ -83,7 +85,7 @@ export const requestSession = (type: SessionType) =>
       res.status(201).json({ status: "success", data: requestSession })
     } catch (error: any) {
       await t.rollback()
-      throw new AppError(400, `Error Request Session! ${error.message}`)
+      return next(new AppError(400, `Error Request Session! ${error.message}`))
     }
   })
 export const getAllAvailableSessionsReq = (type: SessionType) =>
@@ -149,7 +151,9 @@ export const updateSessionReqDate = catchAsync(
     const newSessionDates: Date[] = []
     const currentDate = new Date()
     if (sessionDates && !Array.isArray(sessionDates)) {
-      throw new AppError(400, "Please provide dateList as list or array!")
+      return next(
+        new AppError(400, "Please provide dateList as list or array!")
+      )
     }
     if (sessionDates) {
       for (let date of sessionDates) {
@@ -171,7 +175,9 @@ export const updateSessionReqDate = catchAsync(
       body.sessionDates = [newSessionDates[0]]
     }
     if (sessionRequest.status === SessionStatus.TAKEN) {
-      throw new AppError(403, "Can't update request of and accepted request!")
+      return next(
+        new AppError(403, "Can't update request of and accepted request!")
+      )
     }
     const sessionRequestUpdated = await updateSessionRequestService({
       id: +id,

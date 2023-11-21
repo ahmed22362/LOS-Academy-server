@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
+  canRescheduleSession,
   checkDateFormat,
   createPaidSessionsService,
   generateMeetingLinkAndUpdateSession,
@@ -141,9 +142,11 @@ export const createPaidSessionAdmin = catchAsync(
       newSessionDates.push(new Date(date))
     }
     if (newSessionDates.length > 1) {
-      throw new AppError(
-        400,
-        "you can only create one session per time provide one date"
+      return next(
+        new AppError(
+          400,
+          "you can only create one session per time provide one date"
+        )
       )
     }
     const t = await sequelize.transaction()
@@ -179,7 +182,7 @@ export const createPaidSessionAdmin = catchAsync(
       res.status(201).json({ status: "success", data: session })
     } catch (error) {
       await t.rollback()
-      throw new AppError(400, `Error creating session!`)
+      return next(new AppError(400, `Error creating session!`))
     }
   }
 )
@@ -206,7 +209,7 @@ export const updateSessionAttendance = async (
         transaction: t,
       })
     } else {
-      throw new AppError(400, "Can't define which user signed in!")
+      return next(new AppError(400, "Can't define which user signed in!"))
     }
     await t.commit()
     res
@@ -290,6 +293,14 @@ export const updateSessionStatus = catchAsync(
             )
           )
         }
+        if (!session.meetingLink) {
+          return next(
+            new AppError(
+              400,
+              "Can't make ongoing session before generating it's link! generate the link before update it status!"
+            )
+          )
+        }
       }
       if (
         status === SessionStatus.ABSENT &&
@@ -365,7 +376,12 @@ export const userRequestSessionReschedule = catchAsync(
     }
     newDatesOptions.forEach((date: string) => {
       checkDateFormat(date)
-      if (new Date(date) <= session.sessionDate) {
+      const currentDate = new Date().getTime()
+      const newSessionDate = new Date(date).getTime()
+      if (
+        newSessionDate <= new Date(session.sessionDate).getTime() &&
+        currentDate > newSessionDate
+      ) {
         return next(
           new AppError(
             400,
@@ -418,9 +434,15 @@ export const teacherRequestSessionReschedule = catchAsync(
     if (!Array.isArray(newDatesOptions)) {
       return next(new AppError(400, "please provide newDatesOptions as list!"))
     }
+    const datesArr: Date[] = []
     newDatesOptions.forEach((date) => {
       checkDateFormat(date)
-      if (new Date(date) <= session.sessionDate) {
+      const currentDate = new Date()
+      const newSessionDate = new Date(date)
+      if (
+        newSessionDate.getTime() <= new Date(session.sessionDate).getTime() &&
+        currentDate.getTime() > newSessionDate.getTime()
+      ) {
         return next(
           new AppError(
             400,
@@ -428,6 +450,7 @@ export const teacherRequestSessionReschedule = catchAsync(
           )
         )
       }
+      datesArr.push(newSessionDate)
     })
     const previousRequest = await getPendingRequestBySessionIdService({
       sessionId,
@@ -443,7 +466,7 @@ export const teacherRequestSessionReschedule = catchAsync(
     const rescheduleReq = await teacherRequestRescheduleService({
       sessionId,
       teacherId,
-      newDatesOptions,
+      newDatesOptions: datesArr,
     })
     scheduleSessionRescheduleRequestMailJob({
       requestedBy: RoleType.TEACHER,
@@ -458,7 +481,7 @@ export const teacherRequestSessionReschedule = catchAsync(
     })
   }
 )
-export const getAllRescheduleRequests = catchAsync(
+export const getAllRescheduleRequestsForAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     let page = req.query.page
     let limit = req.query.limit
@@ -508,7 +531,7 @@ export const updateStatusSessionReschedule = (
           requestId: rescheduleRequestId,
           teacherId,
           status,
-          newDate: new Date(newDate),
+          newDate: newDate ? new Date(newDate) : undefined,
         }
       )
       requestedFrom = RoleType.TEACHER
@@ -517,7 +540,7 @@ export const updateStatusSessionReschedule = (
         requestId: rescheduleRequestId,
         userId,
         status,
-        newDate,
+        newDate: newDate ? new Date(newDate) : undefined,
       })
       requestedFrom = RoleType.USER
     }
@@ -567,21 +590,27 @@ export const userPlaceHisSessions = catchAsync(
       where: { userId, willContinue: true },
     })
     if (!sessionInfo) {
-      throw new AppError(
-        403,
-        "Can't place session dates the user didn't choose to continue with any teacher! you can request paid session"
+      return next(
+        new AppError(
+          403,
+          "Can't place session dates the user didn't choose to continue with any teacher! you can request paid session"
+        )
       )
     }
     const user = await getUserByIdService({ userId })
     if (user.sessionPlaced) {
-      throw new AppError(
-        403,
-        "You already placed your session wait for the next month or contact your admin"
+      return next(
+        new AppError(
+          403,
+          "You already placed your session wait for the next month or contact your admin"
+        )
       )
     }
     const subscription = await checkUserSubscription({ userId })
     if (!Array.isArray(sessionDates)) {
-      throw new AppError(400, "Please provide sessionDates as list or array!")
+      return next(
+        new AppError(400, "Please provide sessionDates as list or array!")
+      )
     }
     await sessionPerWeekEqualDates({
       userId,
@@ -630,7 +659,7 @@ export const userPlaceHisSessions = catchAsync(
       })
     } catch (error: any) {
       await transaction.rollback()
-      throw new AppError(400, `Error Placed Session: ${error.message}`)
+      return next(new AppError(400, `Error Placed Session: ${error.message}`))
     }
   }
 )
@@ -640,14 +669,3 @@ export const getAdminSessionStats = catchAsync(
     res.status(200).json({ status: "success", data: sessionStats })
   }
 )
-// Constants
-const MS_IN_DAY = 1000 * 60 * 60 * 24
-// Validation function
-function canRescheduleSession(sessionDate: Date) {
-  const currentDate = new Date()
-
-  const diffInMs = sessionDate.getTime() - currentDate.getTime()
-  const diffInDays = Math.ceil(diffInMs / MS_IN_DAY)
-
-  return diffInDays >= 10
-}

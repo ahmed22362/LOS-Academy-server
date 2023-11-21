@@ -11,7 +11,7 @@ import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
 import {
   generateSessionLink,
   getAdminSessionStats,
-  getAllRescheduleRequests,
+  getAllRescheduleRequestsForAdmin,
   getAllSessionsByStatus,
   getOneSessionInfo,
   replaceSessionInfoTeacher,
@@ -109,7 +109,11 @@ sessionRouter
   )
 sessionRouter
   .route("/rescheduleRequests")
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllRescheduleRequests)
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    getAllRescheduleRequestsForAdmin
+  )
 sessionRouter
   .route("/:id")
   .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo)

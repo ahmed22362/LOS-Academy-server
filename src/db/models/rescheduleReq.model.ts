@@ -39,7 +39,7 @@ export default class RescheduleRequest extends Model<RescheduleRequest> {
   @Column({ type: DataType.DATE, allowNull: false })
   oldDate!: Date
 
-  @Column({ type: DataType.DATE, allowNull: false })
+  @Column({ type: DataType.ARRAY(DataType.DATE), allowNull: false })
   newDatesOptions!: Date[]
 
   @Column({ type: DataType.DATE })

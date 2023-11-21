@@ -212,7 +212,7 @@ export const protect = (Model: ModelClass) =>
       } else if (currentUser instanceof Teacher) {
         req.teacher = currentUser
       } else {
-        throw new AppError(400, "Can't identify the object identity!")
+        return next(new AppError(400, "Can't identify the object identity!"))
       }
       next()
     }
@@ -349,7 +349,7 @@ export const googleOauthController = catchAsync(
       //jwt.decode(id_token);
       // upsert the user
       if (!googleUser.verified_email) {
-        throw new AppError(403, "Google Account is not verified!")
+        return next(new AppError(403, "Google Account is not verified!"))
       }
       const [user, created] = await User.findOrCreate({
         where: { email: googleUser.email },
@@ -412,19 +412,22 @@ export const resendMailConfirmation = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const email = req.query.email
     if (!email) {
-      throw new AppError(
-        400,
-        "Please provide mail to resend token to confirm the mail"
+      return next(
+        new AppError(
+          400,
+          "Please provide mail to resend token to confirm the mail"
+        )
       )
     }
     const user = await getUserByService({ findOptions: { where: { email } } })
     if (!user) {
-      throw new AppError(404, "Can't find user registered with this email!")
+      return next(
+        new AppError(404, "Can't find user registered with this email!")
+      )
     }
     if (user.verified) {
-      throw new AppError(
-        400,
-        "User already verified his mail user can log in now!"
+      return next(
+        new AppError(400, "User already verified his mail user can log in now!")
       )
     }
     await createAndSendConfirmMail(user, req)

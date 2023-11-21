@@ -305,8 +305,20 @@ export const getReceivedSessionRescheduleRequests = catchAsync(
 export const getAllSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
+    const status = req.query.status
+    let page = req.query.page
+    let limit = req.query.limit
+    let nPage
+    let nLimit
+    if (page && limit) {
+      nPage = Number(page)
+      nLimit = Number(limit)
+    }
     const rescheduleRequests = await getUserAllRescheduleRequestsService({
       userId,
+      page: nPage,
+      pageSize: nLimit,
+      status: status as any,
     })
     res.status(200).json({
       status: "success",

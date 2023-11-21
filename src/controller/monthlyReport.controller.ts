@@ -67,7 +67,7 @@ export const getMonthlyReport = catchAsync(
     const id = req.params.id
     const monthlyReport = await getMonthlyReportService({ id: +id })
     if (!monthlyReport) {
-      throw new AppError(404, "there is no report with this id!")
+      return next(new AppError(404, "there is no report with this id!"))
     }
     res.status(200).json({ status: "success", data: monthlyReport })
   }

@@ -15,9 +15,10 @@ import Session, { SessionStatus } from "../db/models/session.model"
 import SessionInfo from "../db/models/sessionInfo.model"
 import User from "../db/models/user.model"
 import { getUserAttr } from "../controller/user.controller"
-import { RoleType } from "../db/models/teacher.model"
+import Teacher, { RoleType } from "../db/models/teacher.model"
 import { sequelize } from "../db/sequelize"
 import logger from "../utils/logger"
+import { getTeacherAtt } from "../controller/teacher.controller"
 
 export async function createRescheduleRequestService({
   sessionId,
@@ -30,12 +31,20 @@ export async function createRescheduleRequestService({
   oldDate: Date
   requestedBy: RoleType
 }) {
+  const dateArr = newDatesOptions.map((str) => new Date(str))
+
+  // Check if actual Date instance
+  dateArr.forEach((d) => {
+    console.log(d.getTime())
+    console.log(d instanceof Date)
+  })
   const reqBody = {
     sessionId,
     oldDate,
-    newDatesOptions,
+    newDatesOptions: dateArr,
     requestedBy,
   }
+  logger.info(reqBody)
   const rescheduleRequest = await RescheduleRequest.create(reqBody as any)
   if (!rescheduleRequest) {
     throw new AppError(400, "can't create reschedule request!")
@@ -184,6 +193,7 @@ export async function teacherRequestRescheduleService({
       "Can't request session reschedule for session that is not yours!"
     )
   }
+  logger.info(newDatesOptions)
   const rescheduleRequest = createRescheduleRequestService({
     sessionId,
     newDatesOptions,
@@ -220,16 +230,18 @@ export async function teacherAcceptOrDeclineRescheduleRequestService({
   if (!exist) {
     throw new AppError(401, "can't accept request for session is not yours")
   }
-  const newSessionDate = new Date(newDate as Date)
-  if (
-    status === RescheduleRequestStatus.APPROVED &&
-    !rescheduleRequest.newDatesOptions.includes(newSessionDate)
-  ) {
+
+  if (status === RescheduleRequestStatus.APPROVED) {
     const dateStr = rescheduleRequest.newDatesOptions.join(", ")
-    throw new AppError(
-      400,
-      `please provide date that in the range or the reschedule request in: ${dateStr}`
-    )
+    const match = rescheduleRequest.newDatesOptions.some((d) => {
+      return datesMatch(d, newDate as Date)
+    })
+    if (!match) {
+      throw new AppError(
+        400,
+        `please provide date that in the the reschedule request in: ${dateStr}`
+      )
+    }
   }
   const transaction = await sequelize.transaction()
   try {
@@ -240,6 +252,7 @@ export async function teacherAcceptOrDeclineRescheduleRequestService({
       transaction,
     })
     if (status === RescheduleRequestStatus.DECLINED) {
+      await transaction.commit()
       return updatedRequest
     }
     // update session
@@ -333,23 +346,43 @@ export async function getPendingRequestBySessionIdService({
 }
 export async function getUserAllRescheduleRequestsService({
   userId,
+  page,
+  pageSize,
+  status,
   requestedBy,
 }: {
   userId: string
+  page?: number
+  pageSize?: number
+  status?: RescheduleRequestStatus
   requestedBy?: RoleType
 }) {
-  const sessions = await getUserAllSessionsService({
-    userId,
-    status: SessionStatus.PENDING,
-  })
+  let limit
+  let offset
+  if (pageSize) limit = pageSize
+  if (page && pageSize) offset = page * pageSize
+  const sessions = await getUserAllSessionsService({ userId })
   const sessionsIds: number[] = sessions.map((session) => session.id)
-  logger.info(sessionsIds)
-  let where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
-  if (requestedBy) {
-    where.requestedBy = requestedBy
-  }
+  const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
+  if (status) where.status = status
+  if (requestedBy) where.requestedBy = requestedBy
   const rescheduleRequests = await RescheduleRequest.findAll({
     where,
+    limit,
+    offset,
+    include: [
+      {
+        model: Session,
+        attributes: ["sessionInfoId"],
+        include: [
+          {
+            model: SessionInfo,
+            attributes: ["teacherId"],
+            include: [{ model: Teacher, attributes: getTeacherAtt }],
+          },
+        ],
+      },
+    ],
   })
   return rescheduleRequests
 }
@@ -452,4 +485,7 @@ export async function getTeacherRescheduleRequestsService({
     pageSize,
     status,
   })
+}
+function datesMatch(d1: Date, d2: Date) {
+  return d1.getTime() === d2.getTime()
 }

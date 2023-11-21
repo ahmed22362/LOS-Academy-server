@@ -434,6 +434,12 @@ export async function updateSessionTeacherAttendanceService({
   if (!exist) {
     throw new AppError(404, "The Teacher is not assign to this session")
   }
+  if (!canAttendSession(session.sessionDate, session.sessionDuration)) {
+    throw new AppError(
+      400,
+      "Can't update attendance now wait before the session with in 30 min"
+    )
+  }
   session.teacherAttended = attend
   await session.save({ transaction })
 }
@@ -455,6 +461,12 @@ export async function updateSessionStudentAttendanceService({
   })
   if (!exist) {
     throw new AppError(404, "The student is not assign to this session")
+  }
+  if (!canAttendSession(session.sessionDate, session.sessionDuration)) {
+    throw new AppError(
+      400,
+      "Can't update attendance now wait before the session with in 30 min"
+    )
   }
   session.studentAttended = attend
   await session.save({ transaction })
@@ -725,4 +737,31 @@ export async function isThereOngoingSessionForTheSameTeacher({
     )
   }
   return false
+}
+// Constants
+const MS_IN_MINUTE = 1000 * 60
+
+export function canRescheduleSession(sessionDate: Date) {
+  const currentDate = new Date()
+
+  // If session date is in the past - allow reschedule
+  if (sessionDate < currentDate) {
+    return true
+  }
+
+  const diffInMs = sessionDate.getTime() - currentDate.getTime()
+
+  // Convert to minutes and check if >= 10
+  const diffInMinutes = Math.ceil(diffInMs / MS_IN_MINUTE)
+  return diffInMinutes >= 10
+}
+// user can check attendance before the session in 30 minutes
+export function canAttendSession(sessionDate: Date, sessionDuration: number) {
+  const currentDate = new Date()
+  if (currentDate.getMinutes() >= sessionDate.getMinutes() + sessionDuration) {
+    return false
+  }
+  const diffInMs = sessionDate.getTime() - currentDate.getTime()
+  const diffInMinutes = Math.ceil(diffInMs / MS_IN_MINUTE)
+  return diffInMinutes <= 30
 }

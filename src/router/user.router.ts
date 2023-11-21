@@ -3,6 +3,7 @@ import {
   checkJWT,
   createUser,
   deleteUser,
+  getAllSessionRescheduleRequests,
   getAllUsers,
   getMyHistorySessions,
   getMySessionRescheduleRequests,
@@ -30,8 +31,6 @@ import { RoleType } from "../db/models/teacher.model"
 import validate from "../middleware/validate"
 import { createUserSchema } from "../schema/user.schema"
 import {
-  getAllRescheduleRequests,
-  updateSessionStatus,
   updateStatusSessionReschedule,
   userRequestSessionReschedule,
 } from "../controller/session.controller"
@@ -75,7 +74,7 @@ userRouter
   .get(protectUser, setUserOrTeacherId, getReceivedSessionRescheduleRequests)
 userRouter
   .route("/allRescheduleRequests")
-  .get(protectUser, setUserOrTeacherId, getAllRescheduleRequests)
+  .get(protectUser, setUserOrTeacherId, getAllSessionRescheduleRequests)
 userRouter
   .route("/acceptReschedule")
   .post(

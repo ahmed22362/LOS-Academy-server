@@ -189,10 +189,13 @@ class Mail {
     sessionOldDate: Date
     newDatesOptions: Date[]
   }) {
+    let dates = Array.isArray(newDatesOptions)
+      ? newDatesOptions
+      : [newDatesOptions]
     const { title, paragraph, header, footer } = sessionReschedulePayload({
       senderName: this.name,
       receiverName,
-      newDatesOptions: newDatesOptions.map((date) =>
+      newDatesOptions: dates.map((date) =>
         date.toLocaleString("en-GB", { timeZone: "UTC" })
       ),
       sessionOldDate: sessionOldDate.toUTCString(),
@@ -225,11 +228,14 @@ class Mail {
     sessionNewDate: Date
     status: string
   }) {
+    let dates = Array.isArray(newDatesOptions)
+      ? newDatesOptions
+      : [newDatesOptions]
     const { title, paragraph, header, footer, mailAdds } =
       sessionRescheduleStatusPayload({
         senderName: this.name,
         receiverName,
-        newDatesOptions: newDatesOptions.map((date) =>
+        newDatesOptions: dates.map((date) =>
           date.toLocaleString("en-GB", {
             timeZone: "UTC",
           })
