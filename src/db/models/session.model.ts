@@ -14,7 +14,8 @@ export enum SessionStatus {
   PENDING = "pending",
   ONGOING = "ongoing",
   TAKEN = "taken",
-  ABSENT = "absent",
+  USER_ABSENT = "user absent",
+  TEACHER_ABSENT = "teacher absent",
 }
 export enum SessionType {
   FREE = "free",

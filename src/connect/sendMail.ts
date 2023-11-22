@@ -15,6 +15,7 @@ import {
   subscriptionCanceledPayload,
   subscriptionCreatePayload,
 } from "../templates/mails.payloads"
+import { RoleType } from "../db/models/teacher.model"
 dotenv.config()
 
 export interface MailInterface {
@@ -291,15 +292,25 @@ class Mail {
     userName,
     teacherName,
     sessionDate,
+    whoMiss,
   }: {
     userName: string
     teacherName: string
     sessionDate: string
+    whoMiss: RoleType
   }) {
+    let who, missWith
+    if (whoMiss === RoleType.TEACHER) {
+      who = teacherName
+      missWith = userName
+    } else if (whoMiss === RoleType.USER) {
+      who = userName
+      missWith = teacherName
+    }
     const { title, paragraph, header, footer } =
       SessionStartReminderForAdminPayload({
-        teacherName: teacherName,
-        userName,
+        whoMiss: who as string,
+        missWith: missWith as string,
         sessionDate,
       })
     const sessionStartReminderAdminTemplate = generateGenericEmail({

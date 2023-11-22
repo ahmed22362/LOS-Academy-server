@@ -69,10 +69,12 @@ export async function updateTeacherBalance({
   teacherId,
   amount,
   numOfSessions = 1,
+  committed,
   transaction,
 }: {
   teacherId: string
   amount?: number
+  committed?: boolean
   numOfSessions?: number
   transaction?: Transaction
 }) {
@@ -81,7 +83,7 @@ export async function updateTeacherBalance({
     amount = numOfSessions * teacher.sessionCost
   }
   const updated = await teacher.increment(
-    { balance: amount, committedSessions: 1 },
+    { balance: amount, committedSessions: committed ? 1 : 0 },
     {
       transaction,
     }

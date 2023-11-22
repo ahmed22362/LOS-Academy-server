@@ -5,6 +5,7 @@ import AppError from "../utils/AppError"
 import { deleteModelService, updateModelService } from "./factory.services"
 import { DATE_PATTERN, FREE_SESSION_DURATION } from "./sessionReq.service"
 import {
+  getOneSessionInfoServiceBy,
   getTeacherSessionInfoService,
   getUserSessionInfoService,
 } from "./sessionInfo.service"
@@ -17,8 +18,11 @@ import { getTeacherAtt } from "../controller/teacher.controller"
 import {
   scheduleSessionReminderMailJob,
   scheduleSessionStartReminderMailJob,
+  scheduleUpdateSessionToFinished,
+  scheduleUpdateSessionToOngoing,
 } from "../utils/scheduler"
 import { THREE_MINUTES_IN_MILLISECONDS } from "../controller/session.controller"
+import logger from "../utils/logger"
 
 export interface IInfoBody {
   userId: string
@@ -62,10 +66,18 @@ export async function createFreeSessionService({
   sessionInfoId,
   sessionDate,
   transaction,
+  studentName,
+  studentEmail,
+  teacherName,
+  teacherEmail,
 }: {
   sessionInfoId: number
   sessionDate: Date
   transaction?: Transaction
+  studentName: string
+  studentEmail: string
+  teacherName: string
+  teacherEmail: string
 }) {
   const start_time = sessionDate.toISOString().split("T")[1]
   const sessionBody: any = {
@@ -79,13 +91,30 @@ export async function createFreeSessionService({
   if (!session) {
     throw new AppError(400, "Can't create free session!")
   }
-  scheduleSessionStartReminderMailJob({
+  // send mail after 4 mins of the started session for the absent users
+  await scheduleSessionStartReminderMailJob({
     sessionId: session.id,
     sessionDate: session.sessionDate,
   })
-  scheduleSessionReminderMailJob({
+  // send mail before 30 of the session to remind both student and teacher
+  await scheduleSessionReminderMailJob({
     sessionDate: session.sessionDate,
     sessionId: session.id,
+    studentEmail,
+    studentName,
+    teacherEmail,
+    teacherName,
+  })
+  // update the status of the session to be ongoing at it's time
+  await scheduleUpdateSessionToOngoing({
+    sessionId: session.id,
+    sessionDate: session.sessionDate,
+  })
+  // update the status of the session to be finished based on the status of the absents
+  await scheduleUpdateSessionToFinished({
+    sessionId: session.id,
+    sessionDate: session.sessionDate,
+    sessionDuration: session.sessionDuration,
   })
   return session
 }
@@ -96,6 +125,10 @@ export async function createPaidSessionsService({
   sessionCount,
   sessionsPerWeek,
   transaction,
+  studentName,
+  studentEmail,
+  teacherName,
+  teacherEmail,
 }: {
   sessionInfoId: number
   sessionDates: Date[]
@@ -103,6 +136,10 @@ export async function createPaidSessionsService({
   sessionCount: number
   sessionsPerWeek: number
   transaction?: Transaction
+  studentName: string
+  studentEmail: string
+  teacherName: string
+  teacherEmail: string
 }): Promise<Session[]> {
   let sessions: Session[] = []
   const sessionsBody = generateSessions({
@@ -117,13 +154,30 @@ export async function createPaidSessionsService({
     if (!session) {
       throw new AppError(400, "Can't create paid session!")
     }
-    scheduleSessionReminderMailJob({
-      sessionDate: session.sessionDate,
+    // send mail after 4 mins of the started session for the absent users
+    await scheduleSessionStartReminderMailJob({
       sessionId: session.id,
+      sessionDate: session.sessionDate,
     })
-    scheduleSessionStartReminderMailJob({
+    // send mail before 30 of the session to remind both student and teacher
+    await scheduleSessionReminderMailJob({
+      sessionDate: session.sessionDate,
+      sessionId: session.id,
+      studentEmail,
+      studentName,
+      teacherEmail,
+      teacherName,
+    })
+    // update the status of the session to be ongoing at it's time
+    await scheduleUpdateSessionToOngoing({
       sessionId: session.id,
       sessionDate: session.sessionDate,
+    })
+    // update the status of the session to be finished based on the status of the absents
+    await scheduleUpdateSessionToFinished({
+      sessionId: session.id,
+      sessionDate: session.sessionDate,
+      sessionDuration: session.sessionDuration,
     })
     sessions.push(session as Session)
   }
@@ -333,7 +387,7 @@ export async function getUserUpcomingSessionService({
 }) {
   const session = await allUserSessionsService({
     userId,
-    status: SessionStatus.PENDING,
+    status: SessionStatus.ONGOING,
     pageSize: 1,
     upcoming: true,
   })
@@ -473,9 +527,11 @@ export async function updateSessionStudentAttendanceService({
 }
 export async function generateMeetingLinkAndUpdateSession({
   sessionId,
+  status,
   transaction,
 }: {
   sessionId: number
+  status?: SessionStatus
   transaction?: Transaction
 }) {
   const session = await getOneSessionDetailsService({ sessionId })
@@ -484,9 +540,13 @@ export async function generateMeetingLinkAndUpdateSession({
     duration: session.sessionDuration,
     startDateTime: session.sessionDate,
   })
+  const updatedData: any = { meetingLink }
+  if (status) {
+    updatedData.status = status
+  }
   const updatedSession = await updateSessionService({
     sessionId,
-    updatedData: { meetingLink },
+    updatedData,
     transaction,
   })
   return updatedSession

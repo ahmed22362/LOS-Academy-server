@@ -20,7 +20,10 @@ export async function createMaterialService({ body }: { body: IMaterialBody }) {
     const material = Material.create(body as any)
     return material
   } catch (error: any) {
-    throw new AppError(400, `Error Creating material: ${error.message}`)
+    throw new AppError(
+      400,
+      `Error Creating material: ${error.errors[0].message}`
+    )
   }
 }
 

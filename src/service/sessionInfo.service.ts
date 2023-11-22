@@ -74,10 +74,13 @@ export async function getSessionInfoService({
 }
 export async function getOneSessionInfoServiceBy({
   where,
+  include,
 }: {
   where: WhereOptions
+  include?: IncludeOptions[]
 }) {
   const sessionInfo = await SessionInfo.findOne({
+    include,
     where,
     order: [["updatedAt", "DESC"]],
   })

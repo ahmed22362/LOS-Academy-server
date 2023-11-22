@@ -1,4 +1,3 @@
-import { createStripeProduct } from "./stripe.service"
 import Course from "../db/models/course.model"
 import AppError from "../utils/AppError"
 import {

@@ -1,11 +1,14 @@
 import schedule from "node-schedule"
 import Mail from "../connect/sendMail"
-import { getUserByIdService } from "../service/user.service"
-import { getTeacherByIdService } from "../service/teacher.service"
 import logger from "./logger"
 import { getOneSessionDetailsService } from "../service/session.service"
 import { getOneRescheduleRequestService } from "../service/rescheduleReq.service"
 import { RoleType } from "../db/models/teacher.model"
+import { createJobService } from "../service/scheduleJob.service"
+import jobCallbacks, { callbacksNames } from "./schedulerJobsCallbacks"
+import AppError from "./AppError"
+
+const MS_IN_MINUTE = 1000 * 60
 
 export function scheduleVerifyMailJob({
   to,
@@ -20,13 +23,10 @@ export function scheduleVerifyMailJob({
     const mail = new Mail(to, name)
 
     logger.info("in send verify mail schedule!")
-    const date = new Date(new Date().getTime() + 3000)
-    const job = schedule.scheduleJob(date, async () => {
+    const date = new Date(new Date().getTime() + 1000)
+    schedule.scheduleJob(date, async () => {
       await mail.sendVerifyMail({ link })
       logger.info("One time send verify mail executed!")
-      // Delete job
-      job.cancel()
-      logger.info("Job deleted")
     })
   } catch (error: any) {
     logger.error(`Error while send verify mail: ${error.message}`)
@@ -48,17 +48,14 @@ export function scheduleSuccessSubscriptionMailJob({
   try {
     const mail = new Mail(to, name)
     logger.info("in send subscription success mail schedule!")
-    const date = new Date(new Date().getTime() + 3000)
-    const job = schedule.scheduleJob(date, async () => {
+    const date = new Date(new Date().getTime() + 1000)
+    schedule.scheduleJob(date, async () => {
       await mail.sendSubscriptionCreateMail({
         subscriptionAmount,
         subscriptionCycle,
         subscriptionTitle,
       })
       logger.info("One time send subscription success mail executed!")
-      // Delete job
-      job.cancel()
-      logger.info("Job deleted")
     })
   } catch (error: any) {
     logger.error(`Error while subscription success mail: ${error.message}`)
@@ -74,13 +71,10 @@ export function scheduleSubscriptionCanceledMailJob({
   try {
     const mail = new Mail(to, name)
     logger.info("in send subscription cancelled mail schedule!")
-    const date = new Date(new Date().getTime() + 3000)
-    const job = schedule.scheduleJob(date, async () => {
+    const date = new Date(new Date().getTime() + 1000)
+    schedule.scheduleJob(date, async () => {
       await mail.sendSubscriptionCanceledMail()
       logger.info("One time send subscription cancelled executed!")
-      // Delete job
-      job.cancel()
-      logger.info("Job deleted")
     })
   } catch (error: any) {
     logger.error(`Error while subscription cancelled mail: ${error.message}`)
@@ -101,8 +95,8 @@ export function scheduleSessionPlacedMailJob({
 }) {
   try {
     logger.info("in send session placed mail schedule!")
-    const date = new Date(new Date().getTime() + 3000)
-    const job = schedule.scheduleJob(`Session`, date, async () => {
+    const date = new Date(new Date().getTime() + 1000)
+    schedule.scheduleJob(`Session`, date, async () => {
       await new Mail(userEmail, userName).sendSessionPlacesMail({
         sessionDate: sessionDate.toUTCString(),
       })
@@ -110,92 +104,9 @@ export function scheduleSessionPlacedMailJob({
         sessionDate: sessionDate.toUTCString(),
       })
       logger.info("One time session placed mail executed!")
-      // Delete job
-      job.cancel()
-      logger.info("Job deleted")
     })
   } catch (error: any) {
     logger.error(`Error while session placed mail: ${error.message}`)
-  }
-}
-export function scheduleSessionReminderMailJob({
-  sessionDate,
-  sessionId,
-}: {
-  sessionDate: Date
-  sessionId: number
-}) {
-  try {
-    logger.info("in session reminder mail schedule!")
-    const date = new Date(sessionDate).setMinutes(sessionDate.getMinutes() - 30)
-    const job = schedule.scheduleJob(
-      `session #${sessionId}`,
-      date,
-      async () => {
-        const session = await getOneSessionDetailsService({ sessionId })
-        await new Mail(
-          session.SessionInfo.user!.email,
-          session.SessionInfo.user!.name
-        ).sendSessionReminderMail({
-          sessionDate: sessionDate.toUTCString(),
-        })
-        await new Mail(
-          session.SessionInfo.teacher!.email,
-          session.SessionInfo.teacher!.name
-        ).sendSessionReminderMail({
-          sessionDate: sessionDate.toUTCString(),
-        })
-        logger.info("One time session reminder mail executed!")
-        // Delete job
-        job.cancel()
-        logger.info("Job deleted")
-      }
-    )
-  } catch (error: any) {
-    logger.error(`Error while session reminder mail: ${error.message}`)
-  }
-}
-export function scheduleSessionStartReminderMailJob({
-  sessionId,
-  sessionDate,
-}: {
-  sessionId: number
-  sessionDate: Date
-}) {
-  try {
-    logger.info("in session started mail schedule!")
-    // add 4 mins to the session start to check if the user attend
-    const date = new Date(sessionDate).setMinutes(sessionDate.getMinutes() + 4)
-
-    const job = schedule.scheduleJob(
-      `session #${sessionId} started`,
-      date,
-      async () => {
-        const session = await getOneSessionDetailsService({ sessionId })
-        if (!session.studentAttended) {
-          await new Mail(
-            session.SessionInfo.user!.email,
-            session.SessionInfo.user!.name
-          ).sendSessionStartReminderForUser({
-            sessionDate: session.sessionDate.toUTCString(),
-          })
-          await new Mail(
-            process.env.ADMIN_EMAIL as string,
-            "Admin"
-          ).sendSessionStartReminderForAdmin({
-            userName: session.SessionInfo.user!.name,
-            teacherName: session.SessionInfo.teacher!.name,
-            sessionDate: session.sessionDate.toUTCString(),
-          })
-        }
-        logger.info("One time session started reminder mail executed!")
-        // Delete job
-        job.cancel()
-        logger.info("Job deleted")
-      }
-    )
-  } catch (error: any) {
-    logger.error(`Error while session started reminder mail: ${error.message}`)
   }
 }
 export function scheduleSessionRescheduleRequestMailJob({
@@ -211,7 +122,7 @@ export function scheduleSessionRescheduleRequestMailJob({
 }) {
   try {
     logger.info("in session reschedule request mail schedule!")
-    const date = new Date(new Date().getTime() + 3000)
+    const date = new Date(new Date().getTime() + 1000)
     let email: string, name: string, receiverName: string
     const job = schedule.scheduleJob(
       `Session #${sessionId}`,
@@ -234,9 +145,6 @@ export function scheduleSessionRescheduleRequestMailJob({
           newDatesOptions,
         })
         logger.info("One time session reschedule request mail executed!")
-        // Delete job
-        job.cancel()
-        logger.info("Job deleted")
       }
     )
   } catch (error: any) {
@@ -258,7 +166,7 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
 }) {
   try {
     logger.info("in session reschedule request status update mail schedule!")
-    const date = new Date(new Date().getTime() + 3000)
+    const date = new Date(new Date().getTime() + 1000)
     let email: string, name: string
     const job = schedule.scheduleJob(
       `Reschedule Request #${sessionId}`,
@@ -287,9 +195,6 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
           sessionNewDate: session.sessionDate,
         })
         logger.info("One time session reminder mail executed!")
-        // Delete job
-        job.cancel()
-        logger.info("Job deleted")
       }
     )
   } catch (error: any) {
@@ -307,7 +212,7 @@ export function schedulePayoutRequestMailJob({
 }) {
   try {
     logger.info("in payout request mail schedule!")
-    const date = new Date(new Date().getTime() + 3000)
+    const date = new Date(new Date().getTime() + 1000)
 
     const job = schedule.scheduleJob(date, async () => {
       await new Mail(
@@ -315,9 +220,6 @@ export function schedulePayoutRequestMailJob({
         "admin"
       ).sendPayoutRequestMail({ teacherName, amount })
       logger.info("One time payout request mail executed!")
-      // Delete job
-      job.cancel()
-      logger.info("Job deleted")
     })
   } catch (error: any) {
     logger.error(`Error while payout request mail: ${error.message}`)
@@ -334,7 +236,7 @@ export function schedulePayoutStatusUpdateMailJob({
 }) {
   try {
     logger.info("in payout status updated mail schedule!")
-    const date = new Date(new Date().getTime() + 3000)
+    const date = new Date(new Date().getTime() + 1000)
 
     const job = schedule.scheduleJob(date, async () => {
       await new Mail(
@@ -344,9 +246,6 @@ export function schedulePayoutStatusUpdateMailJob({
         status,
       })
       logger.info("One payout status updated mail executed!")
-      // Delete job
-      job.cancel()
-      logger.info("Job deleted")
     })
   } catch (error: any) {
     logger.error(`Error while payout status updated mail: ${error.message}`)
@@ -361,5 +260,178 @@ export function rescheduleReminderJob({
 }) {
   const jobs = schedule.scheduledJobs
   const job = jobs[`session #${sessionId}`]
+  const jobName = `session #${sessionId} finished Updating`
+
   if (job) job.reschedule(newDate.toISOString())
 }
+export async function scheduleSessionReminderMailJob({
+  sessionDate,
+  sessionId,
+  studentName,
+  studentEmail,
+  teacherName,
+  teacherEmail,
+}: {
+  sessionDate: Date
+  sessionId: number
+  studentName: string
+  studentEmail: string
+  teacherName: string
+  teacherEmail: string
+}) {
+  try {
+    logger.info("in session reminder mail schedule!")
+    const ThirtyMinInMS = 30 * MS_IN_MINUTE
+    const date = new Date(sessionDate.getTime() - ThirtyMinInMS)
+    const jobName = `session #${sessionId} Reminder`
+    const callbackName = callbacksNames.SESSION_REMINDER_MAIL
+    const dbJob = await createJobService({
+      body: {
+        name: jobName,
+        scheduledTime: new Date(date),
+        callbackName,
+        data: {
+          studentName,
+          studentEmail,
+          teacherName,
+          teacherEmail,
+        },
+      },
+    })
+    const sessionReminderCallback = jobCallbacks.get(callbackName)
+    if (!sessionReminderCallback) {
+      throw new AppError(
+        404,
+        `Can't find callback with this name ${callbackName}`
+      )
+    }
+    schedule.scheduleJob(jobName, date, async () => {
+      await sessionReminderCallback({
+        sessionDate,
+        studentName,
+        studentEmail,
+        teacherName,
+        teacherEmail,
+        jobId: dbJob.id,
+      })
+    })
+  } catch (error: any) {
+    logger.error(`Error while session reminder mail: ${error.message}`)
+  }
+}
+export async function scheduleSessionStartReminderMailJob({
+  sessionId,
+  sessionDate,
+}: {
+  sessionId: number
+  sessionDate: Date
+}) {
+  try {
+    logger.info("in session started mail schedule!")
+    // add 4 mins to the session start to check if the user attend
+    const FourMinInMS = 4 * MS_IN_MINUTE
+    const date = new Date(sessionDate.getTime() + FourMinInMS)
+    const jobName = `session #${sessionId} started`
+    const callbackName = callbacksNames.SESSION_STARTED_MAIL
+    const dbJob = await createJobService({
+      body: {
+        name: jobName,
+        scheduledTime: new Date(date),
+        callbackName,
+        data: { sessionId },
+      },
+    })
+    const sessionStartedCallback = jobCallbacks.get(callbackName)
+    if (!sessionStartedCallback) {
+      throw new AppError(
+        404,
+        `Can't find callback with this name ${callbackName}`
+      )
+    }
+    const job = schedule.scheduleJob(jobName, date, async () => {
+      await sessionStartedCallback({ sessionId, jobId: dbJob.id })
+    })
+  } catch (error: any) {
+    logger.error(`Error while session started reminder mail: ${error.message}`)
+  }
+}
+export async function scheduleUpdateSessionToOngoing({
+  sessionId,
+  sessionDate,
+}: {
+  sessionId: number
+  sessionDate: Date
+}) {
+  try {
+    logger.info("in update session to ongoing schedule!")
+    const jobName = `session #${sessionId} ONGOING Updating`
+    const callbackName = callbacksNames.UPDATE_SESSION_TO_ONGOING
+    const dbJob = await createJobService({
+      body: {
+        name: jobName,
+        scheduledTime: new Date(sessionDate.getTime() - MS_IN_MINUTE),
+        callbackName,
+        data: {
+          sessionId,
+        },
+      },
+    })
+    const sessionUpdateCallback = jobCallbacks.get(callbackName)
+    if (!sessionUpdateCallback) {
+      throw new AppError(
+        404,
+        `Can't find callback with this name ${callbackName}`
+      )
+    }
+    schedule.scheduleJob(jobName, sessionDate, async () => {
+      await sessionUpdateCallback({
+        sessionId,
+        jobId: dbJob.id,
+      })
+    })
+  } catch (error: any) {
+    logger.error(`Error while session ongoing mail: ${error.message}`)
+  }
+}
+export async function scheduleUpdateSessionToFinished({
+  sessionId,
+  sessionDate,
+  sessionDuration,
+}: {
+  sessionId: number
+  sessionDate: Date
+  sessionDuration: number
+}) {
+  try {
+    logger.info("in update session to finished schedule!")
+    const jobName = `session #${sessionId} finished Updating`
+    const callbackName = callbacksNames.UPDATE_SESSION_TO_FINISHED
+    const date = sessionDate.getTime() + sessionDuration * MS_IN_MINUTE
+    const dbJob = await createJobService({
+      body: {
+        name: jobName,
+        scheduledTime: new Date(date),
+        callbackName,
+        data: {
+          sessionId,
+        },
+      },
+    })
+    const sessionUpdateCallback = jobCallbacks.get(callbackName)
+    if (!sessionUpdateCallback) {
+      throw new AppError(
+        404,
+        `Can't find callback with this name ${callbackName}`
+      )
+    }
+    schedule.scheduleJob(jobName, new Date(date), async () => {
+      await sessionUpdateCallback({
+        sessionId,
+        jobId: dbJob.id,
+      })
+    })
+  } catch (error: any) {
+    logger.error(`Error while session finished mail: ${error.message}`)
+  }
+}
+export function rescheduleSession() {}

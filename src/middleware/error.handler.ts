@@ -15,6 +15,7 @@ const handleDuplicateFieldsDB = (err: any): AppError => {
 }
 
 const handleValidationErrorDB = (err: any): AppError => {
+  console.log(err)
   const errors = Object.values(err.errors).map((el: any) => el.message)
 
   const message = `Invalid input data. ${errors.join(". ")}`
@@ -72,7 +73,7 @@ const errorHandler = (
     if (err.name === "CastError") err = handleCastErrorDB(err)
     if (err.name === "SequelizeUniqueConstraintError")
       err = handleDuplicateFieldsDB(err)
-    if (err.name === "ValidationError") err = handleValidationErrorDB(err)
+    if (err.name === "Validation error") err = handleValidationErrorDB(err)
     if (err.name === "JsonWebTokenError") err = handleJWTError()
     if (err.name === "TokenExpiredError") err = handleJWTExpiredError()
     sendErrorProd(err, res)

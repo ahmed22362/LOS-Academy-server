@@ -269,7 +269,7 @@ export const updateSessionStatus = catchAsync(
           new AppError(401, "you can't update session that is not yours")
         )
       }
-      if (!session.studentAttended && status !== SessionStatus.ABSENT) {
+      if (!session.studentAttended && status !== SessionStatus.USER_ABSENT) {
         return next(
           new AppError(
             400,
@@ -303,7 +303,7 @@ export const updateSessionStatus = catchAsync(
         }
       }
       if (
-        status === SessionStatus.ABSENT &&
+        status === SessionStatus.USER_ABSENT &&
         !isSessionAfterItsTimeRange(
           session.sessionDate,
           session.sessionDuration

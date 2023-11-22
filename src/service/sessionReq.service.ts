@@ -22,6 +22,8 @@ import {
   createSessionInfoService,
 } from "./sessionInfo.service"
 import { sequelize } from "../db/sequelize"
+import logger from "../utils/logger"
+import { getTeacherByIdService } from "./teacher.service"
 export const DATE_PATTERN: RegExp =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
 export const FREE_SESSION_TOPIC = "User Free Session"
@@ -102,6 +104,8 @@ export async function acceptSessionRequestService({
   })
   const userId = sessionReq.userId
   await checkUniqueUserAndTeacher({ teacherId, userId })
+  const user = await getUserByIdService({ userId })
+  const teacher = await getTeacherByIdService({ id: teacherId })
   const t = await sequelize.transaction()
   try {
     const sessionInfo = await createSessionInfoService({
@@ -116,6 +120,10 @@ export async function acceptSessionRequestService({
         sessionInfoId: sessionInfo.id,
         sessionDate: firstDate,
         transaction: t,
+        studentEmail: user.email,
+        studentName: user.name,
+        teacherEmail: teacher.email,
+        teacherName: teacher.name,
       })
       await updateSessionRequestService({
         id: sessionReqId,
@@ -135,6 +143,10 @@ export async function acceptSessionRequestService({
         sessionDuration: subscribePlan.plan.sessionDuration,
         sessionsPerWeek: subscribePlan.plan.sessionsPerWeek,
         transaction: t,
+        studentEmail: user.email,
+        studentName: user.name,
+        teacherEmail: teacher.email,
+        teacherName: teacher.name,
       })
       await updateSessionRequestService({
         id: sessionReqId,

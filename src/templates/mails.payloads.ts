@@ -1,4 +1,5 @@
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
+import { RoleType } from "../db/models/teacher.model"
 
 export const forgetPasswordPayload = ({
   name,
@@ -154,19 +155,19 @@ export const SessionStartReminderForUserPayload = ({
   return { title, header, paragraph, footer }
 }
 export const SessionStartReminderForAdminPayload = ({
-  userName,
-  teacherName,
+  whoMiss,
+  missWith,
   sessionDate,
 }: {
-  userName: string
-  teacherName: string
+  whoMiss: string
+  missWith: string
   sessionDate: string
 }) => {
-  const title = "Student missed session start!"
-  const header = "Student missed session start!"
+  const title = `${whoMiss} missed session start!`
+  const header = `${whoMiss} missed session start!`
   const paragraph = `Hello Admin,
-  <p>This is an automated notification from LOS Academy to inform you that ${userName} has not joined the scheduled learning session with 
-  ${teacherName} after 3 minutes from the session start time of ${sessionDate}.</p>
+  <p>This is an automated notification from LOS Academy to inform you that ${whoMiss} has not joined the scheduled learning session with 
+  ${missWith} after 3 minutes from the session start time of ${sessionDate}.</p>
   <p>The tutor has been waiting in the virtual classroom but the student has failed to log in and connect as expected at the scheduled time.
 
   Please follow up with the student directly to understand why they did not join and assist with rescheduling or cancelling if needed.</p>
