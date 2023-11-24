@@ -8,7 +8,7 @@ export enum scheduledJobStatus {
   COMPLETE = "complete",
 }
 @Table({ tableName: "scheduleJob", timestamps: true, freezeTableName: true })
-export default class scheduleJob extends Model {
+export default class ScheduleJob extends Model {
   @Column
   name!: string
 

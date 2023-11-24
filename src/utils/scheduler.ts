@@ -7,6 +7,15 @@ import { RoleType } from "../db/models/teacher.model"
 import { createJobService } from "../service/scheduleJob.service"
 import jobCallbacks, { callbacksNames } from "./schedulerJobsCallbacks"
 import AppError from "./AppError"
+import {
+  getSessionFinishedJobName,
+  getSessionOngoingJobName,
+  getSessionReminderJobName,
+  getSessionStartedJobName,
+} from "./processSchedulerJobs"
+import { log } from "console"
+import ScheduleJob from "../db/models/scheduleJob.model"
+import { Transaction } from "sequelize"
 
 const MS_IN_MINUTE = 1000 * 60
 
@@ -154,42 +163,42 @@ export function scheduleSessionRescheduleRequestMailJob({
   }
 }
 export function scheduleSessionRescheduleRequestUpdateMailJob({
-  sessionId,
   rescheduleRequestId,
   status,
   requestedBy,
 }: {
   rescheduleRequestId: number
-  sessionId: number
+
   status: string
   requestedBy: RoleType
 }) {
   try {
     logger.info("in session reschedule request status update mail schedule!")
     const date = new Date(new Date().getTime() + 1000)
-    let email: string, name: string
+    let email: string, name: string, senderName: string
     const job = schedule.scheduleJob(
-      `Reschedule Request #${sessionId}`,
+      `Reschedule Request ${rescheduleRequestId}`,
       date,
       async () => {
-        const session = await getOneSessionDetailsService({ sessionId })
         const rescheduleRequest = await getOneRescheduleRequestService({
           id: rescheduleRequestId,
         })
+        const session = await getOneSessionDetailsService({
+          sessionId: rescheduleRequest.sessionId,
+        })
         if (requestedBy === RoleType.TEACHER) {
-          email = session.SessionInfo.teacher!.email
-          name = session.SessionInfo.teacher!.name
-        }
-        if (requestedBy === RoleType.USER) {
           email = session.SessionInfo.user!.email
           name = session.SessionInfo.user!.name
+          senderName = session.SessionInfo.teacher!.name
         }
-        await new Mail(
-          session.SessionInfo.user!.email,
-          session.SessionInfo.user!.name
-        ).sendSessionRescheduleRequestUpdateMail({
+        if (requestedBy === RoleType.USER) {
+          email = session.SessionInfo.teacher!.email
+          name = session.SessionInfo.teacher!.name
+          senderName = session.SessionInfo.user!.name
+        }
+        await new Mail(email, name).sendSessionRescheduleRequestUpdateMail({
           status,
-          receiverName: session.SessionInfo.user!.name,
+          senderName,
           sessionOldDate: session.sessionDate,
           newDatesOptions: rescheduleRequest.newDatesOptions,
           sessionNewDate: session.sessionDate,
@@ -251,18 +260,80 @@ export function schedulePayoutStatusUpdateMailJob({
     logger.error(`Error while payout status updated mail: ${error.message}`)
   }
 }
-export function rescheduleReminderJob({
+export function scheduleUpdateSessionRescheduleRequestStatus({
+  rescheduleRequestId,
+}: {
+  rescheduleRequestId: number
+}) {}
+
+export async function rescheduleSessionJobs({
   sessionId,
   newDate,
+  sessionDuration,
+  transaction,
 }: {
   sessionId: number
   newDate: Date
+  sessionDuration: number
+  transaction?: Transaction
 }) {
+  const jobReminderName = getSessionReminderJobName(sessionId)
+  const jobStartedName = getSessionStartedJobName(sessionId)
+  const jobOngoingName = getSessionOngoingJobName(sessionId)
+  const jobFinishedName = getSessionFinishedJobName(sessionId)
+  const ThirtyMinInMS = 30 * MS_IN_MINUTE
+  const ThreeMinInMS = 4 * MS_IN_MINUTE
   const jobs = schedule.scheduledJobs
-  const job = jobs[`session #${sessionId}`]
-  const jobName = `session #${sessionId} finished Updating`
-
-  if (job) job.reschedule(newDate.toISOString())
+  const reminderJob = jobs[jobReminderName]
+  const sessionStartedJob = jobs[jobStartedName]
+  const sessionOngoingJob = jobs[jobOngoingName]
+  const sessionFinishedJob = jobs[jobFinishedName]
+  const reminderNewDate = new Date(newDate.getTime() - ThirtyMinInMS)
+  const startedNewDate = new Date(newDate.getTime() + ThreeMinInMS)
+  const ongoingNewDate = new Date(newDate.getTime() - MS_IN_MINUTE)
+  const finishedNewDate = new Date(
+    newDate.getTime() + sessionDuration * MS_IN_MINUTE
+  )
+  try {
+    if (reminderJob) {
+      reminderJob.reschedule(reminderNewDate.getTime())
+        ? logger.info("reschedule reminderJob success")
+        : logger.error("reschedule reminderJob fail")
+      await ScheduleJob.update(
+        { scheduledTime: startedNewDate },
+        { where: { name: jobReminderName }, transaction }
+      )
+    }
+    if (sessionStartedJob) {
+      sessionStartedJob.reschedule(startedNewDate.getTime())
+        ? logger.info("reschedule sessionStartedJob success")
+        : logger.error("reschedule sessionStartedJob fail")
+      await ScheduleJob.update(
+        { scheduledTime: startedNewDate },
+        { where: { name: jobStartedName }, transaction }
+      )
+    }
+    if (sessionOngoingJob) {
+      sessionOngoingJob.reschedule(ongoingNewDate.getTime())
+        ? logger.info("reschedule sessionOngoingJob success")
+        : logger.error("reschedule sessionOngoingJob fail")
+      await ScheduleJob.update(
+        { scheduledTime: ongoingNewDate },
+        { where: { name: jobOngoingName }, transaction }
+      )
+    }
+    if (sessionFinishedJob) {
+      sessionFinishedJob.reschedule(finishedNewDate.getTime())
+        ? logger.info("reschedule sessionFinishedJob success")
+        : logger.error("reschedule sessionFinishedJob fail")
+      await ScheduleJob.update(
+        { scheduledTime: finishedNewDate },
+        { where: { name: jobFinishedName }, transaction }
+      )
+    }
+  } catch (error: any) {
+    throw new AppError(400, `Error While rescheduling: ${error.message}`)
+  }
 }
 export async function scheduleSessionReminderMailJob({
   sessionDate,
@@ -283,14 +354,15 @@ export async function scheduleSessionReminderMailJob({
     logger.info("in session reminder mail schedule!")
     const ThirtyMinInMS = 30 * MS_IN_MINUTE
     const date = new Date(sessionDate.getTime() - ThirtyMinInMS)
-    const jobName = `session #${sessionId} Reminder`
+    const jobName = getSessionReminderJobName(sessionId)
     const callbackName = callbacksNames.SESSION_REMINDER_MAIL
     const dbJob = await createJobService({
       body: {
         name: jobName,
-        scheduledTime: new Date(date),
+        scheduledTime: date,
         callbackName,
         data: {
+          sessionDate,
           studentName,
           studentEmail,
           teacherName,
@@ -329,9 +401,9 @@ export async function scheduleSessionStartReminderMailJob({
   try {
     logger.info("in session started mail schedule!")
     // add 4 mins to the session start to check if the user attend
-    const FourMinInMS = 4 * MS_IN_MINUTE
-    const date = new Date(sessionDate.getTime() + FourMinInMS)
-    const jobName = `session #${sessionId} started`
+    const ThreeMinInMS = 3 * MS_IN_MINUTE
+    const date = new Date(sessionDate.getTime() + ThreeMinInMS)
+    const jobName = getSessionStartedJobName(sessionId)
     const callbackName = callbacksNames.SESSION_STARTED_MAIL
     const dbJob = await createJobService({
       body: {
@@ -364,7 +436,7 @@ export async function scheduleUpdateSessionToOngoing({
 }) {
   try {
     logger.info("in update session to ongoing schedule!")
-    const jobName = `session #${sessionId} ONGOING Updating`
+    const jobName = getSessionOngoingJobName(sessionId)
     const callbackName = callbacksNames.UPDATE_SESSION_TO_ONGOING
     const dbJob = await createJobService({
       body: {
@@ -404,7 +476,7 @@ export async function scheduleUpdateSessionToFinished({
 }) {
   try {
     logger.info("in update session to finished schedule!")
-    const jobName = `session #${sessionId} finished Updating`
+    const jobName = getSessionFinishedJobName(sessionId)
     const callbackName = callbacksNames.UPDATE_SESSION_TO_FINISHED
     const date = sessionDate.getTime() + sessionDuration * MS_IN_MINUTE
     const dbJob = await createJobService({
@@ -434,4 +506,3 @@ export async function scheduleUpdateSessionToFinished({
     logger.error(`Error while session finished mail: ${error.message}`)
   }
 }
-export function rescheduleSession() {}

@@ -193,6 +193,7 @@ export async function updateSessionService({
   updatedData: Partial<ISessionUpdateTeacher>
   transaction?: Transaction
 }) {
+  console.log(updatedData)
   const session = await updateModelService({
     ModelClass: Session,
     id: sessionId,

@@ -18,3 +18,15 @@ export default async function rescheduleJobs() {
     })
   })
 }
+export function getSessionReminderJobName(sessionId: number) {
+  return `session #${sessionId} Reminder`
+}
+export function getSessionStartedJobName(sessionId: number) {
+  return `session #${sessionId} Started`
+}
+export function getSessionOngoingJobName(sessionId: number) {
+  return `session #${sessionId} ONGOING Updating`
+}
+export function getSessionFinishedJobName(sessionId: number) {
+  return `session #${sessionId} finished Updating`
+}

@@ -13,24 +13,30 @@ import {
   isSessionWithinTimeRange,
   isThereOngoingSessionForTheSameTeacher,
   teacherOwnThisSession,
+  updateSessionService,
   updateSessionStatusService,
   updateSessionStudentAttendanceService,
   updateSessionTeacherAttendanceService,
+  userOwnThisSession,
 } from "../service/session.service"
 import { sequelize } from "../db/sequelize"
 import AppError from "../utils/AppError"
 import { IRequestWithUser } from "./auth.controller"
 import {
+  datesMatch,
   getAllRescheduleRequestsService,
+  getOneRescheduleRequestService,
   getPendingRequestBySessionIdService,
-  teacherAcceptOrDeclineRescheduleRequestService,
   teacherRequestRescheduleService,
-  userAcceptOrDeclineRescheduleRequestService,
+  updateRescheduleRequestService,
   userRequestRescheduleService,
 } from "../service/rescheduleReq.service"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import Session, { SessionStatus, SessionType } from "../db/models/session.model"
-import { updateTeacherBalance } from "../service/teacher.service"
+import {
+  getTeacherByIdService,
+  updateTeacherBalance,
+} from "../service/teacher.service"
 import {
   checkUserSubscription,
   getUserByIdService,
@@ -44,7 +50,7 @@ import { getUserAttr } from "./user.controller"
 import Teacher, { RoleType } from "../db/models/teacher.model"
 import { getTeacherAtt } from "./teacher.controller"
 import {
-  rescheduleReminderJob,
+  rescheduleSessionJobs,
   scheduleSessionRescheduleRequestMailJob,
   scheduleSessionRescheduleRequestUpdateMailJob,
 } from "../utils/scheduler"
@@ -170,6 +176,8 @@ export const createPaidSessionAdmin = catchAsync(
         })
         sessionInfoId = sessionInfo.id
       }
+      const teacher = await getTeacherByIdService({ id: teacherId })
+      const user = await getTeacherByIdService({ id: userId })
       const session = createPaidSessionsService({
         sessionInfoId,
         sessionCount: 1,
@@ -177,6 +185,10 @@ export const createPaidSessionAdmin = catchAsync(
         sessionDuration,
         sessionsPerWeek: 1,
         transaction: t,
+        studentEmail: user.email,
+        studentName: user.name,
+        teacherEmail: teacher.email,
+        teacherName: teacher.name,
       })
       await t.commit()
       res.status(201).json({ status: "success", data: session })
@@ -523,54 +535,118 @@ export const updateStatusSessionReschedule = (
 ) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId, userId, rescheduleRequestId, newDate } = req.body
-    let requestedFrom
-    let rescheduledSession
-    if (teacherId) {
-      rescheduledSession = await teacherAcceptOrDeclineRescheduleRequestService(
-        {
-          requestId: rescheduleRequestId,
-          teacherId,
-          status,
-          newDate: newDate ? new Date(newDate) : undefined,
-        }
+    const rescheduleRequest = await getOneRescheduleRequestService({
+      id: rescheduleRequestId,
+    })
+    const requestedBy = rescheduleRequest.requestedBy
+    if (
+      (requestedBy === RoleType.TEACHER && teacherId) ||
+      (requestedBy === RoleType.USER && userId)
+    ) {
+      return next(
+        new AppError(403, "can't update status of request that you asked!")
       )
-      requestedFrom = RoleType.TEACHER
+    }
+    if (rescheduleRequest.status !== RescheduleRequestStatus.PENDING) {
+      return next(new AppError(400, "Already responded to!"))
+    }
+    // to check if the teacher has this session to accept the request
+    if (teacherId) {
+      const { exist, session } = await teacherOwnThisSession({
+        teacherId,
+        sessionId: rescheduleRequest.sessionId,
+      })
+      if (!exist) {
+        return next(
+          new AppError(401, "can't accept request for session is not yours")
+        )
+      }
     } else if (userId) {
-      rescheduledSession = await userAcceptOrDeclineRescheduleRequestService({
-        requestId: rescheduleRequestId,
+      const { exist, session } = await userOwnThisSession({
         userId,
+        sessionId: rescheduleRequest.sessionId,
+      })
+      if (!exist) {
+        return next(
+          new AppError(401, "can't accept request for session is not yours")
+        )
+      }
+    }
+    const transaction = await sequelize.transaction()
+    try {
+      const updatedRequest = await updateRescheduleRequestService({
+        requestId: rescheduleRequestId,
         status,
-        newDate: newDate ? new Date(newDate) : undefined,
+        transaction,
       })
-      requestedFrom = RoleType.USER
-    }
-
-    scheduleSessionRescheduleRequestUpdateMailJob({
-      requestedBy: requestedFrom as RoleType,
-      rescheduleRequestId,
-      sessionId: rescheduledSession!.id,
-      status,
-    })
-    if (status === RescheduleRequestStatus.APPROVED) {
-      rescheduleReminderJob({
-        sessionId: rescheduledSession!.id,
-        newDate: (rescheduledSession as Session).sessionDate,
+      if (status === RescheduleRequestStatus.DECLINED) {
+        await transaction.commit()
+        return res.status(200).json({
+          status: "success",
+          message:
+            "reschedule request declined successfully! There is the data of the request after update",
+          data: updatedRequest,
+        })
+      }
+      const dateStr = rescheduleRequest.newDatesOptions.join(", ")
+      const match = rescheduleRequest.newDatesOptions.some((d) => {
+        return datesMatch(d, new Date(newDate))
       })
+      if (!match) {
+        return next(
+          new AppError(
+            400,
+            `please provide date that in the the reschedule request in: ${dateStr}`
+          )
+        )
+      }
+      // update session
+      const updatedSession = await updateSessionService({
+        sessionId: rescheduleRequest.sessionId,
+        updatedData: {
+          sessionDate: newDate,
+          teacherAttended: false,
+          userAttended: false,
+          meetingLink: null,
+        } as any,
+        transaction,
+      })
+      // reschedule session jobs
+      await rescheduleSessionJobs({
+        sessionId: rescheduleRequest.sessionId,
+        newDate: new Date(newDate),
+        sessionDuration: updatedSession.sessionDuration,
+        transaction,
+      })
+      await transaction.commit()
+      scheduleSessionRescheduleRequestUpdateMailJob({
+        requestedBy: requestedBy as RoleType,
+        rescheduleRequestId,
+        status,
+      })
+      res.status(200).json({
+        status: "success",
+        message:
+          "reschedule request accepted successfully! There is the data of the new updated Session",
+        data: [updatedSession, updatedRequest],
+      })
+    } catch (error: any) {
+      await transaction.rollback()
+      return next(new AppError(400, `Error updating request :${error.message}`))
     }
-    let message = "reschedule request accepted successfully"
-    status === RescheduleRequestStatus.DECLINED
-      ? (message = "reschedule request declined successfully!")
-      : message
-    res.status(200).json({
-      status: "success",
-      message,
-      data: rescheduledSession,
-    })
   })
 export const userContinueWithTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { sessionId } = req.body
     const session = await getOneSessionService({ sessionId })
+    if (session.type !== SessionType.FREE) {
+      return next(
+        new AppError(
+          400,
+          "Can't continue with teacher from paid session you already with him!"
+        )
+      )
+    }
     const sessionInfoUpdated = await updateSessionInfoService({
       id: session.sessionInfoId,
       updatedData: { willContinue: true },
@@ -629,6 +705,7 @@ export const userPlaceHisSessions = catchAsync(
       for (let date of sessionDates) {
         checkDateFormat(date)
         if (new Date(date) < currentDate) {
+          await transaction.rollback()
           return next(
             new AppError(
               400,
@@ -638,6 +715,9 @@ export const userPlaceHisSessions = catchAsync(
         }
         newSessionDates.push(new Date(date))
       }
+      const teacher = await getTeacherByIdService({
+        id: sessionInfo.teacherId!,
+      })
       const paidSessions = await createPaidSessionsService({
         sessionInfoId: sessionInfo.id,
         sessionDates: newSessionDates,
@@ -645,6 +725,10 @@ export const userPlaceHisSessions = catchAsync(
         sessionDuration: subscription.plan.sessionDuration,
         sessionsPerWeek: subscription.plan.sessionsPerWeek,
         transaction,
+        studentEmail: user.email,
+        studentName: user.name,
+        teacherEmail: teacher.email,
+        teacherName: teacher.name,
       })
       await updateUserService({
         userId,

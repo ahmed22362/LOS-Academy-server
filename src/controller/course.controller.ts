@@ -62,10 +62,6 @@ export const updateCourse = catchAsync(
       id,
       updatedData: { title, description, details },
     })
-    await updateStripeProduct({
-      productId: course.stripeProductId,
-      body: { name: title },
-    })
     res.status(200).json({ status: "success", data: course })
   }
 )

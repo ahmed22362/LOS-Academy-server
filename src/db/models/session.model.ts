@@ -14,13 +14,13 @@ export enum SessionStatus {
   PENDING = "pending",
   ONGOING = "ongoing",
   TAKEN = "taken",
-  USER_ABSENT = "user absent",
-  TEACHER_ABSENT = "teacher absent",
+  USER_ABSENT = "user_absent",
+  TEACHER_ABSENT = "teacher_absent",
 }
 export enum SessionType {
   FREE = "free",
   PAID = "paid",
-  NOT_ASSIGN = "not assign",
+  NOT_ASSIGN = "not_assign",
 }
 @Table({
   tableName: "session",

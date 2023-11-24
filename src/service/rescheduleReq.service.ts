@@ -11,7 +11,7 @@ import {
   updateSessionService,
   userOwnThisSession,
 } from "./session.service"
-import Session, { SessionStatus } from "../db/models/session.model"
+import Session from "../db/models/session.model"
 import SessionInfo from "../db/models/sessionInfo.model"
 import User from "../db/models/user.model"
 import { getUserAttr } from "../controller/user.controller"
@@ -19,6 +19,7 @@ import Teacher, { RoleType } from "../db/models/teacher.model"
 import { sequelize } from "../db/sequelize"
 import logger from "../utils/logger"
 import { getTeacherAtt } from "../controller/teacher.controller"
+import { rescheduleSessionJobs } from "../utils/scheduler"
 
 export async function createRescheduleRequestService({
   sessionId,
@@ -33,18 +34,12 @@ export async function createRescheduleRequestService({
 }) {
   const dateArr = newDatesOptions.map((str) => new Date(str))
 
-  // Check if actual Date instance
-  dateArr.forEach((d) => {
-    console.log(d.getTime())
-    console.log(d instanceof Date)
-  })
   const reqBody = {
     sessionId,
     oldDate,
     newDatesOptions: dateArr,
     requestedBy,
   }
-  logger.info(reqBody)
   const rescheduleRequest = await RescheduleRequest.create(reqBody as any)
   if (!rescheduleRequest) {
     throw new AppError(400, "can't create reschedule request!")
@@ -193,7 +188,6 @@ export async function teacherRequestRescheduleService({
       "Can't request session reschedule for session that is not yours!"
     )
   }
-  logger.info(newDatesOptions)
   const rescheduleRequest = createRescheduleRequestService({
     sessionId,
     newDatesOptions,
@@ -202,138 +196,7 @@ export async function teacherRequestRescheduleService({
   })
   return rescheduleRequest
 }
-export async function teacherAcceptOrDeclineRescheduleRequestService({
-  requestId,
-  teacherId,
-  status,
-  newDate,
-}: {
-  requestId: number
-  teacherId: string
-  status: RescheduleRequestStatus
-  newDate?: Date
-}) {
-  const rescheduleRequest = await getOneRescheduleRequestService({
-    id: requestId,
-  })
-  if (rescheduleRequest.requestedBy === RoleType.TEACHER) {
-    throw new AppError(403, "can't update status of request that you asked!")
-  }
-  if (rescheduleRequest.status !== RescheduleRequestStatus.PENDING) {
-    throw new AppError(400, "Already responded to!")
-  }
-  // to check if the teacher has this session to accept the request
-  const { exist, session } = await teacherOwnThisSession({
-    teacherId,
-    sessionId: rescheduleRequest.sessionId,
-  })
-  if (!exist) {
-    throw new AppError(401, "can't accept request for session is not yours")
-  }
 
-  if (status === RescheduleRequestStatus.APPROVED) {
-    const dateStr = rescheduleRequest.newDatesOptions.join(", ")
-    const match = rescheduleRequest.newDatesOptions.some((d) => {
-      return datesMatch(d, newDate as Date)
-    })
-    if (!match) {
-      throw new AppError(
-        400,
-        `please provide date that in the the reschedule request in: ${dateStr}`
-      )
-    }
-  }
-  const transaction = await sequelize.transaction()
-  try {
-    const updatedRequest = await updateRescheduleRequestService({
-      requestId,
-      status,
-      newDate,
-      transaction,
-    })
-    if (status === RescheduleRequestStatus.DECLINED) {
-      await transaction.commit()
-      return updatedRequest
-    }
-    // update session
-    const updatedSession = await updateSessionService({
-      sessionId: rescheduleRequest.sessionId,
-      updatedData: {
-        sessionDate: updatedRequest!.newDate,
-        teacherAttended: false,
-        userAttended: false,
-        meetingLink: null,
-        transaction,
-      } as any,
-    })
-    await transaction.commit()
-    return updatedSession as Session
-  } catch (error: any) {
-    await transaction.rollback()
-    throw new AppError(400, `Error updating request :${error.message}`)
-  }
-}
-export async function userAcceptOrDeclineRescheduleRequestService({
-  requestId,
-  userId,
-  status,
-  newDate,
-}: {
-  requestId: number
-  userId: string
-  status: RescheduleRequestStatus
-  newDate?: Date
-}) {
-  const rescheduleRequest = await getOneRescheduleRequestService({
-    id: requestId,
-  })
-  if (rescheduleRequest.requestedBy === RoleType.USER) {
-    throw new AppError(403, "can't update status of request that you asked!")
-  }
-  if (rescheduleRequest.status !== RescheduleRequestStatus.PENDING) {
-    throw new AppError(400, "Already responded to!")
-  }
-  // to check if the teacher has this session to accept the request
-  const { exist, session } = await userOwnThisSession({
-    userId,
-    sessionId: rescheduleRequest.sessionId,
-  })
-  if (!exist) {
-    throw new AppError(401, "can't accept request for session is not yours")
-  }
-  const newSessionDate = new Date(newDate as Date)
-  if (
-    status === RescheduleRequestStatus.APPROVED &&
-    !rescheduleRequest.newDatesOptions.includes(newSessionDate)
-  ) {
-    const dateStr = rescheduleRequest.newDatesOptions.join(", ")
-
-    throw new AppError(
-      400,
-      `please provide date that in the range or the reschedule request in: ${dateStr}`
-    )
-  }
-  const updatedRequest = await updateRescheduleRequestService({
-    requestId,
-    status,
-    newDate,
-  })
-  if (status === RescheduleRequestStatus.DECLINED) {
-    return updatedRequest
-  }
-  // update session
-  const updatedSession = await updateSessionService({
-    sessionId: rescheduleRequest.sessionId,
-    updatedData: {
-      sessionDate: rescheduleRequest.newDate,
-      sessionStartTime: rescheduleRequest.newDate.toUTCString().split("T")[1],
-      teacherAttended: false,
-      userAttended: false,
-      meetingLink: null,
-    } as any,
-  })
-  return updatedSession as Session
-}
 export async function getPendingRequestBySessionIdService({
   sessionId,
 }: {
@@ -486,6 +349,6 @@ export async function getTeacherRescheduleRequestsService({
     status,
   })
 }
-function datesMatch(d1: Date, d2: Date) {
+export function datesMatch(d1: Date, d2: Date) {
   return d1.getTime() === d2.getTime()
 }

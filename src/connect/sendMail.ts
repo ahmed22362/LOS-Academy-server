@@ -217,13 +217,13 @@ class Mail {
     }
   }
   async sendSessionRescheduleRequestUpdateMail({
-    receiverName,
+    senderName,
     sessionOldDate,
     newDatesOptions,
     sessionNewDate,
     status,
   }: {
-    receiverName: string
+    senderName: string
     sessionOldDate: Date
     newDatesOptions: Date[]
     sessionNewDate: Date
@@ -234,8 +234,8 @@ class Mail {
       : [newDatesOptions]
     const { title, paragraph, header, footer, mailAdds } =
       sessionRescheduleStatusPayload({
-        senderName: this.name,
-        receiverName,
+        senderName,
+        receiverName: this.name,
         newDatesOptions: dates.map((date) =>
           date.toLocaleString("en-GB", {
             timeZone: "UTC",
