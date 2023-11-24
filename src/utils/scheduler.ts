@@ -260,6 +260,7 @@ export function schedulePayoutStatusUpdateMailJob({
     logger.error(`Error while payout status updated mail: ${error.message}`)
   }
 }
+// here if there is no response from both side update it to be no response
 export function scheduleUpdateSessionRescheduleRequestStatus({
   rescheduleRequestId,
 }: {

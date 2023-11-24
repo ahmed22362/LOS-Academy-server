@@ -50,11 +50,8 @@ async function getModelsService({
     const models = await ModelClass.findAll(findOptions)
     return models
   } catch (error: any) {
-    console.error("Error getting all models:", error.errors[0].message)
-    throw new AppError(
-      400,
-      `"Error getting all models:" ${error.errors[0].message}`
-    )
+    console.error("Error getting all models:", error.message)
+    throw new AppError(400, `"Error getting all models:" ${error.message}`)
   }
 }
 async function getAllModelsByService({
@@ -82,7 +79,7 @@ async function getAllModelsByService({
     )
     throw new AppError(
       400,
-      `"Error retrieving model by what you want:", ${error.errors[0].message}`
+      `"Error retrieving model by what you want:", ${error.message}`
     )
   }
 }
@@ -108,7 +105,7 @@ async function getOneModelByService({
     )
     throw new AppError(
       400,
-      `"Error retrieving model by what you want:", ${error.errors[0].message}`
+      `"Error retrieving model by what you want:", ${error.message}`
     )
   }
 }
@@ -125,11 +122,8 @@ async function getModelByIdService({
     const model = await ModelClass.findByPk(Id, findOptions)
     return model
   } catch (error: any) {
-    console.error("Error retrieving model by ID:", error.errors[0].message)
-    throw new AppError(
-      400,
-      `"Error retrieving model by ID"", ${error.errors[0].message}`
-    )
+    console.error("Error retrieving model by ID:", error.message)
+    throw new AppError(400, `"Error retrieving model by ID"", ${error.message}`)
   }
 }
 async function getModelByEmailService({
@@ -148,10 +142,10 @@ async function getModelByEmailService({
     const model = await ModelClass.findOne(findOptions)
     return model
   } catch (error: any) {
-    console.error("Error retrieving model by email:", error.errors[0].message)
+    console.error("Error retrieving model by email:", error.message)
     throw new AppError(
       400,
-      `"Error retrieving model by email:", ${error.errors[0].message}`
+      `"Error retrieving model by email:", ${error.message}`
     )
   }
 }
@@ -182,8 +176,8 @@ async function updateModelService({
     }
     return affectedRows[0]
   } catch (error: any) {
-    console.error("Error updating row:", error.errors[0].message)
-    throw new AppError(400, `"Error updating row:", ${error.errors[0].message}`)
+    console.error("Error updating row:", error.message)
+    throw new AppError(400, `"Error updating row:", ${error.message}`)
   }
 }
 async function deleteModelService({
@@ -204,11 +198,8 @@ async function deleteModelService({
     }
     return num_of_deleted_rows
   } catch (error: any) {
-    console.error("Error deleting model:", error.errors[0].message)
-    throw new AppError(
-      400,
-      `"Error deleting model:", ${error.errors[0].message}`
-    )
+    console.error("Error deleting model:", error.message)
+    throw new AppError(400, `"Error deleting model:", ${error.message}`)
   }
 }
 
