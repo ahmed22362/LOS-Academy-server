@@ -38,7 +38,7 @@ export async function createSessionInfoService({
   if (!sessionInfo) {
     throw new AppError(400, "Can't create session info!")
   }
-  return sessionInfo as SessionInfo
+  return sessionInfo
 }
 export async function checkUniqueUserAndTeacher({
   teacherId,
@@ -145,16 +145,34 @@ export async function updateSessionInfoService({
   updatedData: any
   transaction?: Transaction
 }) {
-  const updatedSession = await updateModelService({
-    ModelClass: SessionInfo,
-    id: id,
-    updatedData,
+  const [sessionCo, updatedSession] = await SessionInfo.update(updatedData, {
+    where: { id },
     transaction,
+    returning: true,
   })
   if (!updatedSession) {
     throw new AppError(400, "Can't update session info!")
   }
   return updatedSession
+}
+export async function updateOneSessionInfoService({
+  id,
+  updatedData,
+  transaction,
+}: {
+  id: number
+  updatedData: any
+  transaction?: Transaction
+}) {
+  const [sessionCount, updatedSession] = await SessionInfo.update(updatedData, {
+    where: { id },
+    transaction,
+    returning: true,
+  })
+  if (updatedSession.length === 0) {
+    throw new AppError(400, "Can't update session info!")
+  }
+  return updatedSession[0]
 }
 export async function deleteSessionInfoService({
   sessionInfoId,

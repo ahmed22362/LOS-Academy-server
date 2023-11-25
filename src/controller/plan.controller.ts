@@ -80,7 +80,11 @@ export const getPlans = catchAsync(
       nPage = Number(page)
       nLimit = Number(limit)
     }
-    const plans = await getPlansService({ page: nPage, limit: nLimit })
+    const plans = await getPlansService({
+      page: nPage,
+      limit: nLimit,
+      findOptions: { where: { type: PlanType.STANDARD } },
+    })
     if (!plans) {
       return next(
         new AppError(400, "something wrong happened while getting plans")

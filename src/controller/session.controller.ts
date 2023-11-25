@@ -65,6 +65,7 @@ import {
 import {
   createSessionInfoService,
   getOneSessionInfoServiceBy,
+  updateOneSessionInfoService,
   updateSessionInfoService,
 } from "../service/sessionInfo.service"
 import { createSessionRequestService } from "../service/sessionReq.service"
@@ -75,6 +76,7 @@ import {
   updateJobServiceBy,
 } from "../service/scheduleJob.service"
 import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs"
+import { Transaction } from "sequelize"
 export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000
 
 const DEFAULT_COURSES = ["arabic"]
@@ -118,41 +120,50 @@ export const getOneSessionInfo = catchAsync(
 )
 export const replaceSessionInfoTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, teacherId } = req.body
-    const sessionInfo = await getOneSessionInfoServiceBy({
-      where: { userId, teacherId, willContinue: true },
+    const { userId, oldTeacherId, newTeacherId } = req.body
+    const oldSessionInfo = await getOneSessionInfoServiceBy({
+      where: { userId, teacherId: oldTeacherId, willContinue: true },
     })
-    if (!sessionInfo) {
+    if (!oldSessionInfo) {
       return next(
         new AppError(
           404,
-          "There is no sessions belong to those teacher and user together!"
+          "There is no sessions where this user choose to continue with this old teacher!"
         )
       )
     }
-    const transaction = await sequelize.transaction()
+    const transaction: Transaction = await sequelize.transaction()
     try {
-      await updateSessionInfoService({
-        id: sessionInfo.id,
+      const updatedSession = await updateOneSessionInfoService({
+        id: oldSessionInfo.id,
         updatedData: { willContinue: false },
         transaction,
       })
-      const newSessionInfo = await createSessionInfoService({
-        userId: sessionInfo.userId!,
-        teacherId: sessionInfo.teacherId!,
-        sessionReqId: sessionInfo.sessionRequestId!,
-        willContinue: true,
-        transaction,
+      let newSessionInfo: SessionInfo
+      const existSessionInfo = await getOneSessionInfoServiceBy({
+        where: { userId, teacherId: newTeacherId },
       })
+      if (existSessionInfo) {
+        newSessionInfo = await updateOneSessionInfoService({
+          id: existSessionInfo.id,
+          updatedData: { willContinue: true },
+        })
+      } else {
+        newSessionInfo = await createSessionInfoService({
+          userId,
+          teacherId: newTeacherId,
+          sessionReqId: updatedSession.sessionRequestId!,
+          willContinue: true,
+          transaction,
+        })
+      }
       const newSessions = await updateSessionsService({
         values: { sessionInfoId: newSessionInfo.id },
-        updateOptions: {
-          where: {
-            status: SessionStatus.PENDING,
-            sessionInfoId: sessionInfo.id,
-          },
-          transaction,
+        where: {
+          status: SessionStatus.PENDING,
+          sessionInfoId: oldSessionInfo.id,
         },
+        transaction,
       })
       await transaction.commit()
       res.status(200).json({

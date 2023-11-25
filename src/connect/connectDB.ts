@@ -12,7 +12,7 @@ async function connectDB() {
     .sync({
       force,
       logging: (sql) => {
-        logger.info(sql)
+        // logger.info(sql)
       },
     })
     .then(() => {

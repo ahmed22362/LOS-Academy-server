@@ -50,7 +50,12 @@ export const assignTeacherSchema = z.object({
 export const replaceSessionInfoTeacherSchema = z.object({
   body: z.object({
     userId: z.string({ required_error: "please provide userId" }),
-    teacherId: z.string({ required_error: "please provide teacherId" }),
+    oldTeacherId: z.string({
+      required_error: "please provide oldTeacherId to be replaced",
+    }),
+    newTeacherId: z.string({
+      required_error: "please provide newTeacherId to replace with",
+    }),
   }),
 })
 export const requireEitherTeacherOrUser = z.object({

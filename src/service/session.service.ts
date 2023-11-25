@@ -250,13 +250,19 @@ export async function updateSessionStatusService({
 }
 export async function updateSessionsService({
   values,
-  updateOptions,
+  where,
+  transaction,
 }: {
   values: object
-  updateOptions: UpdateOptions
+  where: WhereOptions
+  transaction?: Transaction
 }) {
-  const affectedRows = await Session.update(values, updateOptions)
-  return affectedRows
+  const [affectedRows, updatedDate] = await Session.update(values, {
+    where,
+    returning: true,
+    transaction,
+  })
+  return updatedDate
 }
 export async function deleteSessionService({ id }: { id: number }) {
   await deleteModelService({ ModelClass: Session, id })
