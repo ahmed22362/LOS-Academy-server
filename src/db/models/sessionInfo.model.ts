@@ -58,8 +58,8 @@ export default class SessionInfo extends Model<SessionInfo> {
   @BelongsTo(() => SessionReq, { foreignKey: "sessionRequestId" })
   sessionRequest?: SessionReq
 
-  @Column({ type: DataType.BOOLEAN, defaultValue: false })
-  willContinue!: boolean
+  @Column({ type: DataType.BOOLEAN, allowNull: true })
+  willContinue?: boolean
 
   @CreatedAt
   createdAt!: Date

@@ -32,8 +32,9 @@ import { RoleType } from "../db/models/teacher.model"
 import validate from "../middleware/validate"
 import { createUserSchema } from "../schema/user.schema"
 import {
+  getUserContinueStatus,
+  requestSessionReschedule,
   updateStatusSessionReschedule,
-  userRequestSessionReschedule,
 } from "../controller/session.controller"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 
@@ -68,7 +69,7 @@ userRouter.get(
 )
 userRouter
   .route("/requestReschedule")
-  .post(protectUser, setUserOrTeacherId, userRequestSessionReschedule)
+  .post(protectUser, setUserOrTeacherId, requestSessionReschedule)
   .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests)
 userRouter
   .route("/receivedRescheduleRequests")
@@ -122,6 +123,12 @@ userRouter.get(
 )
 userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
 userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports)
+userRouter.get(
+  "/myContinueStatus",
+  protectUser,
+  setUserOrTeacherId,
+  getUserContinueStatus
+)
 userRouter.get("/updateMyPlan", protectUser, updateUserPlan)
 userRouter.get("/checkJWT", checkJWT)
 userRouter

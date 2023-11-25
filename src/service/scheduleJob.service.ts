@@ -1,4 +1,10 @@
-import { FindOptions, WhereOptions } from "sequelize"
+import {
+  DestroyOptions,
+  FindOptions,
+  Transaction,
+  UpdateOptions,
+  WhereOptions,
+} from "sequelize"
 import Job, { scheduledJobStatus } from "../db/models/scheduleJob.model"
 import AppError from "../utils/AppError"
 import {
@@ -16,9 +22,19 @@ export interface createJobBody {
   status?: scheduledJobStatus
   data?: object
 }
-export async function createJobService({ body }: { body: createJobBody }) {
+export async function createJobService({
+  body,
+  transaction,
+}: {
+  body: createJobBody
+  transaction?: Transaction
+}) {
   try {
-    const job = await createModelService({ ModelClass: Job, data: body })
+    const job = await createModelService({
+      ModelClass: Job,
+      data: body,
+      transaction,
+    })
     if (!job) {
       throw new AppError(400, "Can't Create job!")
     }
@@ -64,8 +80,25 @@ export async function updateJobService({
     updatedData,
   })) as Job
 }
+export async function updateJobServiceBy({
+  value,
+  updateOptions,
+}: {
+  value: object
+  updateOptions: UpdateOptions
+}) {
+  await Job.update(value, updateOptions)
+}
 export async function deleteJobService({ id }: { id: number }) {
-  return await deleteModelService({ ModelClass: Job, id: id })
+  const job = await getJobService({ id })
+  if (job) await deleteModelService({ ModelClass: Job, id: id })
+}
+export async function deleteJobServiceWhere({
+  destroyOption,
+}: {
+  destroyOption: DestroyOptions
+}) {
+  await Job.destroy(destroyOption)
 }
 export async function getJobService({ id }: { id: number }) {
   return (await getModelByIdService({ ModelClass: Job, Id: id })) as Job

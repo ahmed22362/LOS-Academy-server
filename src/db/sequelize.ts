@@ -1,5 +1,6 @@
 import { Sequelize } from "sequelize-typescript"
 import dotenv from "dotenv"
+import logger from "../utils/logger"
 
 dotenv.config()
 const pg_render_uri = process.env.RENDER_POSTGRESQL_BD_URL as string
@@ -10,7 +11,19 @@ if (process.env.NODE_ENV?.trim() === "production") {
 }
 export const sequelize = new Sequelize(runningDB, {
   logging: (query) => {
-    console.log(query) // Log the SQL query to the console
+    logger.info(query) // Log the SQL query to the console
   },
-  models: [__dirname + "/models"], // or [Player, Team],
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000,
+  },
+  retry: {
+    max: 10,
+  },
+  dialectOptions: {
+    statement_timeout: 1000,
+  },
+  models: [__dirname + "/models"],
 })

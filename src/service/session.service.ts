@@ -1,4 +1,10 @@
-import { FindOptions, Op, Transaction, WhereOptions } from "sequelize"
+import {
+  FindOptions,
+  Op,
+  Transaction,
+  UpdateOptions,
+  WhereOptions,
+} from "sequelize"
 import Session, { SessionStatus } from "../db/models/session.model"
 import { SessionType } from "../db/models/session.model"
 import AppError from "../utils/AppError"
@@ -193,7 +199,6 @@ export async function updateSessionService({
   updatedData: Partial<ISessionUpdateTeacher>
   transaction?: Transaction
 }) {
-  console.log(updatedData)
   const session = await updateModelService({
     ModelClass: Session,
     id: sessionId,
@@ -225,29 +230,13 @@ export async function rescheduleSessionService({
 export async function updateSessionStatusService({
   id,
   updatedData,
-  teacherId,
+
   transaction,
 }: {
   id: number
   updatedData: Partial<ISessionUpdateTeacher>
-  teacherId: string
   transaction?: Transaction
 }) {
-  // to check if the teacher has this session in the session info
-  const { exist, session } = await teacherOwnThisSession({
-    teacherId,
-    sessionId: id,
-  })
-
-  if (!exist) {
-    throw new AppError(404, "The Teacher is not assign to this session")
-  }
-  if (!session.teacherAttended) {
-    throw new AppError(
-      401,
-      "can't update status the session of absent teacher!"
-    )
-  }
   const updatedSession = await updateModelService({
     ModelClass: Session,
     id: id,
@@ -258,6 +247,16 @@ export async function updateSessionStatusService({
     throw new AppError(400, "Can't update service!")
   }
   return updatedSession
+}
+export async function updateSessionsService({
+  values,
+  updateOptions,
+}: {
+  values: object
+  updateOptions: UpdateOptions
+}) {
+  const affectedRows = await Session.update(values, updateOptions)
+  return affectedRows
 }
 export async function deleteSessionService({ id }: { id: number }) {
   await deleteModelService({ ModelClass: Session, id })
@@ -388,7 +387,7 @@ export async function getUserUpcomingSessionService({
 }) {
   const session = await allUserSessionsService({
     userId,
-    status: SessionStatus.ONGOING,
+    status: SessionStatus.PENDING,
     pageSize: 1,
     upcoming: true,
   })
@@ -616,7 +615,7 @@ async function allUserSessionsService({
   }
   if (upcoming) {
     const currentDate = new Date()
-    where.sessionDate = { [Op.gte]: { currentDate } }
+    where.sessionDate = { [Op.gte]: currentDate }
   }
   let limit
   let offset

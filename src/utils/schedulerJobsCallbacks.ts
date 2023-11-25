@@ -1,8 +1,13 @@
 import Mail from "../connect/sendMail"
+import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import { scheduledJobStatus } from "../db/models/scheduleJob.model"
 import { SessionStatus, SessionType } from "../db/models/session.model"
 import { RoleType } from "../db/models/teacher.model"
 import { sequelize } from "../db/sequelize"
+import {
+  getOneRescheduleRequestService,
+  updateRescheduleRequestService,
+} from "../service/rescheduleReq.service"
 import {
   deleteJobService,
   updateJobService,
@@ -25,6 +30,7 @@ export const callbacksNames = {
   SESSION_STARTED_MAIL: "Session Started Mail",
   UPDATE_SESSION_TO_ONGOING: "Session Is Ongoing",
   UPDATE_SESSION_TO_FINISHED: "Session Is Finished",
+  UPDATE_SESSION_RESCHEDULE_STATUS: "Reschedule Request Updating",
 }
 
 const jobCallbacks = new Map<string, JobCallback>()
@@ -225,6 +231,30 @@ const sessionUpdateToFinished: JobCallback = async function ({
   logger.info(`One time session Finished with status executed!`)
   await deleteJobService({ id: jobId })
 }
+// handel no response requests
+const rescheduleRequestUpdate: JobCallback = async function ({
+  rescheduleRequestId,
+  jobId,
+}: {
+  rescheduleRequestId: number
+  jobId: number
+}) {
+  const request = await getOneRescheduleRequestService({
+    id: rescheduleRequestId,
+  })
+  if (request.status === RescheduleRequestStatus.PENDING) {
+    await updateRescheduleRequestService({
+      requestId: rescheduleRequestId,
+      status: RescheduleRequestStatus.NO_RESPONSE,
+    })
+    logger.info("One time reschedule Request updated to no response executed!")
+  }
+
+  await deleteJobService({ id: jobId })
+  logger.info(
+    "One time reschedule Request job executed already responded request!"
+  )
+}
 jobCallbacks.set(callbacksNames.SESSION_REMINDER_MAIL, sessionReminderEmail)
 jobCallbacks.set(callbacksNames.SESSION_STARTED_MAIL, sessionStartedEmail)
 jobCallbacks.set(
@@ -234,6 +264,10 @@ jobCallbacks.set(
 jobCallbacks.set(
   callbacksNames.UPDATE_SESSION_TO_FINISHED,
   sessionUpdateToFinished
+)
+jobCallbacks.set(
+  callbacksNames.UPDATE_SESSION_RESCHEDULE_STATUS,
+  rescheduleRequestUpdate
 )
 
 export default jobCallbacks

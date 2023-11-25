@@ -22,7 +22,8 @@ export const SessionStatusSchema = z.enum([
   "pending",
   "ongoing",
   "taken",
-  "absent",
+  "user_absent",
+  "teacher_absent",
 ])
 export const sessionDates = z
   .array(z.string())
@@ -46,7 +47,12 @@ export const userPlacedSessionDatesSchema = z.object({
 export const assignTeacherSchema = z.object({
   body: z.object({ teacherId, sessionReqId }),
 })
-export const replaceSessionInfoTeacherSchema = generateLinkSchema
+export const replaceSessionInfoTeacherSchema = z.object({
+  body: z.object({
+    userId: z.string({ required_error: "please provide userId" }),
+    teacherId: z.string({ required_error: "please provide teacherId" }),
+  }),
+})
 export const requireEitherTeacherOrUser = z.object({
   body: z
     .object({ teacherId, userId })

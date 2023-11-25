@@ -2,12 +2,16 @@ import schedule from "node-schedule"
 import Mail from "../connect/sendMail"
 import logger from "./logger"
 import { getOneSessionDetailsService } from "../service/session.service"
-import { getOneRescheduleRequestService } from "../service/rescheduleReq.service"
+import {
+  getOneRescheduleRequestService,
+  updateRescheduleRequestService,
+} from "../service/rescheduleReq.service"
 import { RoleType } from "../db/models/teacher.model"
 import { createJobService } from "../service/scheduleJob.service"
 import jobCallbacks, { callbacksNames } from "./schedulerJobsCallbacks"
 import AppError from "./AppError"
 import {
+  getRescheduleRequestJobName,
   getSessionFinishedJobName,
   getSessionOngoingJobName,
   getSessionReminderJobName,
@@ -16,6 +20,7 @@ import {
 import { log } from "console"
 import ScheduleJob from "../db/models/scheduleJob.model"
 import { Transaction } from "sequelize"
+import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 
 const MS_IN_MINUTE = 1000 * 60
 
@@ -261,11 +266,47 @@ export function schedulePayoutStatusUpdateMailJob({
   }
 }
 // here if there is no response from both side update it to be no response
-export function scheduleUpdateSessionRescheduleRequestStatus({
+export async function scheduleSessionRescheduleRequestStatus({
   rescheduleRequestId,
+  sessionDate,
+  transaction,
 }: {
   rescheduleRequestId: number
-}) {}
+  sessionDate: Date
+  transaction?: Transaction
+}) {
+  logger.info("in Reschedule Session update schedule!")
+  const TEN_MIN_IN_MS = 10 * MS_IN_MINUTE
+  const jobDate = new Date(sessionDate.getTime() - TEN_MIN_IN_MS)
+  const jobName = getRescheduleRequestJobName(rescheduleRequestId)
+  const callbackName = callbacksNames.UPDATE_SESSION_RESCHEDULE_STATUS
+  try {
+    const dbJob = await createJobService({
+      body: {
+        name: jobName,
+        scheduledTime: jobDate,
+        callbackName,
+        data: {
+          sessionDate,
+          rescheduleRequestId,
+        },
+      },
+      transaction,
+    })
+    const rescheduleUpdateCallback = jobCallbacks.get(callbackName)
+    if (!rescheduleUpdateCallback) {
+      throw new AppError(
+        404,
+        `Can't find callback with this name ${callbackName}`
+      )
+    }
+    schedule.scheduleJob(jobName, jobDate, async () => {
+      await rescheduleUpdateCallback({ rescheduleRequestId, jobId: dbJob.id })
+    })
+  } catch (error: any) {
+    logger.error(`Error while session reminder mail: ${error.message}`)
+  }
+}
 
 export async function rescheduleSessionJobs({
   sessionId,
@@ -343,6 +384,7 @@ export async function scheduleSessionReminderMailJob({
   studentEmail,
   teacherName,
   teacherEmail,
+  transaction,
 }: {
   sessionDate: Date
   sessionId: number
@@ -350,11 +392,16 @@ export async function scheduleSessionReminderMailJob({
   studentEmail: string
   teacherName: string
   teacherEmail: string
+  transaction?: Transaction
 }) {
   try {
     logger.info("in session reminder mail schedule!")
     const ThirtyMinInMS = 30 * MS_IN_MINUTE
     const date = new Date(sessionDate.getTime() - ThirtyMinInMS)
+    const currentDate = new Date()
+    if (currentDate > date) {
+      return
+    }
     const jobName = getSessionReminderJobName(sessionId)
     const callbackName = callbacksNames.SESSION_REMINDER_MAIL
     const dbJob = await createJobService({
@@ -370,6 +417,7 @@ export async function scheduleSessionReminderMailJob({
           teacherEmail,
         },
       },
+      transaction,
     })
     const sessionReminderCallback = jobCallbacks.get(callbackName)
     if (!sessionReminderCallback) {
@@ -395,9 +443,11 @@ export async function scheduleSessionReminderMailJob({
 export async function scheduleSessionStartReminderMailJob({
   sessionId,
   sessionDate,
+  transaction,
 }: {
   sessionId: number
   sessionDate: Date
+  transaction?: Transaction
 }) {
   try {
     logger.info("in session started mail schedule!")
@@ -413,6 +463,7 @@ export async function scheduleSessionStartReminderMailJob({
         callbackName,
         data: { sessionId },
       },
+      transaction,
     })
     const sessionStartedCallback = jobCallbacks.get(callbackName)
     if (!sessionStartedCallback) {
@@ -431,9 +482,11 @@ export async function scheduleSessionStartReminderMailJob({
 export async function scheduleUpdateSessionToOngoing({
   sessionId,
   sessionDate,
+  transaction,
 }: {
   sessionId: number
   sessionDate: Date
+  transaction?: Transaction
 }) {
   try {
     logger.info("in update session to ongoing schedule!")
@@ -448,6 +501,7 @@ export async function scheduleUpdateSessionToOngoing({
           sessionId,
         },
       },
+      transaction,
     })
     const sessionUpdateCallback = jobCallbacks.get(callbackName)
     if (!sessionUpdateCallback) {
@@ -470,10 +524,12 @@ export async function scheduleUpdateSessionToFinished({
   sessionId,
   sessionDate,
   sessionDuration,
+  transaction,
 }: {
   sessionId: number
   sessionDate: Date
   sessionDuration: number
+  transaction?: Transaction
 }) {
   try {
     logger.info("in update session to finished schedule!")
@@ -489,6 +545,7 @@ export async function scheduleUpdateSessionToFinished({
           sessionId,
         },
       },
+      transaction,
     })
     const sessionUpdateCallback = jobCallbacks.get(callbackName)
     if (!sessionUpdateCallback) {

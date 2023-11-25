@@ -128,17 +128,37 @@ export const deleteUser = catchAsync(
 export const updateUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id
-    const { name, email, phone, age, gender } = req.body
-    const body = { name, email, phone, age, gender } as IUserInput
+    const {
+      name,
+      email,
+      phone,
+      age,
+      gender,
+      remainSessions,
+      availableFreeSession,
+      verified,
+    } = req.body
+
+    const body: Partial<IUserInput> = {} // Use Partial to make all properties optional
+
+    if (name) body.name = name
+    if (email) body.email = email
+    if (phone) body.phone = phone
+    if (age) body.age = age
+    if (gender) body.gender = gender
+
     if (req.body.teacherId) {
       const teacher = await getTeacherByIdService({ id: req.body.teacherId })
       if (teacher.role === RoleType.ADMIN) {
-        body.remainSessions = req.body.remainSessions
-        body.availableFreeSession = req.body.availableFreeSession
-        body.verified = req.body.verified
+        if (remainSessions !== undefined) body.remainSessions = remainSessions
+        if (availableFreeSession !== undefined)
+          body.availableFreeSession = availableFreeSession
+        if (verified !== undefined) body.verified = verified
       }
     }
+
     const user = await updateUserService({ userId: id, updatedData: body })
+
     if (!user) {
       return next(new AppError(404, "Can't find user to update!"))
     }
@@ -258,18 +278,12 @@ export const getUserOngoingSession = catchAsync(
 )
 export const getUserSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
-    }
+    const { nPage, nLimit, status } = getPaginationParameter(req)
     const sessions = await getUserAllSessionsService({
       userId: req.body.userId,
       page: nPage,
       pageSize: nLimit,
+      status: status as any,
     })
     res
       .status(200)
@@ -279,8 +293,12 @@ export const getUserSessions = catchAsync(
 export const getMySessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
+    const { nPage, nLimit, status } = getPaginationParameter(req)
     const rescheduleRequests = await getUserRescheduleRequestsService({
       userId,
+      page: nPage,
+      pageSize: nLimit,
+      status: status as any,
     })
     res.status(200).json({
       status: "success",
@@ -292,8 +310,12 @@ export const getMySessionRescheduleRequests = catchAsync(
 export const getReceivedSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
+    const { nPage, nLimit, status } = getPaginationParameter(req)
     const rescheduleRequests = await getUserReceivedRescheduleRequestsService({
       userId,
+      page: nPage,
+      pageSize: nLimit,
+      status: status as any,
     })
     res.status(200).json({
       status: "success",
@@ -305,15 +327,7 @@ export const getReceivedSessionRescheduleRequests = catchAsync(
 export const getAllSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
-    const status = req.query.status
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
-    }
+    const { nPage, nLimit, status } = getPaginationParameter(req)
     const rescheduleRequests = await getUserAllRescheduleRequestsService({
       userId,
       page: nPage,
@@ -339,3 +353,15 @@ export const checkJWT = catchAsync(
     })
   }
 )
+export function getPaginationParameter(req: Request) {
+  const status = req.query.status
+  let page = req.query.page
+  let limit = req.query.limit
+  let nPage
+  let nLimit
+  if (page && limit) {
+    nPage = Number(page)
+    nLimit = Number(limit)
+  }
+  return { nLimit, nPage, status }
+}

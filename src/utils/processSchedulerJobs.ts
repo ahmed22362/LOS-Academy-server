@@ -30,3 +30,6 @@ export function getSessionOngoingJobName(sessionId: number) {
 export function getSessionFinishedJobName(sessionId: number) {
   return `session #${sessionId} finished Updating`
 }
+export function getRescheduleRequestJobName(requestId: number) {
+  return `Reschedule Request #${requestId}`
+}

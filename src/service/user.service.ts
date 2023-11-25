@@ -7,6 +7,7 @@ import {
 } from "./subscription.service"
 import Plan from "../db/models/plan.model"
 import { SubscriptionStatus } from "../db/models/subscription.model"
+import { updateModelService } from "./factory.services"
 const { Op } = require("sequelize")
 
 export interface UserResponse {
@@ -111,28 +112,16 @@ async function updateUserService({
   transaction,
 }: {
   userId: string
-  updatedData: Partial<User>
+  updatedData: object
   transaction?: Transaction
-}): Promise<User | null> {
-  try {
-    const [affectedCount, affectedRows] = await User.update(updatedData, {
-      where: { id: userId },
-      returning: true,
-      individualHooks: true,
-      transaction,
-    })
-    if (affectedRows.length === 0) {
-      // No user found to update
-      return null
-    }
-    if (affectedCount > 1) {
-      throw new AppError(400, "update user update more than one user !")
-    }
-    return affectedRows[0]
-  } catch (error: any) {
-    console.error("Error updating user:", error.message)
-    throw new AppError(400, error.message)
-  }
+}): Promise<User> {
+  console.log(updatedData)
+  const user = (await updateModelService({
+    ModelClass: User,
+    id: userId,
+    updatedData,
+  })) as User
+  return user
 }
 async function updateUserRemainSessionService({
   userId,

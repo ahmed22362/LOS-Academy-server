@@ -8,7 +8,6 @@ import {
   getTeacherAllSessionsService,
   getUserAllSessionsService,
   teacherOwnThisSession,
-  updateSessionService,
   userOwnThisSession,
 } from "./session.service"
 import Session from "../db/models/session.model"
@@ -16,21 +15,21 @@ import SessionInfo from "../db/models/sessionInfo.model"
 import User from "../db/models/user.model"
 import { getUserAttr } from "../controller/user.controller"
 import Teacher, { RoleType } from "../db/models/teacher.model"
-import { sequelize } from "../db/sequelize"
-import logger from "../utils/logger"
 import { getTeacherAtt } from "../controller/teacher.controller"
-import { rescheduleSessionJobs } from "../utils/scheduler"
+import logger from "../utils/logger"
 
 export async function createRescheduleRequestService({
   sessionId,
   newDatesOptions,
   oldDate,
   requestedBy,
+  transaction,
 }: {
   sessionId: number
   newDatesOptions: Date[]
   oldDate: Date
   requestedBy: RoleType
+  transaction?: Transaction
 }) {
   const dateArr = newDatesOptions.map((str) => new Date(str))
 
@@ -40,7 +39,9 @@ export async function createRescheduleRequestService({
     newDatesOptions: dateArr,
     requestedBy,
   }
-  const rescheduleRequest = await RescheduleRequest.create(reqBody as any)
+  const rescheduleRequest = await RescheduleRequest.create(reqBody as any, {
+    transaction,
+  })
   if (!rescheduleRequest) {
     throw new AppError(400, "can't create reschedule request!")
   }
@@ -149,10 +150,12 @@ export async function userRequestRescheduleService({
   sessionId,
   userId,
   newDatesOptions,
+  transaction,
 }: {
   sessionId: number
   userId: string
   newDatesOptions: Date[]
+  transaction?: Transaction
 }) {
   const { session, exist } = await userOwnThisSession({ userId, sessionId })
   if (!exist) {
@@ -166,6 +169,7 @@ export async function userRequestRescheduleService({
     newDatesOptions,
     oldDate: session!.sessionDate,
     requestedBy: RoleType.USER,
+    transaction,
   })
   return rescheduleRequest
 }
@@ -173,11 +177,14 @@ export async function teacherRequestRescheduleService({
   sessionId,
   teacherId,
   newDatesOptions,
+  transaction,
 }: {
   sessionId: number
   teacherId: string
   newDatesOptions: Date[]
+  transaction?: Transaction
 }) {
+  logger.info({ here: teacherId, sessionId })
   const { session, exist } = await teacherOwnThisSession({
     teacherId,
     sessionId,
@@ -193,6 +200,7 @@ export async function teacherRequestRescheduleService({
     newDatesOptions,
     oldDate: session!.sessionDate,
     requestedBy: RoleType.TEACHER,
+    transaction,
   })
   return rescheduleRequest
 }
@@ -251,20 +259,38 @@ export async function getUserAllRescheduleRequestsService({
 }
 export async function getUserReceivedRescheduleRequestsService({
   userId,
+  page,
+  pageSize,
+  status,
 }: {
   userId: string
+  page?: number
+  pageSize?: number
+  status?: RescheduleRequestStatus
 }) {
   return getUserAllRescheduleRequestsService({
     userId,
     requestedBy: RoleType.TEACHER,
+    page,
+    pageSize,
+    status,
   })
 }
 export async function getUserRescheduleRequestsService({
   userId,
+  page,
+  pageSize,
+  status,
 }: {
   userId: string
+  page?: number
+  pageSize?: number
+  status?: RescheduleRequestStatus
 }) {
   return getUserAllRescheduleRequestsService({
+    page,
+    pageSize,
+    status,
     userId,
     requestedBy: RoleType.USER,
   })

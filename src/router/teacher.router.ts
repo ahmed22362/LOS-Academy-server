@@ -36,7 +36,7 @@ import {
 } from "../schema/teacher.schema"
 import { RoleType } from "../db/models/teacher.model"
 import {
-  teacherRequestSessionReschedule,
+  requestSessionReschedule,
   updateStatusSessionReschedule,
 } from "../controller/session.controller"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
@@ -116,7 +116,7 @@ teacherRouter
   .get(protectTeacher, setUserOrTeacherId, getMySessionsStats)
 teacherRouter
   .route("/requestReschedule")
-  .post(protectTeacher, setUserOrTeacherId, teacherRequestSessionReschedule)
+  .post(protectTeacher, setUserOrTeacherId, requestSessionReschedule)
   .get(protectTeacher, setUserOrTeacherId, getSessionRescheduleRequests)
 teacherRouter
   .route("/receivedRescheduleRequests")

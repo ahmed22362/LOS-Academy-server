@@ -20,16 +20,19 @@ export async function createSessionInfoService({
   teacherId,
   sessionReqId,
   transaction,
+  willContinue,
 }: {
   userId: string
   teacherId: string
   sessionReqId: number
+  willContinue?: boolean
   transaction?: Transaction
 }) {
   const infoBody: any = {
     userId,
     teacherId,
     sessionRequestId: sessionReqId,
+    willContinue,
   }
   const sessionInfo = await SessionInfo.create(infoBody, { transaction })
   if (!sessionInfo) {
@@ -136,14 +139,17 @@ export async function getAllSessionsInfoService({
 export async function updateSessionInfoService({
   id,
   updatedData,
+  transaction,
 }: {
   id: number
   updatedData: any
+  transaction?: Transaction
 }) {
   const updatedSession = await updateModelService({
     ModelClass: SessionInfo,
     id: id,
     updatedData,
+    transaction,
   })
   if (!updatedSession) {
     throw new AppError(400, "Can't update session info!")

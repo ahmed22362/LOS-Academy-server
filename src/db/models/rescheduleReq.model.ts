@@ -15,6 +15,7 @@ export enum RescheduleRequestStatus {
   PENDING = "pending",
   APPROVED = "approved",
   DECLINED = "declined",
+  NO_RESPONSE = "no_response",
 }
 
 @Table({

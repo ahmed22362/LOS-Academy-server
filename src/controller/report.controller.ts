@@ -14,6 +14,10 @@ import {
   updateReportService,
 } from "../service/report.service"
 import Session, { SessionStatus } from "../db/models/session.model"
+import User from "../db/models/user.model"
+import { getUserAttr } from "./user.controller"
+import Teacher from "../db/models/teacher.model"
+import { getTeacherAtt } from "./teacher.controller"
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -158,9 +162,14 @@ export const getAllReports = catchAsync(
       nLimit = Number(limit)
       offset = nPage * nLimit
     }
+
     const reports = await getAllReportsService({
       findOptions: {
-        include: { model: Session, attributes: ["sessionDate"] },
+        include: [
+          { model: Session, attributes: ["sessionDate"] },
+          { model: User, attributes: getUserAttr },
+          { model: Teacher, attributes: getTeacherAtt },
+        ],
         limit: nLimit,
         offset: offset,
       },
