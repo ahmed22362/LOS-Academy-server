@@ -86,6 +86,7 @@ export const createUser = catchAsync(
       phone,
     })
     newUser.customerId = stripeCustomer.id
+    await newUser.save()
     res.status(200).json({ status: "success", data: newUser })
   }
 )
@@ -137,15 +138,17 @@ export const updateUser = catchAsync(
       remainSessions,
       availableFreeSession,
       verified,
+      customerId,
     } = req.body
 
-    const body: Partial<IUserInput> = {} // Use Partial to make all properties optional
+    const body: any = {} // Use Partial to make all properties optional
 
     if (name) body.name = name
     if (email) body.email = email
     if (phone) body.phone = phone
     if (age) body.age = age
     if (gender) body.gender = gender
+    body.customerId = customerId
 
     if (req.body.teacherId) {
       const teacher = await getTeacherByIdService({ id: req.body.teacherId })
@@ -157,8 +160,10 @@ export const updateUser = catchAsync(
       }
     }
 
-    const user = await updateUserService({ userId: id, updatedData: body })
-
+    const user = await updateUserService({
+      userId: id,
+      updatedData: body as object,
+    })
     if (!user) {
       return next(new AppError(404, "Can't find user to update!"))
     }

@@ -115,13 +115,12 @@ async function updateUserService({
   updatedData: object
   transaction?: Transaction
 }): Promise<User> {
-  console.log(updatedData)
-  const user = (await updateModelService({
+  const user = await updateModelService({
     ModelClass: User,
     id: userId,
     updatedData,
-  })) as User
-  return user
+  })
+  return user as User
 }
 async function updateUserRemainSessionService({
   userId,
