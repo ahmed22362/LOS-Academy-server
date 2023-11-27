@@ -811,7 +811,7 @@ export function canRescheduleSession(sessionDate: Date) {
   const currentDate = new Date()
 
   // If session date is in the past - allow reschedule
-  if (sessionDate < currentDate) {
+  if (sessionDate.getTime() < currentDate.getTime()) {
     return true
   }
 

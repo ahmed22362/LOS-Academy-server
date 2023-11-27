@@ -337,6 +337,7 @@ export async function rescheduleSessionJobs({
     newDate.getTime() + sessionDuration * MS_IN_MINUTE
   )
   try {
+    const session = await getOneSessionDetailsService({ sessionId })
     if (reminderJob) {
       reminderJob.reschedule(reminderNewDate.getTime())
         ? logger.info("reschedule reminderJob success")
@@ -345,6 +346,17 @@ export async function rescheduleSessionJobs({
         { scheduledTime: startedNewDate },
         { where: { name: jobReminderName }, transaction }
       )
+    } else {
+      logger.info("there is no reminder job! and created one! ")
+      await scheduleSessionReminderMailJob({
+        sessionDate: newDate,
+        sessionId,
+        studentName: session.SessionInfo.user!.name,
+        studentEmail: session.SessionInfo.user!.email,
+        teacherName: session.SessionInfo.teacher!.name,
+        teacherEmail: session.SessionInfo.teacher!.email,
+        transaction,
+      })
     }
     if (sessionStartedJob) {
       sessionStartedJob.reschedule(startedNewDate.getTime())
@@ -354,6 +366,13 @@ export async function rescheduleSessionJobs({
         { scheduledTime: startedNewDate },
         { where: { name: jobStartedName }, transaction }
       )
+    } else {
+      logger.info("there is no session started job! and created one! ")
+      await scheduleSessionStartReminderMailJob({
+        sessionId,
+        sessionDate: newDate,
+        transaction,
+      })
     }
     if (sessionOngoingJob) {
       sessionOngoingJob.reschedule(ongoingNewDate.getTime())
@@ -363,6 +382,13 @@ export async function rescheduleSessionJobs({
         { scheduledTime: ongoingNewDate },
         { where: { name: jobOngoingName }, transaction }
       )
+    } else {
+      logger.info("there is no updated session to ongoing! and created one! ")
+      await scheduleUpdateSessionToOngoing({
+        sessionId,
+        sessionDate: newDate,
+        transaction,
+      })
     }
     if (sessionFinishedJob) {
       sessionFinishedJob.reschedule(finishedNewDate.getTime())
@@ -372,6 +398,13 @@ export async function rescheduleSessionJobs({
         { scheduledTime: finishedNewDate },
         { where: { name: jobFinishedName }, transaction }
       )
+    } else {
+      await scheduleUpdateSessionToFinished({
+        sessionId,
+        sessionDate: newDate,
+        sessionDuration: session.sessionDuration,
+        transaction,
+      })
     }
   } catch (error: any) {
     throw new AppError(400, `Error While rescheduling: ${error.message}`)

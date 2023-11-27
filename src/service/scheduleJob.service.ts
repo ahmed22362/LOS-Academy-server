@@ -103,3 +103,10 @@ export async function deleteJobServiceWhere({
 export async function getJobService({ id }: { id: number }) {
   return (await getModelByIdService({ ModelClass: Job, Id: id })) as Job
 }
+export async function getJobServiceByName({ jobName }: { jobName: string }) {
+  const job = await Job.findOne({ where: { name: jobName } })
+  if (!job) {
+    throw new AppError(404, `There is no job with this name ${jobName}`)
+  }
+  return job
+}

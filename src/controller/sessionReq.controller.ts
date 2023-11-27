@@ -160,7 +160,7 @@ export const updateSessionReqDate = catchAsync(
       for (let date of sessionDates) {
         checkDateFormat(date)
         const sessionDate = new Date(date)
-        if (sessionDate < currentDate) {
+        if (sessionDate.getTime() < currentDate.getTime()) {
           return next(
             new AppError(
               400,

@@ -121,3 +121,8 @@ export const getUserMonthlyReport = catchAsync(
       .json({ status: "success", length: reports.length, data: reports })
   }
 )
+export const getTeacherMonthlyReport = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = []
+  }
+)

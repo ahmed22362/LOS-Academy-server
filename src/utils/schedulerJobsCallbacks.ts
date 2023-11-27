@@ -67,7 +67,7 @@ const sessionReminderEmail: JobCallback = async function ({
     })
     throw new AppError(
       400,
-      `Can't update the fished session's status: ${error.message}`
+      `Can't update the fished session's status: ${error}`
     )
   }
 }
@@ -123,7 +123,7 @@ const sessionStartedEmail: JobCallback = async function ({
     })
     throw new AppError(
       400,
-      `Can't update the fished session's status: ${error.message}`
+      `Can't update the fished session's status: ${error}`
     )
   }
 }
@@ -149,7 +149,7 @@ const sessionUpdateToOngoing: JobCallback = async function ({
     })
     throw new AppError(
       400,
-      `Can't update the fished session's status: ${error.message}`
+      `Can't update the fished session's status: ${error}`
     )
   }
 }
@@ -225,7 +225,7 @@ const sessionUpdateToFinished: JobCallback = async function ({
     await transaction.rollback()
     throw new AppError(
       400,
-      `Can't update the fished session's status: ${error.message}`
+      `Can't update the fished session's status: ${error}`
     )
   }
   logger.info(`One time session Finished with status executed!`)

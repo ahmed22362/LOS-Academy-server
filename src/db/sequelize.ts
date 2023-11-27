@@ -11,7 +11,7 @@ if (process.env.NODE_ENV?.trim() === "production") {
 }
 export const sequelize = new Sequelize(runningDB, {
   logging: (query) => {
-    logger.info(query) // Log the SQL query to the console
+    // logger.info(query) // Log the SQL query to the console
   },
   pool: {
     max: 5,

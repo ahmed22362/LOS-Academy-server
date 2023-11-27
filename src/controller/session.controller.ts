@@ -69,16 +69,11 @@ import {
   updateSessionInfoService,
 } from "../service/sessionInfo.service"
 import { createSessionRequestService } from "../service/sessionReq.service"
-import logger from "../utils/logger"
-import {
-  deleteJobServiceWhere,
-  updateJobService,
-  updateJobServiceBy,
-} from "../service/scheduleJob.service"
+import { deleteJobServiceWhere } from "../service/scheduleJob.service"
 import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs"
-import { Transaction } from "sequelize"
+import { NOW, Transaction } from "sequelize"
 export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000
-
+export const HOUR_IN_MILLISECONDS = 60 * 60 * 1000
 const DEFAULT_COURSES = ["arabic"]
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -460,6 +455,17 @@ export const requestSessionReschedule = catchAsync(
           )
         )
       }
+      //  else if (
+      //   currentDate.getTime() + HOUR_IN_MILLISECONDS >
+      //   newSessionDate.getTime()
+      // ) {
+      //   return next(
+      //     new AppError(
+      //       400,
+      //       `Please provide date and time that is at least one hour form now!`
+      //     )
+      //   )
+      // }
       datesArr.push(newSessionDate)
     }
     const previousRequest = await getPendingRequestBySessionIdService({
@@ -714,6 +720,13 @@ export const updateStatusSessionReschedule = (
           sessionDuration: updatedSession.sessionDuration,
           transaction,
         })
+      } else {
+        return next(
+          new AppError(
+            404,
+            `Error while updating request session! can't determine the status of the request!`
+          )
+        )
       }
       // no need now for the job that checked missed requests
       const jobName = getRescheduleRequestJobName(rescheduleRequestId)
