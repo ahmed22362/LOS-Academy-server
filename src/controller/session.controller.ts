@@ -72,6 +72,7 @@ import { createSessionRequestService } from "../service/sessionReq.service"
 import { deleteJobServiceWhere } from "../service/scheduleJob.service"
 import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs"
 import { NOW, Transaction } from "sequelize"
+import { SubscriptionStatus } from "../db/models/subscription.model"
 export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000
 export const HOUR_IN_MILLISECONDS = 60 * 60 * 1000
 const DEFAULT_COURSES = ["arabic"]
@@ -321,14 +322,14 @@ export const updateSessionStatus = catchAsync(
           new AppError(401, "you can't update session that is not yours")
         )
       }
-      if (!session.studentAttended && status !== SessionStatus.USER_ABSENT) {
-        return next(
-          new AppError(
-            400,
-            "user must attend before you can update the session status!"
-          )
-        )
-      }
+      // if (!session.studentAttended && status !== SessionStatus.USER_ABSENT) {
+      //   return next(
+      //     new AppError(
+      //       400,
+      //       "user must attend before you can update the session status!"
+      //     )
+      //   )
+      // }
       if (
         session.status !== SessionStatus.PENDING &&
         session.status !== SessionStatus.ONGOING
@@ -389,11 +390,6 @@ export const updateSessionStatus = catchAsync(
           )
         }
         if (session.type === SessionType.PAID) {
-          await updateTeacherBalance({
-            teacherId,
-            numOfSessions: 1,
-            transaction: t,
-          })
           await updateUserRemainSessionService({
             userId: session.SessionInfo.userId as string,
             amountOfSessions: -1,
@@ -420,6 +416,15 @@ export const requestSessionReschedule = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId, userId, sessionId, newDatesOptions } = req.body
     const session = await getOneSessionService({ sessionId })
+    const MAX_NUMBER_OF_REQUESTS = 2
+    if (session.reschedule_request_count >= MAX_NUMBER_OF_REQUESTS) {
+      return next(
+        new AppError(
+          400,
+          "Can't request new schedule because every session has maximum two requests and this session take all it's opportunities!"
+        )
+      )
+    }
     if (!canRescheduleSession(session.sessionDate)) {
       return next(
         new AppError(
@@ -529,6 +534,7 @@ export const requestSessionReschedule = catchAsync(
         sessionDate: session.sessionDate,
         transaction,
       })
+      await session.increment({ reschedule_request_count: 1 }, { transaction })
       await transaction.commit()
       res.status(200).json({
         status: "success",
@@ -762,10 +768,13 @@ export const userContinueWithTeacher = catchAsync(
       id: session.sessionInfoId,
       updatedData: { willContinue },
     })
+    const message = willContinue
+      ? `The user chose to continue with that teacher now choose plan and pay for it after the plan \n 
+    go and choose the date for your sessions`
+      : `The user choose to NOT continue with teacher you can always request a new session free or paid!`
     res.status(200).json({
       status: "success",
-      message: `The user chose to continue with that teacher now choose plan and pay for it after the plan \n 
-        go and choose the date for your sessions`,
+      message,
       data: sessionInfoUpdated,
     })
   }
@@ -794,6 +803,11 @@ export const userPlaceHisSessions = catchAsync(
       )
     }
     const subscription = await checkUserSubscription({ userId })
+    if (subscription.status !== SubscriptionStatus.ACTIVE) {
+      return next(
+        new AppError(400, "You  must activate your subscription first!")
+      )
+    }
     if (!Array.isArray(sessionDates)) {
       return next(
         new AppError(400, "Please provide sessionDates as list or array!")

@@ -65,10 +65,7 @@ const sessionReminderEmail: JobCallback = async function ({
       id: jobId,
       updatedData: { status: scheduledJobStatus.FAILED },
     })
-    throw new AppError(
-      400,
-      `Can't update the fished session's status: ${error}`
-    )
+    throw new AppError(400, `Can't Send session reminder mail: ${error}`)
   }
 }
 const sessionStartedEmail: JobCallback = async function ({
@@ -123,7 +120,7 @@ const sessionStartedEmail: JobCallback = async function ({
     })
     throw new AppError(
       400,
-      `Can't update the fished session's status: ${error}`
+      `Can't send session started reminder mail: ${error}`
     )
   }
 }
@@ -149,7 +146,7 @@ const sessionUpdateToOngoing: JobCallback = async function ({
     })
     throw new AppError(
       400,
-      `Can't update the fished session's status: ${error}`
+      `Can't update Session to be ongoing or generating the link try manually: ${error}`
     )
   }
 }
@@ -170,16 +167,18 @@ const sessionUpdateToFinished: JobCallback = async function ({
         updatedData: { status: SessionStatus.USER_ABSENT },
         transaction,
       })
-      await updateTeacherBalance({
-        teacherId: session.SessionInfo.teacherId!,
-        numOfSessions: 1,
-        transaction,
-      })
-      await updateUserRemainSessionService({
-        userId: session.SessionInfo.userId!,
-        amountOfSessions: -1,
-        transaction,
-      })
+      if (session.type === SessionType.PAID) {
+        await updateTeacherBalance({
+          teacherId: session.SessionInfo.teacherId!,
+          numOfSessions: 1,
+          transaction,
+        })
+        await updateUserRemainSessionService({
+          userId: session.SessionInfo.userId!,
+          amountOfSessions: -1,
+          transaction,
+        })
+      }
     }
     if (!session.teacherAttended) {
       logger.info("teacher absent")
@@ -204,11 +203,6 @@ const sessionUpdateToFinished: JobCallback = async function ({
         transaction,
       })
       if (session.type === SessionType.PAID) {
-        await updateTeacherBalance({
-          teacherId: session.SessionInfo.teacherId!,
-          numOfSessions: 1,
-          transaction,
-        })
         await updateUserRemainSessionService({
           userId: session.SessionInfo.userId!,
           amountOfSessions: -1,

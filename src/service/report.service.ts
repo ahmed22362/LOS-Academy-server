@@ -1,4 +1,4 @@
-import { FindOptions, Op } from "sequelize"
+import { FindOptions, Op, Transaction } from "sequelize"
 import sessionReport, { GradeOptions } from "../db/models/report.model"
 import AppError from "../utils/AppError"
 import { updateModelService } from "./factory.services"
@@ -21,9 +21,15 @@ interface IReportBody {
   sessionId: number
 }
 
-export async function createReportService({ body }: { body: IReportBody }) {
+export async function createReportService({
+  body,
+  transaction,
+}: {
+  body: IReportBody
+  transaction?: Transaction
+}) {
   try {
-    const report = await sessionReport.create(body as any)
+    const report = await sessionReport.create(body as any, { transaction })
     if (!report) {
       throw new AppError(400, "Can't create report")
     }

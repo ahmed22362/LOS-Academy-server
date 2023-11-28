@@ -1,2 +1,8 @@
 .env
 /node_modules
+# sequelize 
+/migrations
+/seeders
+/config
+# Sequelize config Template 
+/config/config.json.template

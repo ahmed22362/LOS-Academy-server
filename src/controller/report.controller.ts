@@ -18,6 +18,10 @@ import User from "../db/models/user.model"
 import { getUserAttr } from "./user.controller"
 import Teacher from "../db/models/teacher.model"
 import { getTeacherAtt } from "./teacher.controller"
+import SessionInfo from "../db/models/sessionInfo.model"
+import logger from "../utils/logger"
+import { updateTeacherBalance } from "../service/teacher.service"
+import { sequelize } from "../db/sequelize"
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -46,25 +50,55 @@ export const createReport = catchAsync(
     if (session.status !== SessionStatus.TAKEN) {
       return next(new AppError(400, "can't add report to a non taken session"))
     }
-
-    const report = await createReportService({
-      body: {
-        arabic,
-        islamic,
-        quran,
-        comment,
-        grade,
-        sessionId,
-        arabicComment,
-        islamicComment,
-        quranComment,
-      },
+    if (!session.studentAttended) {
+      return next(
+        new AppError(
+          400,
+          "Can't add report for an absent student! what will you write in it?"
+        )
+      )
+    }
+    const existReports = await getAllReportsService({
+      findOptions: { where: { sessionId } },
     })
-    res.status(201).json({
-      status: "success",
-      message: "report created successfully",
-      data: report,
-    })
+    if (existReports.length > 0) {
+      return next(
+        new AppError(
+          400,
+          "This Session already has report can't add two reports fot the same session!"
+        )
+      )
+    }
+    const transaction = await sequelize.transaction()
+    try {
+      const report = await createReportService({
+        body: {
+          arabic,
+          islamic,
+          quran,
+          comment,
+          grade,
+          sessionId,
+          arabicComment,
+          islamicComment,
+          quranComment,
+        },
+        transaction,
+      })
+      await updateTeacherBalance({
+        teacherId: teacherId!,
+        numOfSessions: 1,
+        transaction,
+      })
+      res.status(201).json({
+        status: "success",
+        message: "report created successfully",
+        data: report,
+      })
+    } catch (error: any) {
+      logger.error(`Error while creating report ${error}`)
+      return next(new AppError(400, `Error creating report ${error.message}`))
+    }
   }
 )
 export const updateReport = catchAsync(
@@ -166,9 +200,20 @@ export const getAllReports = catchAsync(
     const reports = await getAllReportsService({
       findOptions: {
         include: [
-          { model: Session, attributes: ["sessionDate"] },
-          { model: User, attributes: getUserAttr },
-          { model: Teacher, attributes: getTeacherAtt },
+          {
+            model: Session,
+            attributes: ["sessionDate", "sessionInfoId"],
+            include: [
+              {
+                model: SessionInfo,
+                attributes: ["userId", "teacherId"],
+                include: [
+                  { model: User, attributes: getUserAttr },
+                  { model: Teacher, attributes: getTeacherAtt },
+                ],
+              },
+            ],
+          },
         ],
         limit: nLimit,
         offset: offset,

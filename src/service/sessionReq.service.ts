@@ -20,6 +20,7 @@ import {
 import {
   checkUniqueUserAndTeacher,
   createSessionInfoService,
+  updateSessionInfoService,
 } from "./sessionInfo.service"
 import { sequelize } from "../db/sequelize"
 import logger from "../utils/logger"
@@ -27,7 +28,7 @@ import { getTeacherByIdService } from "./teacher.service"
 export const DATE_PATTERN: RegExp =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
 export const FREE_SESSION_TOPIC = "User Free Session"
-export const FREE_SESSION_DURATION = 20 // 20 min
+export const FREE_SESSION_DURATION = 25 // 20 min
 export interface ICreateReq {
   userId: string
   sessionDates: Date[]
@@ -156,6 +157,11 @@ export async function acceptSessionRequestService({
       await updateUserService({
         userId,
         updatedData: { sessionPlaced: true },
+        transaction: t,
+      })
+      await updateSessionInfoService({
+        id: sessionInfo.id,
+        updatedData: { willContinue: true },
         transaction: t,
       })
       await t.commit()

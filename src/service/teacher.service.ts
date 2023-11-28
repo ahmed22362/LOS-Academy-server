@@ -107,8 +107,8 @@ export async function getTeacherStudentsService({
     findOptions: { include: { model: User, attributes: getUserAttr } },
   })) as SessionInfo[]
   const students = sessionInfos.map((info) => info.user)
-  const unique = [...new Set(students.map((item) => JSON.stringify(item)))].map(
-    (item) => JSON.parse(item)
-  )
+  const unique: User[] = [
+    ...new Set(students.map((item) => JSON.stringify(item))),
+  ].map((item) => JSON.parse(item))
   return unique
 }

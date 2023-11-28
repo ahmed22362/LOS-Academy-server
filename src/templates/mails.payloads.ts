@@ -133,7 +133,9 @@ export const sessionReschedulePayload = ({
   <p><strong>User:</strong> ${senderName}</p>
   <p><strong>Current Session Date and Time:</strong> ${sessionOldDate}</p>
   <p><strong>Proposed Rescheduled Date and Time:</strong> ${allDatesString} </p>
-</div>
+  <p><strong>You can accept or decline this request from your dashboard open you dashboear!</strong></p>
+  </div>
+
   `
   const footer = `If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`
   return { title, header, paragraph, footer }

@@ -55,6 +55,19 @@ export default class ZoomService {
     }
   }
 
+  // async getUserDetails() {
+  //   const access_token = await this.getAuthToken()
+  //   const url = `${api_base_url}/users/me`
+
+  //   const res = axios.get("https://api.zoom.us/v2/users/me", {
+  //     headers: {
+  //       "Content-Type": "application/x-www-form-urlencoded",
+  //       authorization: `Bearer ${access_token}`, // Do not publish or share your token with anyone.
+  //     },
+  //   })
+  //   console.log(res)
+  // }
+
   async createMeeting({
     topic,
     duration,
@@ -76,6 +89,7 @@ export default class ZoomService {
       settings: {
         join_before_host: true,
         waiting_room: false,
+        participant_video: true,
       },
     }
     const meetingResponse = await axios.post(
@@ -98,7 +112,6 @@ export default class ZoomService {
       message: "Success",
       status: 1,
     }
-    console.log(content)
     return response_data.join_url
   }
 }

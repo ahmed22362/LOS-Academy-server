@@ -78,4 +78,11 @@ export default class Session extends Model<Session> {
     allowNull: true,
   })
   meetingLink?: string
+
+  @Column({
+    type: DataType.INTEGER,
+    defaultValue: 0,
+    validate: { min: 0, max: 2 },
+  })
+  reschedule_request_count!: number
 }

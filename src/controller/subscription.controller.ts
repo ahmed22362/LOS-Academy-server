@@ -28,11 +28,15 @@ export const createSubscription = catchAsync(
     const sessionDuration = req.body.sessionDuration
     const sessionsCount = req.body.sessionsCount
     const sessionsPerWeek = req.body.sessionsPerWeek
+    const continueFlag = req.body.continueFlag
     // const successLink: string = `${req.protocol}://${req.get(
     //   "host"
     // )}/?session_id={CHECKOUT_SESSION_ID}`
-    const successLink: string = `https://los-academy.vercel.app/student_profile`
-    const failLink: string = `${req.protocol}://${req.get("host")}/`
+    let successLink: string = `https://los-academy.vercel.app/student_profile`
+    if (continueFlag) {
+      successLink += "?fromUserContinue=true"
+    }
+    const failLink: string = `https://los-academy.vercel.app/`
     // check if there is active subscription
     const previousSubscription = await checkPreviousUserSubreption({ userId })
     if (

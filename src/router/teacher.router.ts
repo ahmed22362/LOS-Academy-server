@@ -41,6 +41,7 @@ import {
 } from "../controller/session.controller"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import { getMyPayoutRequests } from "../controller/payout.controller"
+import { getTeacherMonthlyReport } from "../controller/monthlyReport.controller"
 const teacherRouter = Router()
 
 teacherRouter
@@ -131,6 +132,9 @@ teacherRouter
     setUserOrTeacherId,
     updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED)
   )
+teacherRouter
+  .route("/myMonthlyReport")
+  .get(protectTeacher, getTeacherMonthlyReport)
 teacherRouter
   .route("/declineReschedule")
   .post(
