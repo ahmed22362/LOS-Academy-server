@@ -7,15 +7,9 @@ import { singJWTToken, verifyToken } from "../utils/jwt"
 import Mail from "../connect/sendMail"
 import crypto from "crypto"
 import dotenv from "dotenv"
-import logger from "../utils/logger"
-import {
-  getGoogleOAuthTokens,
-  getGoogleUser,
-} from "../service/googleOauth.service"
 import {
   UserResponse,
   createUserService,
-  getUserByResetTokenService,
   getUserByService,
   updateUserService,
 } from "../service/user.service"
@@ -303,7 +297,6 @@ export const resetPassword = catchAsync(
     res.render("resetPasswordSuccess")
   }
 )
-
 export const updatePassword = catchAsync(
   async (req: IRequestWithUser, res: Response, next: NextFunction) => {
     const { currentPassword, newPassword } = req.body
@@ -333,42 +326,6 @@ export const updatePassword = catchAsync(
     // 4) Log user in, send JWT
     createSendToken({ user: updatedUser, statusCode: 200, res })
   }
-)
-
-export const googleOauthController = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    // get the code from qs
-    const code = req.query.code as string
-    // get the id and access token with the code
-    try {
-      const { id_token, access_token } = await getGoogleOAuthTokens({
-        code,
-      })
-      // get user with tokens
-      const googleUser = await getGoogleUser({ id_token, access_token })
-      //jwt.decode(id_token);
-      // upsert the user
-      if (!googleUser.verified_email) {
-        return next(new AppError(403, "Google Account is not verified!"))
-      }
-      const [user, created] = await User.findOrCreate({
-        where: { email: googleUser.email },
-        defaults: {
-          email: googleUser.email,
-          name: googleUser.name,
-        } as User,
-      })
-      logger.info({ user })
-      // create an access token
-      createSendToken({ user, redirect: "https://cubuild.net/", res })
-    } catch (error: any) {
-      logger.error(error, "Failed to authorized Google user!")
-      return res.render("errorPage", { message: error.message })
-    }
-  }
-)
-export const sendConfirmEmail = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {}
 )
 export const verifyMail = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

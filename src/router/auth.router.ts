@@ -7,23 +7,19 @@ import {
   updateMyPasswordSchema,
 } from "../schema/user.schema"
 import {
-  login,
   checkToken,
   signup,
   forgetPassword,
   resetPassword,
   updatePassword,
-  googleOauthController,
   verifyMail,
   resendMailConfirmation,
 } from "../controller/auth.controller"
 import validate from "../middleware/validate"
-import { protect } from "../controller/auth.controller"
 import { loginUser, protectUser } from "../controller/user.controller"
 
 const authRouter = Router()
 
-authRouter.get("/oauth/google/callback", googleOauthController)
 authRouter.post("/signup", validate(signupUserSchema), signup)
 authRouter.post("/login", validate(loginUserSchema), loginUser)
 authRouter.post(
