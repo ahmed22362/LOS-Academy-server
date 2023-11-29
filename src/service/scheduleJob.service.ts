@@ -22,18 +22,11 @@ export interface createJobBody {
   status?: scheduledJobStatus
   data?: object
 }
-export async function createJobService({
-  body,
-  transaction,
-}: {
-  body: createJobBody
-  transaction?: Transaction
-}) {
+export async function createJobService({ body }: { body: createJobBody }) {
   try {
     const job = await createModelService({
       ModelClass: Job,
       data: body,
-      transaction,
     })
     if (!job) {
       throw new AppError(400, "Can't Create job!")
