@@ -118,10 +118,7 @@ const sessionStartedEmail: JobCallback = async function ({
       id: jobId,
       updatedData: { status: scheduledJobStatus.FAILED },
     })
-    throw new AppError(
-      400,
-      `Can't send session started reminder mail: ${error}`
-    )
+    logger.error(`Can't send session started reminder mail: ${error}`)
   }
 }
 const sessionUpdateToOngoing: JobCallback = async function ({
@@ -144,8 +141,7 @@ const sessionUpdateToOngoing: JobCallback = async function ({
       id: jobId,
       updatedData: { status: scheduledJobStatus.FAILED },
     })
-    throw new AppError(
-      400,
+    logger.error(
       `Can't update Session to be ongoing or generating the link try manually: ${error}`
     )
   }
@@ -211,19 +207,16 @@ const sessionUpdateToFinished: JobCallback = async function ({
       }
     }
     await transaction.commit()
+    logger.info(`One time session Finished with status executed!`)
+    await deleteJobService({ id: jobId })
   } catch (error: any) {
     await updateJobService({
       id: jobId,
       updatedData: { status: scheduledJobStatus.FAILED },
     })
     await transaction.rollback()
-    throw new AppError(
-      400,
-      `Can't update the fished session's status: ${error}`
-    )
+    logger.error(`Can't update the fished session's status: ${error}`)
   }
-  logger.info(`One time session Finished with status executed!`)
-  await deleteJobService({ id: jobId })
 }
 // handel no response requests
 const rescheduleRequestUpdate: JobCallback = async function ({

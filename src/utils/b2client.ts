@@ -1,8 +1,16 @@
 import B2 from "backblaze-b2"
-import AppError from "./AppError"
 import logger from "./logger"
 import dotenv from "dotenv"
 dotenv.config()
+
+interface StandardApiResponse {
+  status: number
+  statusText: string
+  headers: any
+  config: any
+  request: any
+  data: any
+}
 
 export default class B2Client {
   private b2: B2
@@ -18,7 +26,6 @@ export default class B2Client {
       return authResponse.data
     } catch (error: any) {
       logger.error(error)
-      throw new AppError(400, "Error while Authenticate B2Client!")
     }
   }
   async getUploadLink(bucketId: string) {
@@ -27,14 +34,19 @@ export default class B2Client {
       return response
     } catch (error: any) {
       logger.error(error)
-      throw new AppError(400, "Error while Getting Upload Link in B2Client!")
     }
   }
   async uploadFile(file: Express.Multer.File) {
     const authResponse = await this.getAuthToken()
     const { downloadUrl } = authResponse
     const bucketId = process.env.LOS_Bucket_ID || ""
-    const response = await this.getUploadLink(bucketId)
+    const response: StandardApiResponse | undefined = await this.getUploadLink(
+      bucketId
+    )
+    if (!response) {
+      logger.error(`There is no response for getting upload link`)
+      return
+    }
     const { authorizationToken, uploadUrl } = response.data
     try {
       const params = {
@@ -56,7 +68,6 @@ export default class B2Client {
       return fileDate
     } catch (error) {
       logger.error(error)
-      throw new AppError(400, "There is problem while uploading the Files")
     }
   }
   async deleteFile(fileId: string) {
@@ -64,10 +75,7 @@ export default class B2Client {
     try {
       await this.b2.downloadFileById({ fileId, responseType: "json" })
     } catch (error) {
-      throw new AppError(
-        400,
-        "there is some wrong happened while deleting the file!"
-      )
+      logger.error(`Error while deleting file: ${error}`)
     }
   }
 }
