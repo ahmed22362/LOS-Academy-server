@@ -3,7 +3,6 @@ import {
   FindOptions,
   Transaction,
   UpdateOptions,
-  WhereOptions,
 } from "sequelize"
 import Job, { scheduledJobStatus } from "../db/models/scheduleJob.model"
 import AppError from "../utils/AppError"
@@ -22,12 +21,15 @@ export interface createJobBody {
   status?: scheduledJobStatus
   data?: object
 }
-export async function createJobService({ body }: { body: createJobBody }) {
+export async function createJobService({
+  body,
+  transaction,
+}: {
+  body: createJobBody
+  transaction?: Transaction
+}) {
   try {
-    const job = await createModelService({
-      ModelClass: Job,
-      data: body,
-    })
+    const job = await Job.create(body as any, { transaction })
     if (!job) {
       throw new AppError(400, "Can't Create job!")
     }
