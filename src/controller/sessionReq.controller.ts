@@ -25,7 +25,6 @@ import {
 } from "../service/session.service"
 import { sequelize } from "../db/sequelize"
 import { scheduleSessionPlacedMailJob } from "../utils/scheduler"
-import logger from "../utils/logger"
 
 export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {

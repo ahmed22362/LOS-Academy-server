@@ -15,6 +15,7 @@ import {
   getAdminSessionsStatisticsService,
   getOneSessionService,
   getTeacherAllSessionsService,
+  getTeacherLatestTakenSessionService,
   getTeacherOngoingSessionService,
   getTeacherRemainSessionsService,
   getTeacherSessionsStatisticsService,
@@ -28,10 +29,6 @@ import {
   getTeacherReceivedRescheduleRequestsService,
   getTeacherRescheduleRequestsService,
 } from "../service/rescheduleReq.service"
-import {
-  getSessionInfoService,
-  updateSessionInfoService,
-} from "../service/sessionInfo.service"
 
 export const getTeacherAtt = [
   "id",
@@ -217,6 +214,15 @@ export const getTeacherOngoingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
     const sessions = await getTeacherOngoingSessionService({ teacherId })
+    res
+      .status(200)
+      .json({ status: "success", length: sessions.length, data: sessions })
+  }
+)
+export const getTeacherLatestTakenSession = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const teacherId = req.body.teacherId
+    const sessions = await getTeacherLatestTakenSessionService({ teacherId })
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })

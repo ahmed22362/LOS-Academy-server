@@ -1,17 +1,10 @@
-import {
-  FindOptions,
-  Op,
-  Transaction,
-  UpdateOptions,
-  WhereOptions,
-} from "sequelize"
+import { FindOptions, Op, Transaction, WhereOptions } from "sequelize"
 import Session, { SessionStatus } from "../db/models/session.model"
 import { SessionType } from "../db/models/session.model"
 import AppError from "../utils/AppError"
 import { deleteModelService, updateModelService } from "./factory.services"
 import { DATE_PATTERN, FREE_SESSION_DURATION } from "./sessionReq.service"
 import {
-  getOneSessionInfoServiceBy,
   getTeacherSessionInfoService,
   getUserSessionInfoService,
 } from "./sessionInfo.service"
@@ -28,7 +21,6 @@ import {
   scheduleUpdateSessionToOngoing,
 } from "../utils/scheduler"
 import { THREE_MINUTES_IN_MILLISECONDS } from "../controller/session.controller"
-import logger from "../utils/logger"
 
 export interface IInfoBody {
   userId: string
@@ -51,6 +43,7 @@ export interface ISessionUpdateUser {
 export interface ISessionUpdateTeacher extends ISessionUpdateUser {
   status: SessionStatus
   meetingLink: string
+  hasReport?: boolean
 }
 
 export interface ISessionDetails {
@@ -67,7 +60,10 @@ export interface ISessionDetails {
   teacherEmail: string
   meetingLink: string
 }
-
+export enum OrderAssociation {
+  DESC = "DESC",
+  ASC = "ASC",
+}
 export async function createFreeSessionService({
   sessionInfoId,
   sessionDate,
@@ -206,7 +202,7 @@ export async function updateSessionService({
     transaction,
   })
   if (!session) {
-    throw new AppError(400, "can't update session!")
+    throw new AppError(400, `can't update session!`)
   }
   return session as Session
 }
@@ -426,6 +422,7 @@ export async function getTeacherAllSessionsService({
     page,
     pageSize,
     status,
+    orderAssociation: OrderAssociation.ASC,
   })
   return session
 }
@@ -439,6 +436,7 @@ export async function getTeacherUpcomingSessionService({
     status: SessionStatus.PENDING,
     pageSize: 1,
     upcoming: true,
+    orderAssociation: OrderAssociation.ASC,
   })
   return session
 }
@@ -450,6 +448,20 @@ export async function getTeacherOngoingSessionService({
   const session = await allTeacherSessionsService({
     teacherId,
     status: SessionStatus.ONGOING,
+    orderAssociation: OrderAssociation.ASC,
+  })
+  return session
+}
+export async function getTeacherLatestTakenSessionService({
+  teacherId,
+}: {
+  teacherId: string
+}) {
+  const session = await allTeacherSessionsService({
+    pageSize: 1,
+    teacherId,
+    status: SessionStatus.TAKEN,
+    orderAssociation: OrderAssociation.DESC,
   })
   return session
 }
@@ -461,6 +473,7 @@ export async function getTeacherRemainSessionsService({
   const sessions = await allTeacherSessionsService({
     teacherId,
     status: SessionStatus.PENDING,
+    orderAssociation: OrderAssociation.ASC,
   })
   return sessions
 }
@@ -472,6 +485,7 @@ export async function getTeacherTakenSessionsService({
   const sessions = await allTeacherSessionsService({
     teacherId,
     status: SessionStatus.TAKEN,
+    orderAssociation: OrderAssociation.ASC,
   })
   return sessions
 }
@@ -650,19 +664,23 @@ async function allTeacherSessionsService({
   page,
   pageSize,
   upcoming,
+  whereObj,
+  orderAssociation,
 }: {
   teacherId: string
   status?: SessionStatus
   page?: number
   pageSize?: number
   upcoming?: boolean
+  orderAssociation: OrderAssociation
+  whereObj?: object
 }) {
   const sessionInfo = await getTeacherSessionInfoService({
     teacherId,
     include: { model: User },
   })
   const sessionInfoIds = sessionInfo.map((info) => info.id)
-  const where: WhereOptions = {
+  let where: WhereOptions = {
     sessionInfoId: { [Op.in]: sessionInfoIds },
   }
   if (status) {
@@ -671,6 +689,9 @@ async function allTeacherSessionsService({
   if (upcoming) {
     const currentDate = new Date()
     where.sessionDate = { [Op.gte]: { currentDate } }
+  }
+  if (whereObj) {
+    where = { ...where, ...whereObj }
   }
   let limit
   let offset
@@ -688,7 +709,7 @@ async function allTeacherSessionsService({
       where,
       limit,
       offset,
-      order: [["sessionDate", "ASC"]],
+      order: [["sessionDate", orderAssociation]],
     },
   })
   return sessions

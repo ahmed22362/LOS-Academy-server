@@ -1,8 +1,9 @@
 import { NextFunction, Response, Request } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
-  getOneSessionDetailsService,
+  getOneSessionService,
   teacherOwnThisSession,
+  updateSessionService,
 } from "../service/session.service"
 import AppError from "../utils/AppError"
 import {
@@ -46,7 +47,7 @@ export const createReport = catchAsync(
         )
       )
     }
-    const session = await getOneSessionDetailsService({ sessionId })
+    const session = await getOneSessionService({ sessionId })
     if (session.status !== SessionStatus.TAKEN) {
       return next(new AppError(400, "can't add report to a non taken session"))
     }
@@ -58,14 +59,11 @@ export const createReport = catchAsync(
         )
       )
     }
-    const existReports = await getAllReportsService({
-      findOptions: { where: { sessionId } },
-    })
-    if (existReports.length > 0) {
+    if (session.hasReport) {
       return next(
         new AppError(
           400,
-          "This Session already has report can't add two reports fot the same session!"
+          "Session already has report you can't add two reports for the same session!"
         )
       )
     }
@@ -90,12 +88,19 @@ export const createReport = catchAsync(
         numOfSessions: 1,
         transaction,
       })
+      await updateSessionService({
+        sessionId,
+        updatedData: { hasReport: true },
+        transaction,
+      })
+      await transaction.commit()
       res.status(201).json({
         status: "success",
         message: "report created successfully",
         data: report,
       })
     } catch (error: any) {
+      await transaction.rollback()
       logger.error(`Error while creating report ${error}`)
       return next(new AppError(400, `Error creating report ${error.message}`))
     }

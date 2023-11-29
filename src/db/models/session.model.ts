@@ -85,4 +85,10 @@ export default class Session extends Model<Session> {
     validate: { min: 0, max: 2 },
   })
   reschedule_request_count!: number
+
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  hasReport!: boolean
 }

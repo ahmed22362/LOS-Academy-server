@@ -1,7 +1,6 @@
 import { FindOptions, Transaction } from "sequelize"
 import AppError from "../utils/AppError"
 import { Model } from "sequelize-typescript"
-import logger from "../utils/logger"
 
 export interface ModelClass {
   new (): Model
@@ -17,11 +16,9 @@ export interface ModelClass {
 async function createModelService({
   ModelClass,
   data,
-  transaction,
 }: {
   ModelClass: ModelClass
   data: any
-  transaction?: Transaction
 }) {
   try {
     const model = await ModelClass.create(data)
