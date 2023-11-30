@@ -23,8 +23,10 @@ import {
   getStripeSubscription,
 } from "../service/stripe.service"
 import {
+  OrderAssociation,
   getUserAllSessionsService,
   getUserAllTakenSessionsService,
+  getUserLatestTakenSessionService,
   getUserOngoingSessionService,
   getUserRemainSessionsService,
   getUserUpcomingSessionService,
@@ -252,9 +254,10 @@ export const getMyHistorySessions = catchAsync(
     const sessions = await getUserAllTakenSessionsService({
       userId: req.body.userId,
     })
+
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions })
+      .json({ status: "success", length: sessions!.length, data: sessions })
   }
 )
 export const getUserRemainSessions = catchAsync(
@@ -262,6 +265,9 @@ export const getUserRemainSessions = catchAsync(
     const sessions = await getUserRemainSessionsService({
       userId: req.body.userId,
     })
+    if (!sessions) {
+      return next(new AppError(400, "can't get this user Sessions"))
+    }
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
@@ -271,6 +277,9 @@ export const getUserUpcomingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
     const session = await getUserUpcomingSessionService({ userId })
+    if (!session) {
+      return next(new AppError(400, "can't get this user Sessions"))
+    }
     res.status(200).json({ status: "success", data: session })
   }
 )
@@ -278,6 +287,19 @@ export const getUserOngoingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
     const session = await getUserOngoingSessionService({ userId })
+    if (!session) {
+      return next(new AppError(400, "can't get this user Sessions"))
+    }
+    res.status(200).json({ status: "success", data: session })
+  }
+)
+export const getUserLatestTakenSession = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.body.userId
+    const session = await getUserLatestTakenSessionService({ userId })
+    if (!session) {
+      return next(new AppError(400, "Can't get this user sessions"))
+    }
     res.status(200).json({ status: "success", data: session })
   }
 )
@@ -289,7 +311,11 @@ export const getUserSessions = catchAsync(
       page: nPage,
       pageSize: nLimit,
       status: status as any,
+      orderAssociation: OrderAssociation.DESC,
     })
+    if (!sessions) {
+      return next(new AppError(400, "Can't get this user sessions!"))
+    }
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })

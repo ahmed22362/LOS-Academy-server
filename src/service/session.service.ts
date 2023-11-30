@@ -346,9 +346,10 @@ export async function getUserAllTakenSessionsService({
 }: {
   userId: string
 }) {
-  const sessions = await allUserSessionsService({
+  const sessions = await allTeacherOrUserSessionsService({
     userId,
     status: SessionStatus.TAKEN,
+    orderAssociation: OrderAssociation.DESC,
   })
   return sessions
 }
@@ -357,17 +358,20 @@ export async function getUserAllSessionsService({
   page,
   pageSize,
   status,
+  orderAssociation,
 }: {
   userId: string
   page?: number
   pageSize?: number
   status?: SessionStatus
+  orderAssociation: OrderAssociation
 }) {
-  const sessions = await allUserSessionsService({
+  const sessions = await allTeacherOrUserSessionsService({
     userId,
     page,
     pageSize,
     status,
+    orderAssociation,
   })
   return sessions
 }
@@ -376,9 +380,10 @@ export async function getUserRemainSessionsService({
 }: {
   userId: string
 }) {
-  const sessions = await allUserSessionsService({
+  const sessions = await allTeacherOrUserSessionsService({
     userId,
     status: SessionStatus.PENDING,
+    orderAssociation: OrderAssociation.ASC,
   })
   return sessions
 }
@@ -387,11 +392,12 @@ export async function getUserUpcomingSessionService({
 }: {
   userId: string
 }) {
-  const session = await allUserSessionsService({
+  const session = await allTeacherOrUserSessionsService({
     userId,
     status: SessionStatus.PENDING,
     pageSize: 1,
     upcoming: true,
+    orderAssociation: OrderAssociation.ASC,
   })
   return session
 }
@@ -400,9 +406,24 @@ export async function getUserOngoingSessionService({
 }: {
   userId: string
 }) {
-  const session = await allUserSessionsService({
+  const session = await allTeacherOrUserSessionsService({
     userId,
     status: SessionStatus.ONGOING,
+    orderAssociation: OrderAssociation.ASC,
+  })
+  return session
+}
+
+export async function getUserLatestTakenSessionService({
+  userId,
+}: {
+  userId: string
+}) {
+  const session = await allTeacherOrUserSessionsService({
+    pageSize: 1,
+    userId,
+    status: SessionStatus.TAKEN,
+    orderAssociation: OrderAssociation.DESC,
   })
   return session
 }
@@ -417,7 +438,7 @@ export async function getTeacherAllSessionsService({
   pageSize?: number
   status?: SessionStatus
 }) {
-  const session = await allTeacherSessionsService({
+  const session = await allTeacherOrUserSessionsService({
     teacherId,
     page,
     pageSize,
@@ -431,7 +452,7 @@ export async function getTeacherUpcomingSessionService({
 }: {
   teacherId: string
 }) {
-  const session = await allTeacherSessionsService({
+  const session = await allTeacherOrUserSessionsService({
     teacherId,
     status: SessionStatus.PENDING,
     pageSize: 1,
@@ -445,7 +466,7 @@ export async function getTeacherOngoingSessionService({
 }: {
   teacherId: string
 }) {
-  const session = await allTeacherSessionsService({
+  const session = await allTeacherOrUserSessionsService({
     teacherId,
     status: SessionStatus.ONGOING,
     orderAssociation: OrderAssociation.ASC,
@@ -457,7 +478,7 @@ export async function getTeacherLatestTakenSessionService({
 }: {
   teacherId: string
 }) {
-  const session = await allTeacherSessionsService({
+  const session = await allTeacherOrUserSessionsService({
     pageSize: 1,
     teacherId,
     status: SessionStatus.TAKEN,
@@ -470,7 +491,7 @@ export async function getTeacherRemainSessionsService({
 }: {
   teacherId: string
 }) {
-  const sessions = await allTeacherSessionsService({
+  const sessions = await allTeacherOrUserSessionsService({
     teacherId,
     status: SessionStatus.PENDING,
     orderAssociation: OrderAssociation.ASC,
@@ -482,10 +503,10 @@ export async function getTeacherTakenSessionsService({
 }: {
   teacherId: string
 }) {
-  const sessions = await allTeacherSessionsService({
+  const sessions = await allTeacherOrUserSessionsService({
     teacherId,
     status: SessionStatus.TAKEN,
-    orderAssociation: OrderAssociation.ASC,
+    orderAssociation: OrderAssociation.DESC,
   })
   return sessions
 }
@@ -601,59 +622,9 @@ export async function getAdminSessionsStatisticsService() {
 }
 // helper functions
 
-async function allUserSessionsService({
-  userId,
-  status,
-  page,
-  pageSize,
-  upcoming,
-}: {
-  userId: string
-  status?: SessionStatus
-  page?: number
-  pageSize?: number
-  upcoming?: boolean
-}) {
-  const sessionInfo = await getUserSessionInfoService({
-    userId,
-    include: { model: Teacher },
-  })
-  const sessionInfoIds = sessionInfo.map((info) => info.id)
-  const where: WhereOptions = {
-    sessionInfoId: {
-      [Op.in]: sessionInfoIds,
-    },
-  }
-  if (status) {
-    where.status = status
-  }
-  if (upcoming) {
-    const currentDate = new Date()
-    where.sessionDate = { [Op.gte]: currentDate }
-  }
-  let limit
-  let offset
-  if (pageSize) limit = pageSize
-  if (pageSize && page) offset = page * pageSize
-  const sessions = await getAllSessionsService({
-    findOptions: {
-      include: [
-        {
-          model: SessionInfo,
-          attributes: ["teacherId"],
-          include: [{ model: Teacher, attributes: getTeacherAtt }],
-        },
-      ],
-      where,
-      limit,
-      offset,
-      order: [["sessionDate", "ASC"]],
-    },
-  })
-  return sessions
-}
-async function allTeacherSessionsService({
+async function allTeacherOrUserSessionsService({
   teacherId,
+  userId,
   status,
   page,
   pageSize,
@@ -661,7 +632,8 @@ async function allTeacherSessionsService({
   whereObj,
   orderAssociation,
 }: {
-  teacherId: string
+  teacherId?: string
+  userId?: string
   status?: SessionStatus
   page?: number
   pageSize?: number
@@ -669,10 +641,26 @@ async function allTeacherSessionsService({
   orderAssociation: OrderAssociation
   whereObj?: object
 }) {
-  const sessionInfo = await getTeacherSessionInfoService({
-    teacherId,
-    include: { model: User },
-  })
+  let sessionInfo: SessionInfo[]
+  let idAttribute: string
+  let includeObj: object
+  if (teacherId) {
+    sessionInfo = await getTeacherSessionInfoService({
+      teacherId,
+      include: { model: User },
+    })
+    idAttribute = "teacherId"
+    includeObj = { model: Teacher, attributes: getTeacherAtt }
+  } else if (userId) {
+    sessionInfo = await getUserSessionInfoService({
+      userId,
+      include: { model: Teacher },
+    })
+    idAttribute = "userId"
+    includeObj = { model: User, attributes: getUserAttr }
+  } else {
+    return
+  }
   const sessionInfoIds = sessionInfo.map((info) => info.id)
   let where: WhereOptions = {
     sessionInfoId: { [Op.in]: sessionInfoIds },
@@ -689,6 +677,7 @@ async function allTeacherSessionsService({
   }
   let limit
   let offset
+
   if (pageSize) limit = pageSize
   if (pageSize && page) offset = page * pageSize
   const sessions = await getAllSessionsService({
@@ -696,8 +685,8 @@ async function allTeacherSessionsService({
       include: [
         {
           model: SessionInfo,
-          attributes: ["userId"],
-          include: [{ model: User, attributes: getUserAttr }],
+          attributes: [idAttribute],
+          include: [includeObj],
         },
       ],
       where,
@@ -811,7 +800,7 @@ export async function isThereOngoingSessionForTheSameTeacher({
     teacherId,
     status: SessionStatus.ONGOING,
   })
-  if (sessions.length > 0) {
+  if (sessions && sessions.length > 0) {
     throw new AppError(
       400,
       "Can't update session to be ongoing while there is another ongoing one!"

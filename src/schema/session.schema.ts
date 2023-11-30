@@ -39,7 +39,12 @@ export const updateSessionStatusSchema = z.object({
   body: z.object({ sessionId, teacherId, status: SessionStatusSchema }),
 })
 export const userContinueWithTeacherSchema = z.object({
-  body: z.object({ sessionId }),
+  body: z.object({
+    sessionId,
+    willContinue: z.boolean({
+      required_error: "Please provide willContinue in boolean!",
+    }),
+  }),
 })
 export const userPlacedSessionDatesSchema = z.object({
   body: z.object({ userId, sessionDates }),

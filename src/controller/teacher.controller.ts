@@ -187,6 +187,9 @@ export const getTeacherRemainSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
     const sessions = await getTeacherRemainSessionsService({ teacherId })
+    if (!sessions) {
+      return next(new AppError(400, "can't get this teacher Sessions"))
+    }
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
@@ -196,6 +199,9 @@ export const getTeacherTakenSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
     const sessions = await getTeacherTakenSessionsService({ teacherId })
+    if (!sessions) {
+      return next(new AppError(400, "can't get this teacher Sessions"))
+    }
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
@@ -205,6 +211,9 @@ export const getTeacherUpcomingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
     const sessions = await getTeacherUpcomingSessionService({ teacherId })
+    if (!sessions) {
+      return next(new AppError(400, "can't get this teacher Sessions"))
+    }
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
@@ -214,6 +223,9 @@ export const getTeacherOngoingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
     const sessions = await getTeacherOngoingSessionService({ teacherId })
+    if (!sessions) {
+      return next(new AppError(400, "can't get this teacher Sessions"))
+    }
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
@@ -223,6 +235,9 @@ export const getTeacherLatestTakenSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
     const sessions = await getTeacherLatestTakenSessionService({ teacherId })
+    if (!sessions) {
+      return next(new AppError(400, "can't get this teacher Sessions"))
+    }
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
@@ -246,7 +261,7 @@ export const getTeacherAllSessions = catchAsync(
       page: nPage,
       pageSize: nLimit,
     })
-    const allSessions = Object.values(sessions).flatMap((session) => session)
+    const allSessions = Object.values(sessions!).flatMap((session) => session)
     res
       .status(200)
       .json({ status: "success", length: allSessions.length, sessions })

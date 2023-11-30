@@ -5,6 +5,7 @@ import RescheduleRequest, {
 import AppError from "../utils/AppError"
 import { updateModelService } from "./factory.services"
 import {
+  OrderAssociation,
   getTeacherAllSessionsService,
   getUserAllSessionsService,
   teacherOwnThisSession,
@@ -232,7 +233,13 @@ export async function getUserAllRescheduleRequestsService({
   let offset
   if (pageSize) limit = pageSize
   if (page && pageSize) offset = page * pageSize
-  const sessions = await getUserAllSessionsService({ userId })
+  const sessions = await getUserAllSessionsService({
+    userId,
+    orderAssociation: OrderAssociation.ASC,
+  })
+  if (!sessions) {
+    throw new AppError(400, "can't get this user Sessions")
+  }
   const sessionsIds: number[] = sessions.map((session) => session.id)
   const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
   if (status) where.status = status
@@ -313,6 +320,9 @@ export async function getTeacherAllRescheduleRequestsService({
   if (pageSize) limit = pageSize
   if (page && pageSize) offset = page * pageSize
   const sessions = await getTeacherAllSessionsService({ teacherId })
+  if (!sessions) {
+    throw new AppError(400, "can't get this teacher Sessions")
+  }
   const sessionsIds: number[] = sessions.map((session) => session.id)
   const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
   if (status) where.status = status

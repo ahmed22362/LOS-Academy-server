@@ -10,6 +10,7 @@ import {
   getMySubscription,
   getReceivedSessionRescheduleRequests,
   getUser,
+  getUserLatestTakenSession,
   getUserOngoingSession,
   getUserRemainSessions,
   getUserSessions,
@@ -120,6 +121,12 @@ userRouter.get(
   protectUser,
   setUserOrTeacherId,
   getUserOngoingSession
+)
+userRouter.get(
+  "/myLatestTakenSession",
+  protectUser,
+  setUserOrTeacherId,
+  getUserLatestTakenSession
 )
 userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
 userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports)

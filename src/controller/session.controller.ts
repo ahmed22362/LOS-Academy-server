@@ -65,6 +65,7 @@ import {
 import {
   createSessionInfoService,
   getOneSessionInfoServiceBy,
+  getSessionInfoService,
   updateOneSessionInfoService,
   updateSessionInfoService,
 } from "../service/sessionInfo.service"
@@ -754,8 +755,11 @@ export const updateStatusSessionReschedule = (
   })
 export const userContinueWithTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionId, willContinue } = req.body
-    const session = await getOneSessionService({ sessionId })
+    const { sessionId, willContinue, userId } = req.body
+    const { exist, session } = await userOwnThisSession({ userId, sessionId })
+    if (!exist) {
+      return next(new AppError(400, "User don't own this session"))
+    }
     if (session.type !== SessionType.FREE) {
       return next(
         new AppError(
@@ -764,10 +768,17 @@ export const userContinueWithTeacher = catchAsync(
         )
       )
     }
-    const sessionInfoUpdated = await updateSessionInfoService({
+    const sessionInfo = await getSessionInfoService({
       id: session.sessionInfoId,
-      updatedData: { willContinue },
     })
+    if (
+      sessionInfo.willContinue != null ||
+      sessionInfo.willContinue != undefined
+    ) {
+      return next(new AppError(400, "already responded to!"))
+    }
+    sessionInfo.willContinue = willContinue
+    await sessionInfo.save()
     const message = willContinue
       ? `The user chose to continue with that teacher now choose plan and pay for it after the plan \n 
     go and choose the date for your sessions`
@@ -775,7 +786,7 @@ export const userContinueWithTeacher = catchAsync(
     res.status(200).json({
       status: "success",
       message,
-      data: sessionInfoUpdated,
+      data: sessionInfo,
     })
   }
 )
