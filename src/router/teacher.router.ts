@@ -143,7 +143,7 @@ teacherRouter
   )
 teacherRouter
   .route("/myMonthlyReport")
-  .get(protectTeacher, getTeacherMonthlyReport)
+  .get(protectTeacher, setUserOrTeacherId, getTeacherMonthlyReport)
 teacherRouter
   .route("/declineReschedule")
   .post(

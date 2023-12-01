@@ -10,6 +10,7 @@ import {
 } from "../service/monthlyReport.service"
 import AppError from "../utils/AppError"
 import { getTeacherStudentsService } from "../service/teacher.service"
+import { Gender } from "../db/models/user.model"
 
 export const createMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -122,16 +123,17 @@ export const getUserMonthlyReport = catchAsync(
       .json({ status: "success", length: reports.length, data: reports })
   }
 )
+
 export const getTeacherMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId } = req.body
-    const students = await getTeacherStudentsService({ teacherId })
     const reports = []
+    const students = await getTeacherStudentsService({ teacherId })
     for (const student of students) {
       const userReport = await getUserMonthlyReportService({
         userId: student.id,
       })
-      reports.push(userReport)
+      reports.push(...userReport)
     }
     res.status(200).json({ status: "success", data: reports })
   }

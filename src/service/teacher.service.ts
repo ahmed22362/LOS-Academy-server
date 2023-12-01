@@ -1,5 +1,5 @@
 import Teacher from "../db/models/teacher.model"
-import { FindOptions, Transaction } from "sequelize"
+import { FindOptions, Op, Transaction } from "sequelize"
 import { ITeacherInput } from "../db/models/teacher.model"
 import {
   createModelService,
@@ -97,15 +97,16 @@ export async function getTeacherByService({
 }): Promise<Teacher | null> {
   return await getOneModelByService({ Model: Teacher, findOptions })
 }
+
 export async function getTeacherStudentsService({
   teacherId,
 }: {
-  teacherId: String
+  teacherId: string
 }) {
-  const sessionInfos = (await getAllModelsByService({
-    Model: SessionInfo,
-    findOptions: { include: { model: User, attributes: getUserAttr } },
-  })) as SessionInfo[]
+  const sessionInfos = await SessionInfo.findAll({
+    where: { teacherId },
+    include: [{ model: User, attributes: ["id", "name"] }],
+  })
   const students = sessionInfos.map((info) => info.user)
   const unique: User[] = [
     ...new Set(students.map((item) => JSON.stringify(item))),

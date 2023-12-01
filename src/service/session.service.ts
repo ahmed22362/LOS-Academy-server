@@ -647,17 +647,15 @@ async function allTeacherOrUserSessionsService({
   if (teacherId) {
     sessionInfo = await getTeacherSessionInfoService({
       teacherId,
-      include: { model: User },
-    })
-    idAttribute = "teacherId"
-    includeObj = { model: Teacher, attributes: getTeacherAtt }
-  } else if (userId) {
-    sessionInfo = await getUserSessionInfoService({
-      userId,
-      include: { model: Teacher },
     })
     idAttribute = "userId"
     includeObj = { model: User, attributes: getUserAttr }
+  } else if (userId) {
+    sessionInfo = await getUserSessionInfoService({
+      userId,
+    })
+    idAttribute = "teacherId"
+    includeObj = { model: Teacher, attributes: getTeacherAtt }
   } else {
     return
   }

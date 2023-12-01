@@ -1,5 +1,7 @@
+import { getUserAttr } from "../controller/user.controller"
 import MonthlyReport from "../db/models/monthlyReport.model"
 import { GradeOptions } from "../db/models/report.model"
+import User from "../db/models/user.model"
 import AppError from "../utils/AppError"
 import {
   createModelService,
@@ -98,7 +100,10 @@ export async function getUserMonthlyReportService({
 }) {
   const reports = await getAllModelsByService({
     Model: MonthlyReport,
-    findOptions: { where: { userId } },
+    findOptions: {
+      where: { userId },
+      include: [{ model: User, attributes: getUserAttr }],
+    },
     page,
     pageSize,
   })
