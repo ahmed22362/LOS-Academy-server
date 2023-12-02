@@ -185,6 +185,9 @@ async function checkUserSubscription({ userId }: { userId: string }) {
       "user must subscribe to plan first to request paid session!"
     )
   }
+  if (subscription.status !== SubscriptionStatus.ACTIVE) {
+    throw new AppError(403, "please activate your subscription first!")
+  }
   return subscription
 }
 export async function sessionPerWeekEqualDates({

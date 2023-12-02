@@ -182,53 +182,6 @@ export async function getAllSubscriptionsService({
   })
   return subscriptions
 }
-export async function checkPreviousUserSubreption({
-  userId,
-}: {
-  userId: string
-}) {
-  const previousSubscription = await getSubscriptionByUserId({
-    userId,
-  })
-  if (
-    previousSubscription &&
-    previousSubscription.status !== SubscriptionStatus.ACTIVE
-  ) {
-    return previousSubscription
-  } else if (
-    previousSubscription &&
-    previousSubscription.status === SubscriptionStatus.ACTIVE
-  ) {
-    throw new AppError(
-      400,
-      "Can't subscribe again you already subscribe to an active subscription"
-    )
-  } else {
-    return null
-  }
-}
-export async function ThePreviousSubscriptionIsTheSame({
-  sessionDuration,
-  sessionsCount,
-  sessionsPerWeek,
-  planId,
-}: {
-  sessionDuration: number
-  sessionsCount: number
-  sessionsPerWeek: number
-  planId: number
-}) {
-  const plan = await Plan.findByPk(planId)
-  logger.info(plan)
-  if (
-    plan?.sessionDuration !== sessionDuration ||
-    plan.sessionsCount !== sessionsCount ||
-    plan?.sessionsPerWeek !== sessionsPerWeek
-  ) {
-    return false
-  }
-  return true
-}
 export async function handelCheckoutSessionCompleted(
   checkoutSession: Stripe.Checkout.Session
 ) {

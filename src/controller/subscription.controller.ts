@@ -1,13 +1,11 @@
 import { NextFunction, Request, Response } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
-  ThePreviousSubscriptionIsTheSame,
-  checkPreviousUserSubreption,
   createStripeSubscriptionService,
   createSubscriptionService,
   deleteSubscriptionService,
   getAllSubscriptionsService,
-  handelSubscriptionPayed,
+  getSubscriptionByUserId,
   handelSubscriptionPayedManually,
   updateSubscriptionService,
 } from "../service/subscription.service"
@@ -29,41 +27,12 @@ export const createSubscription = catchAsync(
     const sessionsCount = req.body.sessionsCount
     const sessionsPerWeek = req.body.sessionsPerWeek
     const continueFlag = req.body.continueFlag
-    // const successLink: string = `${req.protocol}://${req.get(
-    //   "host"
-    // )}/?session_id={CHECKOUT_SESSION_ID}`
     let successLink: string = `https://los-academy.vercel.app/student_profile`
     if (continueFlag) {
       successLink += "?fromUserContinue=true"
     }
     const failLink: string = `https://los-academy.vercel.app/`
-    // check if there is active subscription
-    const previousSubscription = await checkPreviousUserSubreption({ userId })
-    if (
-      previousSubscription &&
-      (await ThePreviousSubscriptionIsTheSame({
-        sessionDuration,
-        sessionsCount,
-        sessionsPerWeek,
-        planId: previousSubscription.plan.id,
-      }))
-    ) {
-      const stripeCheckSession = await createStripeSubscriptionService({
-        body: {
-          userId: previousSubscription.userId,
-          planId: previousSubscription.plan.id,
-          success_url: successLink,
-          cancel_url: failLink,
-        },
-      })
-      await updateSubscriptionService({
-        id: previousSubscription.id,
-        updatedData: { stripe_checkout_session_id: stripeCheckSession.id },
-      })
-      return res
-        .status(200)
-        .json({ status: "success", data: stripeCheckSession })
-    }
+    // i should have the plan id to continue and if the user want custom plan i will create it!
     if (!planId) {
       const plan = await createPlanService({
         data: {
@@ -77,6 +46,52 @@ export const createSubscription = catchAsync(
       })
       planId = plan.id
     }
+    // check if there is an previous subscription
+    const previousSubscription = await getSubscriptionByUserId({
+      userId,
+    })
+    if (previousSubscription) {
+      //there is an active one can't subscribe again!
+      if (previousSubscription.status === SubscriptionStatus.ACTIVE) {
+        return next(
+          new AppError(400, "Can't subscribe again there is an active one!")
+        )
+      }
+      // here i will check if he want to repay or change the plan!
+      // then i have to get the plan id first!
+      if (previousSubscription.status === SubscriptionStatus.INCOMPLETE) {
+        const stripeCheckSession = await createStripeSubscriptionService({
+          body: {
+            userId: previousSubscription.userId,
+            planId,
+            success_url: successLink,
+            cancel_url: failLink,
+          },
+        })
+        if (previousSubscription.planId === planId) {
+          // then he want to repay
+          await updateSubscriptionService({
+            id: previousSubscription.id,
+            updatedData: { stripe_checkout_session_id: stripeCheckSession.id },
+          })
+        } else {
+          // then he want to change the plan
+          await updateSubscriptionService({
+            id: previousSubscription.id,
+            updatedData: {
+              stripe_checkout_session_id: stripeCheckSession.id,
+              planId,
+            },
+          })
+        }
+        return res.status(200).json({
+          status: "success",
+          message:
+            "the user want to repay or change his incomplete subscription",
+          data: stripeCheckSession,
+        })
+      }
+    }
     const stripeCheckSession = await createStripeSubscriptionService({
       body: { userId, planId, success_url: successLink, cancel_url: failLink },
     })
@@ -85,12 +100,10 @@ export const createSubscription = catchAsync(
       planId,
       stripe_checkout_session_id: stripeCheckSession.id,
     }
-    const subscription = await createSubscriptionService({
+    await createSubscriptionService({
       body: subscriptionBody,
     })
-    res
-      .status(200)
-      .json({ status: "success", data: { stripeCheckSession, subscription } })
+    res.status(200).json({ status: "success", data: stripeCheckSession })
   }
 )
 export const updateSubscription = catchAsync(
