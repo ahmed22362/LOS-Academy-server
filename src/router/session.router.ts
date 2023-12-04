@@ -26,6 +26,7 @@ import { RoleType } from "../db/models/teacher.model"
 import validate from "../middleware/validate"
 import {
   assignTeacherSchema,
+  cancelRequestSchema,
   generateLinkSchema,
   replaceSessionInfoTeacherSchema,
   requireEitherTeacherOrUser,
