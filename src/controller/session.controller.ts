@@ -11,6 +11,7 @@ import {
   getOneSessionService,
   isSessionAfterItsTimeRange,
   isSessionWithinTimeRange,
+  isTeacherHasOverlappingSessions,
   isThereOngoingSessionForTheSameTeacher,
   teacherOwnThisSession,
   updateSessionService,
@@ -456,18 +457,17 @@ export const requestSessionReschedule = catchAsync(
             `Please provide date in the future not in the past!: Your Entered Date=> ${newSessionDate}`
           )
         )
+      } else if (
+        currentDate.getTime() + HOUR_IN_MILLISECONDS >
+        newSessionDate.getTime()
+      ) {
+        return next(
+          new AppError(
+            400,
+            `Please provide date and time that is at least one hour form now!`
+          )
+        )
       }
-      //  else if (
-      //   currentDate.getTime() + HOUR_IN_MILLISECONDS >
-      //   newSessionDate.getTime()
-      // ) {
-      //   return next(
-      //     new AppError(
-      //       400,
-      //       `Please provide date and time that is at least one hour form now!`
-      //     )
-      //   )
-      // }
       datesArr.push(newSessionDate)
     }
     const previousRequest = await getPendingRequestBySessionIdService({
@@ -502,6 +502,11 @@ export const requestSessionReschedule = catchAsync(
       let rescheduleReq: RescheduleRequest
       let requestedBy: RoleType
       if (teacherId) {
+        await isTeacherHasOverlappingSessions({
+          teacherId,
+          wantedSessionDates: datesArr,
+          wantedSessionDuration: session.sessionDuration,
+        })
         rescheduleReq = await teacherRequestRescheduleService({
           sessionId,
           teacherId,
@@ -674,6 +679,7 @@ export const updateStatusSessionReschedule = (
       return next(new AppError(400, "Already responded to!"))
     }
     // to check if the teacher has this session to accept the request
+    let localSession
     if (teacherId) {
       const { exist, session } = await teacherOwnThisSession({
         teacherId,
@@ -684,6 +690,7 @@ export const updateStatusSessionReschedule = (
           new AppError(401, "can't update request for session is not yours")
         )
       }
+      localSession = session
     } else if (userId) {
       const { exist, session } = await userOwnThisSession({
         userId,
@@ -694,6 +701,9 @@ export const updateStatusSessionReschedule = (
           new AppError(401, "can't update request for session is not yours")
         )
       }
+      localSession = session
+    } else {
+      return next(new AppError(400, "cant determine who singed in!"))
     }
     const transaction = await sequelize.transaction()
 
@@ -724,6 +734,13 @@ export const updateStatusSessionReschedule = (
             `please provide date that in the the reschedule request in: ${dateStr}`
           )
         )
+      }
+      if (teacherId) {
+        await isTeacherHasOverlappingSessions({
+          teacherId,
+          wantedSessionDates: rescheduleRequest.newDatesOptions,
+          wantedSessionDuration: localSession.sessionDuration,
+        })
       }
       updatedRequest = await updateRescheduleRequestService({
         requestId: rescheduleRequestId,

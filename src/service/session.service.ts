@@ -866,10 +866,10 @@ export async function isTeacherHasOverlappingSessions({
 
   // Check each wanted date
   for (let wantedDate of wantedSessionDates) {
-    // Get wanted rangefor overlapping sessions
+    // Get wanted range for overlapping sessions
     const wantedStart = wantedDate.getTime()
     const wantedEnd =
-      wantedDate.getDate() + wantedSessionDuration * MS_IN_MINUTE
+      wantedDate.getTime() + wantedSessionDuration * MS_IN_MINUTE
     // Binary search
     let lowerIdx = 0
     let upperIdx = teacherSessions.length - 1
@@ -879,7 +879,6 @@ export async function isTeacherHasOverlappingSessions({
       const session = teacherSessions[midIdx]
       const sessionEndDate =
         session.sessionDate.getTime() + session.sessionDuration * MS_IN_MINUTE
-
       if (wantedStart >= sessionEndDate) {
         lowerIdx = midIdx + 1
       } else if (wantedEnd <= session.sessionDate.getTime()) {
@@ -887,7 +886,7 @@ export async function isTeacherHasOverlappingSessions({
       } else {
         throw new AppError(
           400,
-          `Teacher has conflict in times with his sessions wantedDate: ${wantedDate}, session with conflict: ${session}`
+          `Teacher has conflict in times with his sessions wantedDate: ${wantedDate}, session with conflict: ${session.sessionDate}`
         )
       }
     }
