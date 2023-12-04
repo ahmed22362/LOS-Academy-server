@@ -37,12 +37,14 @@ import {
 } from "../schema/teacher.schema"
 import { RoleType } from "../db/models/teacher.model"
 import {
+  cancelSessionRescheduleRequest,
   requestSessionReschedule,
   updateStatusSessionReschedule,
 } from "../controller/session.controller"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import { getMyPayoutRequests } from "../controller/payout.controller"
 import { getTeacherMonthlyReport } from "../controller/monthlyReport.controller"
+import { cancelRequestSchema } from "../schema/session.schema"
 const teacherRouter = Router()
 
 teacherRouter
@@ -128,6 +130,15 @@ teacherRouter
   .route("/requestReschedule")
   .post(protectTeacher, setUserOrTeacherId, requestSessionReschedule)
   .get(protectTeacher, setUserOrTeacherId, getSessionRescheduleRequests)
+
+teacherRouter
+  .route("/cancelRescheduleRequest")
+  .post(
+    protectTeacher,
+    setUserOrTeacherId,
+    validate(cancelRequestSchema),
+    cancelSessionRescheduleRequest
+  )
 teacherRouter
   .route("/receivedRescheduleRequests")
   .get(protectTeacher, setUserOrTeacherId, getReceivedSessionRescheduleRequests)

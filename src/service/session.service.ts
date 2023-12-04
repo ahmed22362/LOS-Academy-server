@@ -436,7 +436,7 @@ export async function getTeacherAllSessionsService({
   teacherId: string
   page?: number
   pageSize?: number
-  status?: SessionStatus
+  status?: string
 }) {
   const session = await allTeacherOrUserSessionsService({
     teacherId,
@@ -529,8 +529,11 @@ export async function updateSessionTeacherAttendanceService({
   if (!exist) {
     throw new AppError(404, "The Teacher is not assign to this session")
   }
-  if (!canAttendSession(session.sessionDate, session.sessionDuration)) {
-    throw new AppError(400, "Can't update attendance now")
+  if (!canAttendSession(session.sessionDate)) {
+    throw new AppError(
+      400,
+      "Can't update attendance now because 15 mins passed!"
+    )
   }
   session.teacherAttended = attend
   await session.save({ transaction })
@@ -554,8 +557,11 @@ export async function updateSessionStudentAttendanceService({
   if (!exist) {
     throw new AppError(404, "The student is not assign to this session")
   }
-  if (!canAttendSession(session.sessionDate, session.sessionDuration)) {
-    throw new AppError(400, "Can't update attendance now")
+  if (!canAttendSession(session.sessionDate)) {
+    throw new AppError(
+      400,
+      "Can't update attendance now because 15 mins passed!"
+    )
   }
   session.studentAttended = attend
   await session.save({ transaction })
@@ -634,7 +640,7 @@ async function allTeacherOrUserSessionsService({
 }: {
   teacherId?: string
   userId?: string
-  status?: SessionStatus
+  status?: string
   page?: number
   pageSize?: number
   upcoming?: boolean
@@ -693,6 +699,9 @@ async function allTeacherOrUserSessionsService({
       order: [["sessionDate", orderAssociation]],
     },
   })
+  if (!sessions) {
+    throw new AppError(400, "Error getting sessions")
+  }
   return sessions
 }
 
@@ -823,15 +832,65 @@ export function canRescheduleSession(sessionDate: Date) {
   const diffInMinutes = Math.ceil(diffInMs / MS_IN_MINUTE)
   return diffInMinutes >= 10
 }
-export function canAttendSession(sessionDate: Date, sessionDuration: number) {
+export function canAttendSession(sessionDate: Date) {
   const currentDate = new Date()
   const attendanceMargin = 15
   if (currentDate.getTime() < sessionDate.getTime()) {
     return false
   } else if (
-    sessionDate.getTime() + attendanceMargin * MS_IN_MINUTE <
+    sessionDate.getTime() + attendanceMargin * MS_IN_MINUTE >
     currentDate.getTime()
   ) {
     return false
   } else return true
+}
+export async function isTeacherHasOverlappingSessions({
+  teacherId,
+  wantedSessionDates,
+  wantedSessionDuration,
+}: {
+  teacherId: string
+  wantedSessionDates: Date[]
+  wantedSessionDuration: number
+}) {
+  const teacherSessions = await getTeacherRemainSessionsService({ teacherId })
+
+  if (!Array.isArray(teacherSessions)) {
+    throw new AppError(400, "Can't get teacher sessions")
+  }
+
+  // Sort all sessions by start time
+  teacherSessions.sort(
+    (a, b) => a.sessionDate.getTime() - b.sessionDate.getTime()
+  )
+
+  // Check each wanted date
+  for (let wantedDate of wantedSessionDates) {
+    // Get wanted rangefor overlapping sessions
+    const wantedStart = wantedDate.getTime()
+    const wantedEnd =
+      wantedDate.getDate() + wantedSessionDuration * MS_IN_MINUTE
+    // Binary search
+    let lowerIdx = 0
+    let upperIdx = teacherSessions.length - 1
+
+    while (lowerIdx <= upperIdx) {
+      const midIdx = Math.floor((lowerIdx + upperIdx) / 2)
+      const session = teacherSessions[midIdx]
+      const sessionEndDate =
+        session.sessionDate.getTime() + session.sessionDuration * MS_IN_MINUTE
+
+      if (wantedStart >= sessionEndDate) {
+        lowerIdx = midIdx + 1
+      } else if (wantedEnd <= session.sessionDate.getTime()) {
+        upperIdx = midIdx - 1
+      } else {
+        throw new AppError(
+          400,
+          `Teacher has conflict in times with his sessions wantedDate: ${wantedDate}, session with conflict: ${session}`
+        )
+      }
+    }
+  }
+  return false
 }

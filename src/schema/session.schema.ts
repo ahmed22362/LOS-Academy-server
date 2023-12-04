@@ -52,6 +52,13 @@ export const userPlacedSessionDatesSchema = z.object({
 export const assignTeacherSchema = z.object({
   body: z.object({ teacherId, sessionReqId }),
 })
+export const cancelRequestSchema = z.object({
+  body: z.object({
+    requestId: z.number({
+      required_error: "please enter the number of the request!",
+    }),
+  }),
+})
 export const replaceSessionInfoTeacherSchema = z.object({
   body: z.object({
     userId: z.string({ required_error: "please provide userId" }),

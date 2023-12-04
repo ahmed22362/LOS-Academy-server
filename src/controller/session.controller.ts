@@ -67,27 +67,23 @@ import {
   getOneSessionInfoServiceBy,
   getSessionInfoService,
   updateOneSessionInfoService,
-  updateSessionInfoService,
 } from "../service/sessionInfo.service"
 import { createSessionRequestService } from "../service/sessionReq.service"
 import { deleteJobServiceWhere } from "../service/scheduleJob.service"
 import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs"
-import { NOW, Transaction } from "sequelize"
+import { Transaction } from "sequelize"
 import { SubscriptionStatus } from "../db/models/subscription.model"
 export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000
 export const HOUR_IN_MILLISECONDS = 60 * 60 * 1000
 const DEFAULT_COURSES = ["arabic"]
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
-    }
-    const sessions = await getAllSessionsServiceByStatus({})
+    const { nPage, nLimit, status } = getPaginationParameter(req)
+    const sessions = await getAllSessionsServiceByStatus({
+      status: status as SessionStatus,
+      page: nPage,
+      pageSize: nLimit,
+    })
     res
       .status(200)
       .json({ status: "success", length: sessions.length, data: sessions })
@@ -552,7 +548,7 @@ export const requestSessionReschedule = catchAsync(
 )
 export const cancelSessionRescheduleRequest = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { requestId, userId } = req.body
+    const { requestId, userId, teacherId } = req.body
     const request = await getOneRescheduleRequestService({ id: requestId })
     if (request.status !== RescheduleRequestStatus.PENDING) {
       return next(
@@ -562,21 +558,56 @@ export const cancelSessionRescheduleRequest = catchAsync(
         )
       )
     }
-    const { session, exist } = await userOwnThisSession({
-      userId,
-      sessionId: request.sessionId,
-    })
-    if (!exist) {
-      return next(
-        new AppError(
-          403,
-          "you don't own this session that associated with the request!"
+    let localSession
+    if (userId) {
+      const { session, exist } = await userOwnThisSession({
+        userId,
+        sessionId: request.sessionId,
+      })
+      if (!exist) {
+        return next(
+          new AppError(
+            403,
+            "you don't own this session that associated with the request!"
+          )
         )
+      }
+      if (request.requestedBy !== RoleType.USER) {
+        return next(
+          new AppError(400, "Can't cancel request that you didn't requested")
+        )
+      }
+      localSession = session
+    } else if (teacherId) {
+      const { session, exist } = await teacherOwnThisSession({
+        teacherId,
+        sessionId: request.sessionId,
+      })
+      if (!exist) {
+        return next(
+          new AppError(
+            403,
+            "you don't own this session that associated with the request!"
+          )
+        )
+      }
+      if (request.requestedBy !== RoleType.TEACHER) {
+        return next(
+          new AppError(400, "Can't cancel request that you didn't requested")
+        )
+      }
+      localSession = session
+    } else {
+      return next(
+        new AppError(400, "Can't determine who is signed in user or teacher")
       )
     }
     const transaction = await sequelize.transaction()
     try {
-      await session.decrement({ reschedule_request_count: 1 }, { transaction })
+      await localSession.decrement(
+        { reschedule_request_count: 1 },
+        { transaction }
+      )
       await request.destroy({ transaction })
       await transaction.commit()
       res
@@ -592,14 +623,9 @@ export const cancelSessionRescheduleRequest = catchAsync(
 )
 export const getAllRescheduleRequestsForAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
     let offset
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
+    const { nPage, nLimit, status } = getPaginationParameter(req)
+    if (nPage && nLimit) {
       offset = nPage * nLimit
     }
     const requests = await getAllRescheduleRequestsService({

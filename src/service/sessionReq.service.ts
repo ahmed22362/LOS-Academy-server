@@ -16,6 +16,7 @@ import {
 import {
   createFreeSessionService,
   createPaidSessionsService,
+  isTeacherHasOverlappingSessions,
 } from "./session.service"
 import {
   checkUniqueUserAndTeacher,
@@ -116,6 +117,11 @@ export async function acceptSessionRequestService({
       transaction: t,
     })
     if (sessionReq.type === SessionType.FREE) {
+      await isTeacherHasOverlappingSessions({
+        teacherId,
+        wantedSessionDates: sessionReq.sessionDates,
+        wantedSessionDuration: FREE_SESSION_DURATION,
+      })
       const firstDate = sessionReq.sessionDates[0]
       const freeSession = await createFreeSessionService({
         sessionInfoId: sessionInfo.id,
@@ -136,6 +142,11 @@ export async function acceptSessionRequestService({
     } else if (sessionReq.type === SessionType.PAID) {
       const subscribePlan = await getUserSubscriptionPlan({
         userId: sessionReq.userId,
+      })
+      await isTeacherHasOverlappingSessions({
+        teacherId,
+        wantedSessionDates: sessionReq.sessionDates,
+        wantedSessionDuration: subscribePlan.plan.sessionDuration,
       })
       const paidSessions = await createPaidSessionsService({
         sessionInfoId: sessionInfo.id,

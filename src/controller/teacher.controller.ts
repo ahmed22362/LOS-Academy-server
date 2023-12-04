@@ -29,6 +29,7 @@ import {
   getTeacherReceivedRescheduleRequestsService,
   getTeacherRescheduleRequestsService,
 } from "../service/rescheduleReq.service"
+import { getPaginationParameter } from "./user.controller"
 
 export const getTeacherAtt = [
   "id",
@@ -246,25 +247,21 @@ export const getTeacherLatestTakenSession = catchAsync(
 export const getTeacherAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
+
     let offset
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
+    const { nPage, nLimit, status } = getPaginationParameter(req)
+    if (nPage && nLimit) {
       offset = nPage * nLimit
     }
     const sessions = await getTeacherAllSessionsService({
       teacherId,
       page: nPage,
       pageSize: nLimit,
+      status: status as string,
     })
-    const allSessions = Object.values(sessions!).flatMap((session) => session)
     res
       .status(200)
-      .json({ status: "success", length: allSessions.length, sessions })
+      .json({ status: "success", length: sessions!.length, sessions })
   }
 )
 export const getTeacherAllStudents = catchAsync(
@@ -296,15 +293,7 @@ export const getAdminBalance = catchAsync(
 export const getSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
-    const { status } = req.query
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
-    }
+    const { nPage, nLimit, status } = getPaginationParameter(req)
     const rescheduleRequests = await getTeacherRescheduleRequestsService({
       teacherId,
       status: status as any,
@@ -321,15 +310,7 @@ export const getSessionRescheduleRequests = catchAsync(
 export const getReceivedSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
-    const status = req.query.status
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
-    }
+    const { nPage, nLimit, status } = getPaginationParameter(req)
     const rescheduleRequests =
       await getTeacherReceivedRescheduleRequestsService({
         teacherId,
@@ -347,16 +328,7 @@ export const getReceivedSessionRescheduleRequests = catchAsync(
 export const getAllSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId
-    const status = req.query.status
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
-    }
-
+    const { nPage, nLimit, status } = getPaginationParameter(req)
     const rescheduleRequests = await getTeacherAllRescheduleRequestsService({
       teacherId,
       page: nPage,

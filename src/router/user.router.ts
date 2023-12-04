@@ -39,6 +39,7 @@ import {
   updateStatusSessionReschedule,
 } from "../controller/session.controller"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
+import { cancelRequestSchema } from "../schema/session.schema"
 
 const userRouter = Router()
 
@@ -75,7 +76,12 @@ userRouter
   .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests)
 userRouter
   .route("/cancelRescheduleRequest")
-  .post(protectUser, setUserOrTeacherId, cancelSessionRescheduleRequest)
+  .post(
+    protectUser,
+    setUserOrTeacherId,
+    validate(cancelRequestSchema),
+    cancelSessionRescheduleRequest
+  )
 userRouter
   .route("/receivedRescheduleRequests")
   .get(protectUser, setUserOrTeacherId, getReceivedSessionRescheduleRequests)

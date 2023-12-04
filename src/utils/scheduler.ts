@@ -139,19 +139,19 @@ export function scheduleSessionRescheduleRequestMailJob({
     const date = new Date(new Date().getTime() + 1000)
     let email: string, name: string, receiverName: string
     const job = schedule.scheduleJob(
-      `Session #${sessionId}`,
+      `Reschedule Session #${sessionId}`,
       date,
       async () => {
         const session = await getOneSessionDetailsService({ sessionId })
         if (requestedBy === RoleType.USER) {
           email = session.SessionInfo.teacher!.email
-          name = session.SessionInfo.teacher!.name
-          receiverName = session.SessionInfo.user!.name
+          receiverName = session.SessionInfo.teacher!.name
+          name = session.SessionInfo.user!.name
         }
         if (requestedBy === RoleType.TEACHER) {
           email = session.SessionInfo.user!.email
-          name = session.SessionInfo.user!.name
-          receiverName = session.SessionInfo.teacher!.name
+          receiverName = session.SessionInfo.user!.name
+          name = session.SessionInfo.teacher!.name
         }
         await new Mail(email, name).sendSessionRescheduleRequestMail({
           receiverName,

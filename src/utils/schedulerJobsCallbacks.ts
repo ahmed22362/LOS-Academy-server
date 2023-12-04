@@ -65,7 +65,7 @@ const sessionReminderEmail: JobCallback = async function ({
       id: jobId,
       updatedData: { status: scheduledJobStatus.FAILED },
     })
-    throw new AppError(400, `Can't Send session reminder mail: ${error}`)
+    logger.error(`Can't Send session reminder mail: ${error}`)
   }
 }
 const sessionStartedEmail: JobCallback = async function ({
@@ -207,8 +207,8 @@ const sessionUpdateToFinished: JobCallback = async function ({
       }
     }
     await transaction.commit()
-    logger.info(`One time session Finished with status executed!`)
     await deleteJobService({ id: jobId })
+    logger.info(`One time session Finished with status executed!`)
   } catch (error: any) {
     await updateJobService({
       id: jobId,

@@ -46,7 +46,12 @@ sessionRouter.use("/free", freeSessionRouter)
 sessionRouter.use("/paid", paidSessionRouter)
 sessionRouter
   .route("/cancelSessionRequest")
-  .post(protectUser, setUserOrTeacherId, cancelSessionReq)
+  .post(
+    protectUser,
+    setUserOrTeacherId,
+    validate(cancelRequestSchema),
+    cancelSessionReq
+  )
 sessionRouter
   .route("/updateUserAttendance")
   .post(
