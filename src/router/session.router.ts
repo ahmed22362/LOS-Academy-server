@@ -2,6 +2,7 @@ import { Router } from "express"
 import { protectTeacher } from "../controller/teacher.controller"
 import {
   acceptSessionReq,
+  cancelSessionReq,
   getAllSessionsReq,
   getOneSessionReq,
 } from "../controller/sessionReq.controller"
@@ -43,6 +44,9 @@ sessionRouter
   .get(protectTeacher, setUserOrTeacherId, getOneSessionReq)
 sessionRouter.use("/free", freeSessionRouter)
 sessionRouter.use("/paid", paidSessionRouter)
+sessionRouter
+  .route("/cancelSessionRequest")
+  .post(protectUser, setUserOrTeacherId, cancelSessionReq)
 sessionRouter
   .route("/updateUserAttendance")
   .post(

@@ -550,6 +550,46 @@ export const requestSessionReschedule = catchAsync(
     }
   }
 )
+export const cancelSessionRescheduleRequest = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { requestId, userId } = req.body
+    const request = await getOneRescheduleRequestService({ id: requestId })
+    if (request.status !== RescheduleRequestStatus.PENDING) {
+      return next(
+        new AppError(
+          400,
+          "Can't delete request because it's already responded to!"
+        )
+      )
+    }
+    const { session, exist } = await userOwnThisSession({
+      userId,
+      sessionId: request.sessionId,
+    })
+    if (!exist) {
+      return next(
+        new AppError(
+          403,
+          "you don't own this session that associated with the request!"
+        )
+      )
+    }
+    const transaction = await sequelize.transaction()
+    try {
+      await session.decrement({ reschedule_request_count: 1 }, { transaction })
+      await request.destroy({ transaction })
+      await transaction.commit()
+      res
+        .status(200)
+        .json({ status: "success", message: "request deleted successfully!" })
+    } catch (error: any) {
+      await transaction.rollback()
+      return next(
+        new AppError(400, `Error while deleting request: ${error.message}`)
+      )
+    }
+  }
+)
 export const getAllRescheduleRequestsForAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     let page = req.query.page

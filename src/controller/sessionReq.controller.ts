@@ -230,9 +230,48 @@ export const acceptSessionReq = catchAsync(
     })
   }
 )
+export const cancelSessionReq = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { requestId, userId } = req.body
+    const sessionRequest = await getOneSessionRequestService({ id: requestId })
+    if (userId !== sessionRequest.userId) {
+      return next(new AppError(403, "You don't own this session to cancel it!"))
+    }
+    if (sessionRequest.status !== SessionStatus.PENDING) {
+      return next(
+        new AppError(
+          400,
+          "Session request already responded to Can't cancel it!"
+        )
+      )
+    }
+    const transaction = await sequelize.transaction()
+    try {
+      await User.increment(
+        { availableFreeSession: 1 },
+        {
+          where: { id: userId },
+          transaction,
+        }
+      )
+      await sessionRequest.destroy({ transaction })
+      await transaction.commit()
+      res.status(200).json({
+        status: "success",
+        message: "Session request deleted successfully!",
+      })
+    } catch (error: any) {
+      await transaction.rollback()
+      return next(
+        new AppError(400, `Can't delete session Request : ${error.message}`)
+      )
+    }
+  }
+)
 export const getUserSessionReq = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.body
+    console.log(userId)
     const requests = await getUserSessionRequestService({ userId })
     res.status(200).json({ status: "success", data: requests })
   }

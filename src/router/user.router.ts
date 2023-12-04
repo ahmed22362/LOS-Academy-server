@@ -33,6 +33,7 @@ import { RoleType } from "../db/models/teacher.model"
 import validate from "../middleware/validate"
 import { createUserSchema } from "../schema/user.schema"
 import {
+  cancelSessionRescheduleRequest,
   getUserContinueStatus,
   requestSessionReschedule,
   updateStatusSessionReschedule,
@@ -72,6 +73,9 @@ userRouter
   .route("/requestReschedule")
   .post(protectUser, setUserOrTeacherId, requestSessionReschedule)
   .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests)
+userRouter
+  .route("/cancelRescheduleRequest")
+  .post(protectUser, setUserOrTeacherId, cancelSessionRescheduleRequest)
 userRouter
   .route("/receivedRescheduleRequests")
   .get(protectUser, setUserOrTeacherId, getReceivedSessionRescheduleRequests)
