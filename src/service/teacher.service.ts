@@ -105,7 +105,7 @@ export async function getTeacherStudentsService({
 }) {
   const sessionInfos = await SessionInfo.findAll({
     where: { teacherId },
-    include: [{ model: User, attributes: ["id", "name"] }],
+    include: [{ model: User, attributes: getUserAttr }],
   })
   const students = sessionInfos.map((info) => info.user)
   const unique: User[] = [
