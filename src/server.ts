@@ -3,6 +3,8 @@ import routes from "./routes"
 import logger from "./utils/logger"
 import connectDB from "./connect/connectDB"
 import rescheduleJobs from "./utils/processSchedulerJobs"
+import { createServer } from "node:http"
+import { setupSocket } from "./connect/socket"
 const PORT = process.env.PORT || 3000
 
 process.on("uncaughtException", (err) => {
@@ -15,7 +17,11 @@ process.on("unhandledRejection", (err: any) => {
   logger.error(err)
   process.exit(1)
 })
-app.listen(PORT, async () => {
+
+const server = createServer(app)
+const io = setupSocket(server)
+
+server.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`)
   await connectDB()
   await rescheduleJobs()

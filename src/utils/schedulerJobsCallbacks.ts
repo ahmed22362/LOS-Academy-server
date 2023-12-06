@@ -1,4 +1,8 @@
 import Mail from "../connect/sendMail"
+import {
+  emitSessionFinishedForUser,
+  emitSessionOngoingForUser,
+} from "../connect/socket"
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import { scheduledJobStatus } from "../db/models/scheduleJob.model"
 import { SessionStatus, SessionType } from "../db/models/session.model"
@@ -19,7 +23,6 @@ import {
 } from "../service/session.service"
 import { updateTeacherBalance } from "../service/teacher.service"
 import { updateUserRemainSessionService } from "../service/user.service"
-import AppError from "./AppError"
 import logger from "./logger"
 
 interface JobCallback {
@@ -129,12 +132,20 @@ const sessionUpdateToOngoing: JobCallback = async function ({
   jobId: number
 }) {
   try {
-    await generateMeetingLinkAndUpdateSession({
+    const updatedSession = await generateMeetingLinkAndUpdateSession({
       sessionId,
       status: SessionStatus.ONGOING,
     })
     logger.info("One time session updated to ongoing executed!")
-
+    // one for user and one for teacher!
+    emitSessionOngoingForUser(
+      updatedSession.SessionInfo.userId!,
+      updatedSession
+    )
+    emitSessionOngoingForUser(
+      updatedSession.SessionInfo.teacherId!,
+      updatedSession
+    )
     await deleteJobService({ id: jobId })
   } catch (error: any) {
     await updateJobService({
@@ -207,6 +218,8 @@ const sessionUpdateToFinished: JobCallback = async function ({
       }
     }
     await transaction.commit()
+    emitSessionOngoingForUser(session.SessionInfo.userId!)
+    emitSessionOngoingForUser(session.SessionInfo.teacherId!)
     await deleteJobService({ id: jobId })
     logger.info(`One time session Finished with status executed!`)
   } catch (error: any) {

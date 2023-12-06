@@ -341,6 +341,19 @@ export async function getOneSessionService({
   }
   return session
 }
+export async function getOneSessionWithSessionInfoOnlyService({
+  sessionId,
+}: {
+  sessionId: number
+}) {
+  const session = await Session.findByPk(sessionId, {
+    include: [{ model: SessionInfo }],
+  })
+  if (!session) {
+    throw new AppError(404, "There is no session with this id!")
+  }
+  return session
+}
 export async function getUserAllTakenSessionsService({
   userId,
 }: {
@@ -575,7 +588,7 @@ export async function generateMeetingLinkAndUpdateSession({
   status?: SessionStatus
   transaction?: Transaction
 }) {
-  const session = await getOneSessionDetailsService({ sessionId })
+  const session = await getOneSessionWithSessionInfoOnlyService({ sessionId })
   const meetingLink = await new ZoomService().createMeeting({
     topic: "Session",
     duration: session.sessionDuration,

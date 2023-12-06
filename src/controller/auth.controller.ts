@@ -179,7 +179,7 @@ export const protect = (Model: ModelClass) =>
         )
       }
       // 2) Verification token
-      const decoded = (await verifyToken(token)) as decodedToken
+      const decoded = await verifyToken(token)
       // 3) Check if user still exists
       const currentUser = (await getModelByIdService({
         ModelClass: Model,

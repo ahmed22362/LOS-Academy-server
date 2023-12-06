@@ -2,6 +2,7 @@ import { NextFunction, Response, Request } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
   getOneSessionService,
+  getOneSessionWithSessionInfoOnlyService,
   teacherOwnThisSession,
   updateSessionService,
 } from "../service/session.service"
@@ -23,6 +24,7 @@ import SessionInfo from "../db/models/sessionInfo.model"
 import logger from "../utils/logger"
 import { updateTeacherBalance } from "../service/teacher.service"
 import { sequelize } from "../db/sequelize"
+import { emitReportAddedForUser } from "../connect/socket"
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -47,7 +49,7 @@ export const createReport = catchAsync(
         )
       )
     }
-    const session = await getOneSessionService({ sessionId })
+    const session = await getOneSessionWithSessionInfoOnlyService({ sessionId })
     if (session.status !== SessionStatus.TAKEN) {
       return next(new AppError(400, "can't add report to a non taken session"))
     }
@@ -94,6 +96,7 @@ export const createReport = catchAsync(
         transaction,
       })
       await transaction.commit()
+      emitReportAddedForUser(session.SessionInfo.userId!, report)
       res.status(201).json({
         status: "success",
         message: "report created successfully",
