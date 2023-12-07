@@ -28,18 +28,21 @@ export const setupSocket = (server: http.Server) => {
       socket.userId = user.id
       next()
     } catch (error: any) {
+      logger.error(error.message)
       next(error)
     }
   })
   io.on("connection", async (socket: socketWithUser) => {
     console.log("A user connected:", socket.id, socket.userId)
     socket.on("disconnect", () => {
+      console.log("A user disconnected:", socket.id, socket.userId)
       socketUserMap.delete(socket.userId!)
     })
   })
   io.engine.on("pingTimeout", (socket) => {
     socketUserMap.delete(socket.userId)
   })
+
   io.on("error", (error) => {
     logger.error(error)
   })
