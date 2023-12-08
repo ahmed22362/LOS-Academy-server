@@ -165,14 +165,6 @@ teacherRouter
   )
 teacherRouter.get("/checkJWT", checkJWT)
 
-teacherRouter.get("/emit", protectTeacher, setUserOrTeacherId, (req, res) => {
-  const teacherId = req.body.teacherId
-  const message = req.query.message
-  const socket = getSocketByUserId(teacherId)
-  console.log(`socket founded socketId: ${socket?.id}`)
-  socket?.emit("event", message)
-  res.sendStatus(200)
-})
 teacherRouter
   .route("/:id")
   .get(protectTeacher, getTeacher)

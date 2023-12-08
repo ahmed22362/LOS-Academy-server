@@ -1,4 +1,5 @@
 import { Express } from "express"
+import { join } from "node:path"
 import errorHandler from "./middleware/error.handler"
 import AppError from "./utils/AppError"
 import userRouter from "./router/user.router"
@@ -14,6 +15,7 @@ import materialRouter from "./router/material.router"
 import monthlyReportRouter from "./router/monthlyReports.router"
 import feedBackRouter from "./router/feedback.router"
 import { getSocketByUserId } from "./connect/socket"
+import { verifyToken } from "./utils/jwt"
 
 const PRE_API_V1: string = "/api/v1"
 
@@ -32,6 +34,24 @@ export default function routes(app: Express) {
     res.send(
       `<h1 style="text-align:center; padding-top:100px" >canceled! 😒</h1>`
     )
+  })
+  //only for test purpose
+  app.get("/chat", (req, res) => {
+    const token = req.cookies.token
+    if (!token) {
+      console.error("there is no token in chat test router")
+    }
+    const link = `${req.protocol}://${req.get("host")}`
+    res.render(join(__dirname, "/views/index.ejs"), { token, link })
+  })
+  app.get("/emit", async (req, res) => {
+    const token = req.cookies.token
+    const user = await verifyToken(token)
+    const message = req.query.message
+    const socket = getSocketByUserId(user.id)
+    console.log(`socket founded socketId: ${socket?.id}`)
+    socket?.emit("event", message)
+    res.sendStatus(200)
   })
   app.use(`${PRE_API_V1}/user`, userRouter)
   app.use(`${PRE_API_V1}/teacher`, teacherRouter)
