@@ -37,11 +37,13 @@ export default function routes(app: Express) {
   })
   //only for test purpose
   app.get("/chat", (req, res) => {
-    const token = req.cookies.token
+    let token = req.cookies.token
     if (!token) {
       console.error("there is no token in chat test router")
+      token = "no token"
     }
-    const link = `${req.protocol}://${req.get("host")}`
+    const link = `${req.protocol}://${req.get("host")}/`
+    console.log(token, link)
     res.render(join(__dirname, "/views/index.ejs"), { token, link })
   })
   app.get("/emit", async (req, res) => {

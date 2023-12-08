@@ -63,6 +63,7 @@
     </form>
     <script src="/socket.io/socket.io.js"></script>
     <script>
+      console.log("<%= link %>")
       const socket = io("<%= link %>", {
         auth: {
           token: "<%= token %>",
