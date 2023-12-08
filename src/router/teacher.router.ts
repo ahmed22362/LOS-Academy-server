@@ -45,6 +45,7 @@ import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
 import { getMyPayoutRequests } from "../controller/payout.controller"
 import { getTeacherMonthlyReport } from "../controller/monthlyReport.controller"
 import { cancelRequestSchema } from "../schema/session.schema"
+import { getSocketByUserId } from "../connect/socket"
 const teacherRouter = Router()
 
 teacherRouter
@@ -164,6 +165,14 @@ teacherRouter
   )
 teacherRouter.get("/checkJWT", checkJWT)
 
+teacherRouter.get("/emit", protectTeacher, setUserOrTeacherId, (req, res) => {
+  const teacherId = req.body.teacherId
+  const message = req.query.message
+  const socket = getSocketByUserId(teacherId)
+  console.log(`socket founded socketId: ${socket?.id}`)
+  socket?.emit("event", message)
+  res.sendStatus(200)
+})
 teacherRouter
   .route("/:id")
   .get(protectTeacher, getTeacher)

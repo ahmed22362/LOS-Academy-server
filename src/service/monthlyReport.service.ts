@@ -39,7 +39,7 @@ export async function createMonthlyReportService({
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While creating product or monthlyReport!: ${error.message}`
+      `Error While creating monthlyReport!: ${error.message}`
     )
   }
 }

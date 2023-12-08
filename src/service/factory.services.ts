@@ -24,8 +24,16 @@ async function createModelService({
     const model = await ModelClass.create(data)
     return model
   } catch (error: any) {
-    console.error("Error creating model:", error.errors[0].message)
-    throw new AppError(400, `Error creating model:, ${error.errors[0].message}`)
+    console.error(
+      "Error creating model:",
+      Array.isArray(error.errors) ? error.errors[0].message : error.message
+    )
+    throw new AppError(
+      400,
+      `Error creating model:, ${
+        Array.isArray(error.errors) ? error.errors[0].message : error.message
+      }`
+    )
   }
 }
 async function getModelsService({
@@ -72,7 +80,7 @@ async function getAllModelsByService({
   } catch (error: any) {
     console.error(
       "Error retrieving model by what you want:",
-      error.errors[0].message
+      Array.isArray(error.errors) ? error.errors[0].message : error.message
     )
     throw new AppError(
       400,
@@ -98,7 +106,7 @@ async function getOneModelByService({
   } catch (error: any) {
     console.error(
       "Error retrieving model by what you want:",
-      error.errors[0].message
+      Array.isArray(error.errors) ? error.errors[0].message : error.message
     )
     throw new AppError(
       400,
