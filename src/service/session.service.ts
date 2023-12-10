@@ -588,7 +588,7 @@ export async function generateMeetingLinkAndUpdateSession({
   status?: SessionStatus
   transaction?: Transaction
 }) {
-  const session = await getOneSessionWithSessionInfoOnlyService({ sessionId })
+  const session = await getOneSessionService({ sessionId })
   const meetingLink = await new ZoomService().createMeeting({
     topic: "Session",
     duration: session.sessionDuration,
@@ -629,7 +629,6 @@ export async function getTeacherSessionsStatisticsService({
     group: "status",
     where: { sessionInfoId: { [Op.in]: sessionInfoIds } },
   })
-  console.log(stats)
   return stats
 }
 export async function getAdminSessionsStatisticsService() {

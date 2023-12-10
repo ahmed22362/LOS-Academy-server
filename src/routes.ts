@@ -16,6 +16,7 @@ import monthlyReportRouter from "./router/monthlyReports.router"
 import feedBackRouter from "./router/feedback.router"
 import { getSocketByUserId } from "./connect/socket"
 import { verifyToken } from "./utils/jwt"
+import catchAsync from "./utils/catchAsync"
 
 const PRE_API_V1: string = "/api/v1"
 
@@ -45,15 +46,23 @@ export default function routes(app: Express) {
     const link = `${req.protocol}s://${req.get("host")}/`
     res.render(join(__dirname, "/views/index.ejs"), { token, link })
   })
-  app.get("/emit", async (req, res) => {
-    const token = req.cookies.token
-    const user = await verifyToken(token)
-    const message = req.query.message
-    const socket = getSocketByUserId(user.id)
-    console.log(`socket founded socketId: ${socket?.id}`)
-    socket?.emit("event", message)
-    res.sendStatus(200)
-  })
+  app.get(
+    "/emit",
+    catchAsync(async (req, res, next) => {
+      const token = req.cookies.token
+      if (!token) {
+        return next(new AppError(404, "there is no token!"))
+      }
+      const user = await verifyToken(token)
+
+      const message = req.query.message
+      const event = req.query.event || "event"
+      const socket = getSocketByUserId(user.id)
+      console.log(`socket founded socketId: ${socket?.id}`)
+      socket?.emit(event as string, message)
+      res.sendStatus(200)
+    })
+  )
   app.use(`${PRE_API_V1}/user`, userRouter)
   app.use(`${PRE_API_V1}/teacher`, teacherRouter)
   app.use(`${PRE_API_V1}/course`, courseRouter)

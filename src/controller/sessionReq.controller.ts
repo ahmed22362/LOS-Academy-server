@@ -18,7 +18,7 @@ import {
   sessionPerWeekEqualDates,
 } from "../service/user.service"
 import User from "../db/models/user.model"
-import { getUserAttr } from "./user.controller"
+import { getPaginationParameter, getUserAttr } from "./user.controller"
 import {
   checkDateFormat,
   getOneSessionDetailsService,
@@ -114,21 +114,17 @@ export const getAllAvailableSessionsReq = (type: SessionType) =>
   })
 export const getAllSessionsReq = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
+    const { nLimit, nPage, status } = getPaginationParameter(req)
     let offset
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
-      offset = nPage * nLimit
+    if (nLimit && nPage) {
+      offset = nLimit * nPage
     }
     const sessions = await getAllSessionsRequestService({
       findOptions: {
         include: { model: User, attributes: getUserAttr },
         limit: nLimit,
         offset,
+        where: { status: status ? status : undefined },
       },
     })
     res
@@ -179,6 +175,7 @@ export const updateSessionReqDate = catchAsync(
         new AppError(403, "Can't update request of and accepted request!")
       )
     }
+    const userSubscription = await []
     const sessionRequestUpdated = await updateSessionRequestService({
       id: +id,
       updateBody: body,

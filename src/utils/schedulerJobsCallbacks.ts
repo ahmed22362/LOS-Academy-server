@@ -19,6 +19,7 @@ import {
 import {
   generateMeetingLinkAndUpdateSession,
   getOneSessionDetailsService,
+  getOneSessionWithSessionInfoOnlyService,
   updateSessionService,
 } from "../service/session.service"
 import { updateTeacherBalance } from "../service/teacher.service"
@@ -138,14 +139,11 @@ const sessionUpdateToOngoing: JobCallback = async function ({
     })
     logger.info("One time session updated to ongoing executed!")
     // one for user and one for teacher!
-    emitSessionOngoingForUser(
-      updatedSession.SessionInfo.userId!,
-      updatedSession
-    )
-    emitSessionOngoingForUser(
-      updatedSession.SessionInfo.teacherId!,
-      updatedSession
-    )
+    const session = await getOneSessionWithSessionInfoOnlyService({
+      sessionId: updatedSession.id,
+    })
+    emitSessionOngoingForUser(session.SessionInfo.userId!, session)
+    emitSessionOngoingForUser(session.SessionInfo.teacherId!, session)
     await deleteJobService({ id: jobId })
   } catch (error: any) {
     await updateJobService({

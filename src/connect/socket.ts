@@ -29,7 +29,7 @@ export const setupSocket = (server: http.Server) => {
       next()
     } catch (error: any) {
       logger.error(error.message)
-      next(error)
+      // next(error)
     }
   })
   io.on("connection", async (socket: socketWithUser) => {
