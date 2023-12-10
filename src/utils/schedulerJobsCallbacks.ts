@@ -166,10 +166,11 @@ const sessionUpdateToFinished: JobCallback = async function ({
 }) {
   const session = await getOneSessionDetailsService({ sessionId })
   const transaction = await sequelize.transaction()
+  let updatedSession
   try {
     if (!session.studentAttended) {
       logger.info("student absent")
-      await updateSessionService({
+      updatedSession = await updateSessionService({
         sessionId,
         updatedData: { status: SessionStatus.USER_ABSENT },
         transaction,
@@ -189,7 +190,7 @@ const sessionUpdateToFinished: JobCallback = async function ({
     }
     if (!session.teacherAttended) {
       logger.info("teacher absent")
-      await updateSessionService({
+      updatedSession = await updateSessionService({
         sessionId,
         updatedData: { status: SessionStatus.TEACHER_ABSENT },
         transaction,
@@ -204,7 +205,7 @@ const sessionUpdateToFinished: JobCallback = async function ({
     if (session.studentAttended && session.teacherAttended) {
       logger.info("both attended")
 
-      await updateSessionService({
+      updatedSession = await updateSessionService({
         sessionId,
         updatedData: { status: SessionStatus.TAKEN },
         transaction,
@@ -218,8 +219,8 @@ const sessionUpdateToFinished: JobCallback = async function ({
       }
     }
     await transaction.commit()
-    emitSessionOngoingForUser(session.SessionInfo.userId!)
-    emitSessionOngoingForUser(session.SessionInfo.teacherId!)
+    emitSessionFinishedForUser(session.SessionInfo.userId!, updatedSession)
+    emitSessionFinishedForUser(session.SessionInfo.teacherId!, updatedSession)
     await deleteJobService({ id: jobId })
     logger.info(`One time session Finished with status executed!`)
   } catch (error: any) {

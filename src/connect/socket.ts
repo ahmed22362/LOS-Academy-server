@@ -66,6 +66,9 @@ export const emitEventForUser = ({
     logger.error("Can't find user socket!")
   }
   studentSocket?.emit(eventName, payload)
+  if (studentSocket) {
+    logger.info(`event ${eventName} has been fired!`)
+  }
 }
 export function emitSessionOngoingForUser(userId: string, payload?: object) {
   emitEventForUser({
