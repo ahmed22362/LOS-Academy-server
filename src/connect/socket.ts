@@ -2,6 +2,11 @@ import { Server, Socket } from "socket.io"
 import http from "http"
 import { verifyToken } from "../utils/jwt"
 import logger from "../utils/logger"
+import {
+  getTeacherByIdService,
+  getTeacherByService,
+} from "../service/teacher.service"
+import { eventNames } from "process"
 
 const socketUserMap = new Map<string, Socket>()
 export const socketEventsName = {
@@ -10,6 +15,7 @@ export const socketEventsName = {
   SESSION_RESCHEDULED_REQUESTED: "reschedule_request",
   SESSION_REQUESTED: "session_requested",
   REPORT_ADDED: "report_added",
+  TEACHERS_ROOM: "teachers_room",
 }
 export interface socketWithUser extends Socket {
   userId?: string
@@ -26,10 +32,15 @@ export const setupSocket = (server: http.Server) => {
       const user = await verifyToken(token)
       socketUserMap.set(user.id, socket)
       socket.userId = user.id
+      const teacher = await getTeacherByService({
+        findOptions: { where: { id: user.id } },
+      })
+      if (teacher) {
+        socket.join(socketEventsName.TEACHERS_ROOM)
+      }
       next()
     } catch (error: any) {
       logger.error(error.message)
-      // next(error)
     }
   })
   io.on("connection", async (socket: socketWithUser) => {
@@ -98,13 +109,14 @@ export function emitRescheduleRequestForUser(userId: string, payload?: object) {
     payload,
   })
 }
-export function emitSessionRequestForTeacher(
-  teacherId: string,
+export function emitSessionRequestForTeachers(
+  socket: Socket,
   payload?: object
 ) {
-  emitEventForUser({
-    userId: teacherId,
-    eventName: socketEventsName.SESSION_REQUESTED,
-    payload,
-  })
+  socket
+    .to(socketEventsName.TEACHERS_ROOM)
+    .emit(socketEventsName.SESSION_REQUESTED, payload)
+  logger.info(
+    `${socketEventsName.SESSION_REQUESTED} event emitted for room: ${socketEventsName.TEACHERS_ROOM}`
+  )
 }

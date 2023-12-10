@@ -74,6 +74,7 @@ import { deleteJobServiceWhere } from "../service/scheduleJob.service"
 import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs"
 import { Transaction } from "sequelize"
 import { SubscriptionStatus } from "../db/models/subscription.model"
+import { emitRescheduleRequestForUser } from "../connect/socket"
 export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000
 export const HOUR_IN_MILLISECONDS = 60 * 60 * 1000
 const DEFAULT_COURSES = ["arabic"]
@@ -537,6 +538,7 @@ export const requestSessionReschedule = catchAsync(
         transaction,
       })
       await session.increment({ reschedule_request_count: 1 }, { transaction })
+      emitRescheduleRequestForUser(userId || teacherId, rescheduleReq)
       await transaction.commit()
       res.status(200).json({
         status: "success",

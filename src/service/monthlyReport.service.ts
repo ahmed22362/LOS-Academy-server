@@ -53,6 +53,7 @@ export async function getAllMonthlyReportsService({
   try {
     const monthlyReports = await getModelsService({
       ModelClass: MonthlyReport,
+      findOptions: { include: [{ model: User, attributes: getUserAttr }] },
       page,
       limit,
     })

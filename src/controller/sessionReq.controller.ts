@@ -25,6 +25,10 @@ import {
 } from "../service/session.service"
 import { sequelize } from "../db/sequelize"
 import { scheduleSessionPlacedMailJob } from "../utils/scheduler"
+import {
+  emitSessionRequestForTeachers,
+  getSocketByUserId,
+} from "../connect/socket"
 
 export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -81,6 +85,8 @@ export const requestSession = (type: SessionType) =>
           }
         )
       }
+      const socket = getSocketByUserId(userId)
+      emitSessionRequestForTeachers(socket!, requestSession)
       await t.commit()
       res.status(201).json({ status: "success", data: requestSession })
     } catch (error: any) {

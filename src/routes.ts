@@ -54,12 +54,12 @@ export default function routes(app: Express) {
         return next(new AppError(404, "there is no token!"))
       }
       const user = await verifyToken(token)
-
       const message = req.query.message
       const event = req.query.event || "event"
       const socket = getSocketByUserId(user.id)
       console.log(`socket founded socketId: ${socket?.id}`)
       socket?.emit(event as string, message)
+      console.log(`${event} event has emitted!`)
       res.sendStatus(200)
     })
   )

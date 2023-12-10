@@ -10,7 +10,7 @@ import {
 } from "../service/monthlyReport.service"
 import AppError from "../utils/AppError"
 import { getTeacherStudentsService } from "../service/teacher.service"
-import { Gender } from "../db/models/user.model"
+import { getPaginationParameter } from "./user.controller"
 
 export const createMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -45,14 +45,7 @@ export const createMonthlyReport = catchAsync(
 )
 export const getAllMonthlyReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
-    if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
-    }
+    const { nLimit, nPage } = getPaginationParameter(req)
     const monthlyReports = await getAllMonthlyReportsService({
       page: nPage,
       limit: nLimit,
