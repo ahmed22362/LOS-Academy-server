@@ -215,6 +215,7 @@ export const getMySubscription = catchAsync(
     }
     const subscriptionRes = {
       status: userSubscription.status,
+      type:userSubscription.plan.type,
       planId: userSubscription.planId,
       planTitle: userSubscription.plan.title,
       sessionDuration: userSubscription.plan.sessionDuration,
