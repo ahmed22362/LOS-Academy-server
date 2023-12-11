@@ -1,7 +1,6 @@
 import { NextFunction, Response, Request } from "express"
 import catchAsync from "../utils/catchAsync"
 import {
-  getOneSessionService,
   getOneSessionWithSessionInfoOnlyService,
   teacherOwnThisSession,
   updateSessionService,
