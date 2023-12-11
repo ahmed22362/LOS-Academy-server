@@ -113,10 +113,12 @@ export function emitSessionRequestForTeachers(
   socket: Socket,
   payload?: object
 ) {
-  socket
-    .to(socketEventsName.TEACHERS_ROOM)
-    .emit(socketEventsName.SESSION_REQUESTED, payload)
-  logger.info(
-    `${socketEventsName.SESSION_REQUESTED} event emitted for room: ${socketEventsName.TEACHERS_ROOM}`
-  )
+  if(socket){
+    socket
+      .to(socketEventsName.TEACHERS_ROOM)
+      .emit(socketEventsName.SESSION_REQUESTED, payload)
+    logger.info(
+      `${socketEventsName.SESSION_REQUESTED} event emitted for room: ${socketEventsName.TEACHERS_ROOM}`
+    )
+  }
 }

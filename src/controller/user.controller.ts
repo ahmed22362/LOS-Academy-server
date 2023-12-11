@@ -195,7 +195,8 @@ export const getMySubscription = catchAsync(
       userId: req.body.userId,
     })
     if (!userSubscription) {
-      return res.status(200).json({status:"success",message:"The user has not subscribe to any plan!",data:[]})
+      res.status(200).json({status:"success",
+      message:"user didn't subscript to any plans yet!!",data:[]})
     }
     let stripeSubscription
     let subscriptionStartAt
