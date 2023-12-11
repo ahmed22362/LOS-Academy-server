@@ -114,8 +114,7 @@ export async function getSubscriptionByID({
 }
 
 export async function getSubscriptionByUserId({ userId }: { userId: string }) {
-  const subscription = await  Subscription.findOne({where:{userId},include:Plan,order:[["createAt", "DESC"]]})
-
+  const subscription = await  Subscription.findOne({where:{userId },include:Plan,order:[["createdAt", "DESC"]]})
   return subscription 
 }
 export async function getSubscriptionBy({
