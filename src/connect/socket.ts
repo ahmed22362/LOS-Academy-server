@@ -3,10 +3,9 @@ import http from "http"
 import { verifyToken } from "../utils/jwt"
 import logger from "../utils/logger"
 import {
-  getTeacherByIdService,
   getTeacherByService,
 } from "../service/teacher.service"
-import { eventNames } from "process"
+
 
 const socketUserMap = new Map<string, Socket>()
 export const socketEventsName = {
@@ -36,6 +35,7 @@ export const setupSocket = (server: http.Server) => {
         findOptions: { where: { id: user.id } },
       })
       if (teacher) {
+        logger.info(`teacher: ${teacher.id} has joined the room!`)
         socket.join(socketEventsName.TEACHERS_ROOM)
       }
       next()
@@ -45,6 +45,7 @@ export const setupSocket = (server: http.Server) => {
   })
   io.on("connection", async (socket: socketWithUser) => {
     console.log("A user connected:", socket.id, socket.userId)
+    socket.emit("event",{hello:"world"})
     socket.on("disconnect", () => {
       console.log("A user disconnected:", socket.id, socket.userId)
       socketUserMap.delete(socket.userId!)
@@ -72,12 +73,12 @@ export const emitEventForUser = ({
   eventName: string
   payload?: Object
 }) => {
-  const studentSocket = getSocketByUserId(userId)
-  if (!studentSocket) {
+  const usertSocket = getSocketByUserId(userId)
+  if (!usertSocket) {
     logger.error("Can't find user socket!")
   }
-  studentSocket?.emit(eventName, payload)
-  if (studentSocket) {
+  usertSocket?.emit(eventName, payload)
+  if (usertSocket) {
     logger.info(`event ${eventName} has been fired!`)
   }
 }
