@@ -26,7 +26,7 @@ import {
   OrderAssociation,
   getUserAllSessionsService,
   getUserAllTakenSessionsService,
-  getUserLatestTakenSessionService,
+  getUserLatestNotPendingSessionService,
   getUserOngoingSessionService,
   getUserRemainSessionsService,
   getUserUpcomingSessionService,
@@ -293,10 +293,10 @@ export const getUserOngoingSession = catchAsync(
     res.status(200).json({ status: "success", data: session })
   }
 )
-export const getUserLatestTakenSession = catchAsync(
+export const getUserLatestSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId
-    const session = await getUserLatestTakenSessionService({ userId })
+    const session = await getUserLatestNotPendingSessionService({ userId })
     if (!session) {
       return next(new AppError(400, "Can't get this user sessions"))
     }

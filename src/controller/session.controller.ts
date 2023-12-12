@@ -857,8 +857,8 @@ export const userContinueWithTeacher = catchAsync(
       id: session.sessionInfoId,
     })
     if (
-      sessionInfo.willContinue != null ||
-      sessionInfo.willContinue != undefined
+      sessionInfo.willContinue !== null ||
+      sessionInfo.willContinue !== undefined
     ) {
       return next(new AppError(400, "already responded to!"))
     }

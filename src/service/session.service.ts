@@ -427,7 +427,7 @@ export async function getUserOngoingSessionService({
   return session
 }
 
-export async function getUserLatestTakenSessionService({
+export async function getUserLatestNotPendingSessionService({
   userId,
 }: {
   userId: string
@@ -435,7 +435,8 @@ export async function getUserLatestTakenSessionService({
   const session = await allTeacherOrUserSessionsService({
     pageSize: 1,
     userId,
-    status: SessionStatus.TAKEN,
+    whereObj:{status: { [Op.ne]: SessionStatus.PENDING },
+    },
     orderAssociation: OrderAssociation.DESC,
   })
   return session
