@@ -168,13 +168,7 @@ async function getUserSubscriptionPlan({
   userId: string
   status?: SubscriptionStatus
 }) {
-  const where: any = { userId }
-  if (status) {
-    where.status = status
-  }
-  const userSubscription = getSubscriptionBy({
-    findOptions: { where, include: Plan, order: [["createAt", "DESC"]] },
-  })
+  const userSubscription =  getSubscriptionByUserId({userId})
   return userSubscription
 }
 async function checkUserSubscription({ userId }: { userId: string }) {
@@ -198,6 +192,9 @@ export async function sessionPerWeekEqualDates({
   sessionDatesLength: number
 }) {
   const subscribe = await getUserSubscriptionPlan({ userId })
+  if(!subscribe){
+    throw new AppError(404,"There is no subscription for this user!")
+  }
   if (subscribe.plan.sessionsPerWeek !== sessionDatesLength) {
     throw new AppError(
       400,

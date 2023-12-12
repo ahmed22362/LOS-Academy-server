@@ -114,11 +114,8 @@ export async function getSubscriptionByID({
 }
 
 export async function getSubscriptionByUserId({ userId }: { userId: string }) {
-  const subscription = await getOneModelByService({
-    Model: Subscription,
-    findOptions: { where: { userId }, include: Plan },
-  })
-  return subscription as Subscription
+  const subscription = await  Subscription.findOne({where:{userId },include:Plan,order:[["createdAt", "DESC"]]})
+  return subscription 
 }
 export async function getSubscriptionBy({
   findOptions,
@@ -214,6 +211,9 @@ export async function handelSubscriptionPayed(
       findOptions: { where: { customerId: payment_intent.customer } },
     })
     const membership = await getSubscriptionByUserId({ userId: user?.id })
+    if(!membership){
+      throw new AppError(404,"there is no subscription for this user!")
+    }
     await updateUserRemainSessionService({
       userId: user.id,
       amountOfSessions: membership.plan.sessionsCount,

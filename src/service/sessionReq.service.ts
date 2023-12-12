@@ -143,6 +143,9 @@ export async function acceptSessionRequestService({
       const subscribePlan = await getUserSubscriptionPlan({
         userId: sessionReq.userId,
       })
+      if(!subscribePlan){
+        throw new AppError(404,"There is no subscription for this user!")
+      }
       await isTeacherHasOverlappingSessions({
         teacherId,
         wantedSessionDates: sessionReq.sessionDates,

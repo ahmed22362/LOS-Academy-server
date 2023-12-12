@@ -57,10 +57,10 @@ const sessionReminderEmail: JobCallback = async function ({
 }) {
   try {
     await new Mail(studentEmail, studentName).sendSessionReminderMail({
-      sessionDate: sessionDate.toUTCString(),
+      sessionDate: (sessionDate instanceof Date)? sessionDate.toUTCString():new Date(sessionDate).toUTCString(),
     })
     await new Mail(teacherEmail, teacherName).sendSessionReminderMail({
-      sessionDate: sessionDate.toUTCString(),
+      sessionDate: (sessionDate instanceof Date)? sessionDate.toUTCString():new Date(sessionDate).toUTCString(),
     })
     logger.info("One time session reminder mail executed!")
     await deleteJobService({ id: jobId })
@@ -81,12 +81,13 @@ const sessionStartedEmail: JobCallback = async function ({
 }) {
   const session = await getOneSessionDetailsService({ sessionId })
   try {
+    const sessionDate = session.sessionDate
     if (!session.studentAttended) {
       await new Mail(
         session.SessionInfo.user!.email,
         session.SessionInfo.user!.name
       ).sendSessionStartReminderForUser({
-        sessionDate: session.sessionDate.toUTCString(),
+        sessionDate: (sessionDate instanceof Date)? sessionDate.toUTCString():new Date(sessionDate).toUTCString(),
       })
       await new Mail(
         process.env.ADMIN_EMAIL as string,
@@ -95,7 +96,7 @@ const sessionStartedEmail: JobCallback = async function ({
         userName: session.SessionInfo.user!.name,
         teacherName: session.SessionInfo.teacher!.name,
         whoMiss: RoleType.USER,
-        sessionDate: session.sessionDate.toUTCString(),
+        sessionDate: (sessionDate instanceof Date)? sessionDate.toUTCString():new Date(sessionDate).toUTCString(),
       })
     }
     if (!session.teacherAttended) {
@@ -103,7 +104,7 @@ const sessionStartedEmail: JobCallback = async function ({
         session.SessionInfo.teacher!.email,
         session.SessionInfo.teacher!.name
       ).sendSessionStartReminderForUser({
-        sessionDate: session.sessionDate.toUTCString(),
+        sessionDate: (sessionDate instanceof Date)? sessionDate.toUTCString():new Date(sessionDate).toUTCString(),
       })
       await new Mail(
         process.env.ADMIN_EMAIL as string,
@@ -112,7 +113,7 @@ const sessionStartedEmail: JobCallback = async function ({
         userName: session.SessionInfo.user!.name,
         teacherName: session.SessionInfo.teacher!.name,
         whoMiss: RoleType.TEACHER,
-        sessionDate: session.sessionDate.toUTCString(),
+        sessionDate: (sessionDate instanceof Date)? sessionDate.toUTCString():new Date(sessionDate).toUTCString(),
       })
     }
     logger.info("One time session started reminder mail executed!")
@@ -217,6 +218,7 @@ const sessionUpdateToFinished: JobCallback = async function ({
       }
     }
     await transaction.commit()
+    console.log(session.SessionInfo.userId!,session.SessionInfo.teacherId)
     emitSessionFinishedForUser(session.SessionInfo.userId!, updatedSession)
     emitSessionFinishedForUser(session.SessionInfo.teacherId!, updatedSession)
     await deleteJobService({ id: jobId })

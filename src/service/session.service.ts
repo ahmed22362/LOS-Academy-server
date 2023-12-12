@@ -848,14 +848,12 @@ export function canRescheduleSession(sessionDate: Date) {
 export function canAttendSession(sessionDate: Date) {
   const currentDate = new Date()
   const attendanceMargin = 15
-  if (currentDate.getTime() < sessionDate.getTime()) {
+  if(sessionDate.getTime()<=currentDate.getTime() && 
+  currentDate.getTime()<=sessionDate.getTime() + attendanceMargin * MS_IN_MINUTE){
+    return true
+  }else{
     return false
-  } else if (
-    sessionDate.getTime() + attendanceMargin * MS_IN_MINUTE >
-    currentDate.getTime()
-  ) {
-    return false
-  } else return true
+  }
 }
 export async function isTeacherHasOverlappingSessions({
   teacherId,
@@ -876,7 +874,6 @@ export async function isTeacherHasOverlappingSessions({
   teacherSessions.sort(
     (a, b) => a.sessionDate.getTime() - b.sessionDate.getTime()
   )
-
   // Check each wanted date
   for (let wantedDate of wantedSessionDates) {
     // Get wanted range for overlapping sessions

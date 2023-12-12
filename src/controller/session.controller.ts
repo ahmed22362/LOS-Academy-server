@@ -458,7 +458,8 @@ export const requestSessionReschedule = catchAsync(
             `Please provide date in the future not in the past!: Your Entered Date=> ${newSessionDate}`
           )
         )
-      } else if (
+      } 
+      else if (
         currentDate.getTime() + HOUR_IN_MILLISECONDS >
         newSessionDate.getTime()
       ) {
