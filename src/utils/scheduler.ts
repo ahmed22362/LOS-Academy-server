@@ -525,10 +525,11 @@ export async function scheduleUpdateSessionToOngoing({
     logger.info("in update session to ongoing schedule!")
     const jobName = getSessionOngoingJobName(sessionId)
     const callbackName = callbacksNames.UPDATE_SESSION_TO_ONGOING
+    const scheduleTimeWithErrorMargin =  new Date(sessionDate.getTime() - MS_IN_MINUTE/2)
     const dbJob = await createJobService({
       body: {
         name: jobName,
-        scheduledTime: new Date(sessionDate.getTime() - MS_IN_MINUTE),
+        scheduledTime:scheduleTimeWithErrorMargin,
         callbackName,
         data: {
           sessionId,
@@ -543,14 +544,14 @@ export async function scheduleUpdateSessionToOngoing({
         `Can't find callback with this name ${callbackName}`
       )
     }
-    schedule.scheduleJob(jobName, sessionDate, async () => {
+    schedule.scheduleJob(jobName, scheduleTimeWithErrorMargin, async () => {
       await sessionUpdateCallback({
         sessionId,
         jobId: dbJob.id,
       })
     })
   } catch (error: any) {
-    logger.error(`Error while session ongoing mail: ${error.message}`)
+    logger.error(`Error while session ongoing: ${error.message}`)
   }
 }
 export async function scheduleUpdateSessionToFinished({
@@ -568,11 +569,11 @@ export async function scheduleUpdateSessionToFinished({
     logger.info("in update session to finished schedule!")
     const jobName = getSessionFinishedJobName(sessionId)
     const callbackName = callbacksNames.UPDATE_SESSION_TO_FINISHED
-    const date = sessionDate.getTime() + sessionDuration * MS_IN_MINUTE
+    const scheduledTime =new Date(sessionDate.getTime() + sessionDuration * MS_IN_MINUTE)
     const dbJob = await createJobService({
       body: {
         name: jobName,
-        scheduledTime: new Date(date),
+        scheduledTime: scheduledTime,
         callbackName,
         data: {
           sessionId,
@@ -587,13 +588,13 @@ export async function scheduleUpdateSessionToFinished({
         `Can't find callback with this name ${callbackName}`
       )
     }
-    schedule.scheduleJob(jobName, new Date(date), async () => {
+    schedule.scheduleJob(jobName,scheduledTime, async () => {
       await sessionUpdateCallback({
         sessionId,
         jobId: dbJob.id,
       })
     })
   } catch (error: any) {
-    logger.error(`Error while session finished mail: ${error.message}`)
+    logger.error(`Error while update session to finished: ${error.message}`)
   }
 }

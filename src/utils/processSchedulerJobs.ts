@@ -16,6 +16,7 @@ export default async function rescheduleJobs() {
       callback({ ...job.data, jobId: job.id })
     })
   })
+  logger.info('jobs rescheduled successfully!')
 }
 export function getSessionReminderJobName(sessionId: number) {
   return `session #${sessionId} Reminder`
