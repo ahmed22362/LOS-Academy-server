@@ -1,95 +1,91 @@
-import { FindOptions, Transaction } from "sequelize"
-import User, { Gender, IUserInput } from "../db/models/user.model"
-import AppError from "../utils/AppError"
-import {
-  getSubscriptionBy,
-  getSubscriptionByUserId,
-} from "./subscription.service"
-import Plan from "../db/models/plan.model"
-import { SubscriptionStatus } from "../db/models/subscription.model"
-import { updateModelService } from "./factory.services"
-const { Op } = require("sequelize")
+import { FindOptions, Transaction } from "sequelize";
+import User, { Gender, IUserInput } from "../db/models/user.model";
+import AppError from "../utils/AppError";
+import { getSubscriptionByUserId } from "./subscription.service";
+import { SubscriptionStatus } from "../db/models/subscription.model";
+import { updateModelService } from "./factory.services";
+import { Op } from "sequelize";
 
 export interface UserResponse {
-  id: string
-  name: string
-  email: string
-  age: number
-  phone?: string
-  gender: Gender
-  availableFreeSession: number
-  remainSessions: number
-  verified: boolean
-  sessionPlaced: boolean
+  id: string;
+  name: string;
+  email: string;
+  age: number;
+  phone?: string;
+  gender: Gender;
+  availableFreeSession: number;
+  remainSessions: number;
+  verified: boolean;
+  sessionPlaced: boolean;
 }
 
 async function createUserService({
   userData,
 }: {
-  userData: IUserInput
+  userData: IUserInput;
 }): Promise<User | null> {
   try {
-    const newUser = await User.create(userData as any)
-    return newUser
+    const newUser = await User.create(userData as any);
+    return newUser;
   } catch (error: any) {
-    console.error("Error creating user:", error.message)
-    throw error
+    console.error("Error creating user:", error.message);
+    throw error;
   }
 }
 async function getUsersService({
   findOptions,
 }: {
-  findOptions?: FindOptions
+  findOptions?: FindOptions;
 }): Promise<User[] | null> {
   try {
-    const users = await User.findAll(findOptions)
-    return users
+    const users = await User.findAll(findOptions);
+    return users;
   } catch (error: any) {
-    console.error("Error getting all users:", error.message)
-    return null
+    console.error("Error getting all users:", error.message);
+    return null;
   }
 }
 async function getUserByIdService({
   userId,
   findOptions,
 }: {
-  userId: string
-  findOptions?: FindOptions
+  userId: string;
+  findOptions?: FindOptions;
 }): Promise<User> {
   try {
-    const user = await User.findByPk(userId, findOptions)
+    const user = await User.findByPk(userId, findOptions);
     if (!user) {
-      throw new AppError(404, "Can't find user with this id!")
+      throw new AppError(404, "Can't find user with this id!");
     }
-    return user
+    return user;
   } catch (error: any) {
-    console.error("Error retrieving user by ID:", error.message)
-    throw new AppError(400, `"Error retrieving user by ID:", ${error.message}`)
+    console.error("Error retrieving user by ID:", error.message);
+    throw new AppError(400, `"Error retrieving user by ID:", ${error.message}`);
   }
 }
 async function getUserByService({
   findOptions,
 }: {
-  findOptions?: FindOptions
+  findOptions?: FindOptions;
 }): Promise<User> {
   try {
-    const user = await User.findOne(findOptions)
+    const user = await User.findOne(findOptions);
     if (!user) {
-      throw new AppError(404, "Can't find user")
+      throw new AppError(404, "Can't find user");
     }
-    return user
+    return user;
   } catch (error: any) {
-    console.error("Error retrieving user by what you want:", error.message)
+    console.error("Error retrieving user by what you want:", error.message);
     throw new AppError(
       400,
-      `Error retrieving user by what you want:", ${error.message}`
-    )
+      `Error retrieving user by what you want:", ${error.message}`,
+    );
   }
 }
 async function getUserByResetTokenService({
   hashedToken,
 }: {
-  hashedToken: string
+  hashedToken: string;
 }): Promise<User | null> {
   try {
     const user = await User.findOne({
@@ -99,11 +95,11 @@ async function getUserByResetTokenService({
           [Op.gt]: new Date(),
         },
       },
-    })
-    return user
+    });
+    return user;
   } catch (error: any) {
-    console.error("Error retrieving user by email:", error.message)
-    return null
+    console.error("Error retrieving user by email:", error.message);
+    return null;
   }
 }
 async function updateUserService({
@@ -111,109 +107,109 @@ async function updateUserService({
   updatedData,
   transaction,
 }: {
-  userId: string
-  updatedData: object
-  transaction?: Transaction
+  userId: string;
+  updatedData: object;
+  transaction?: Transaction;
 }): Promise<User> {
   const user = await updateModelService({
     ModelClass: User,
     id: userId,
     updatedData,
-  })
-  return user as User
+  });
+  return user as User;
 }
 async function updateUserRemainSessionService({
   userId,
   amountOfSessions,
   transaction,
 }: {
-  userId: string
-  amountOfSessions: number
-  transaction?: Transaction
+  userId: string;
+  amountOfSessions: number;
+  transaction?: Transaction;
 }) {
-  const user = await getUserByIdService({ userId })
+  const user = await getUserByIdService({ userId });
   // to indicate if the user take placed his session or not so he can't placed again
   // make it false again because he payed so he has the apportunety to place session again
-  user.sessionPlaced = false
-  await user.save()
+  user.sessionPlaced = false;
+  await user.save();
   return await user.increment(
     { remainSessions: amountOfSessions },
-    { transaction }
-  )
+    { transaction },
+  );
 }
 async function deleteUserService({
   userId,
 }: {
-  userId: string
+  userId: string;
 }): Promise<boolean> {
   try {
-    const user = await User.findByPk(userId)
+    const user = await User.findByPk(userId);
     if (!user) {
-      return false
+      return false;
     }
 
     // Delete the user from the database
-    await user.destroy()
+    await user.destroy();
 
-    return true
+    return true;
   } catch (error: any) {
-    console.error("Error deleting user:", error.message)
-    return false
+    console.error("Error deleting user:", error.message);
+    return false;
   }
 }
 async function getUserSubscriptionPlan({
   userId,
   status,
 }: {
-  userId: string
-  status?: SubscriptionStatus
+  userId: string;
+  status?: SubscriptionStatus;
 }) {
-  const userSubscription =  getSubscriptionByUserId({userId})
-  return userSubscription
+  const userSubscription = getSubscriptionByUserId({ userId });
+  return userSubscription;
 }
 async function checkUserSubscription({ userId }: { userId: string }) {
-  const subscription = await getSubscriptionByUserId({ userId })
+  const subscription = await getSubscriptionByUserId({ userId });
   if (!subscription) {
     throw new AppError(
       400,
-      "user must subscribe to plan first to request paid session!"
-    )
+      "user must subscribe to plan first to request paid session!",
+    );
   }
   if (subscription.status !== SubscriptionStatus.ACTIVE) {
-    throw new AppError(403, "please activate your subscription first!")
+    throw new AppError(403, "please activate your subscription first!");
   }
-  return subscription
+  return subscription;
 }
 export async function sessionPerWeekEqualDates({
   userId,
   sessionDatesLength,
 }: {
-  userId: string
-  sessionDatesLength: number
+  userId: string;
+  sessionDatesLength: number;
 }) {
-  const subscribe = await getUserSubscriptionPlan({ userId })
-  if(!subscribe){
-    throw new AppError(404,"There is no subscription for this user!")
+  const subscribe = await getUserSubscriptionPlan({ userId });
+  if (!subscribe) {
+    throw new AppError(404, "There is no subscription for this user!");
   }
   if (subscribe.plan.sessionsPerWeek !== sessionDatesLength) {
     throw new AppError(
       400,
-      `must provide date for all sessions per week the sessions per week are: ${subscribe.plan.sessionsPerWeek} `
-    )
+      `must provide date for all sessions per week the sessions per week are: ${subscribe.plan.sessionsPerWeek} `,
+    );
   }
 }
 export async function checkIfUserPlacedHisSessionBefore({
   userId,
 }: {
-  userId: string
+  userId: string;
 }) {
-  const user = await getUserByIdService({ userId })
+  const user = await getUserByIdService({ userId });
   if (user.sessionPlaced) {
     throw new AppError(
       403,
       `Can't place user session user already placed his session for this month!
-       Wait for the next month or contact your admin`
-    )
+       Wait for the next month or contact your admin`,
+    );
   }
 }
 export {
@@ -227,4 +223,4 @@ export {
   getUserSubscriptionPlan,
   checkUserSubscription,
   updateUserRemainSessionService,
-}
+};

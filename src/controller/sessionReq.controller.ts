@@ -274,7 +274,6 @@ export const cancelSessionReq = catchAsync(
 export const getUserSessionReq = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.body
-    console.log(userId)
     const requests = await getUserSessionRequestService({ userId })
     res.status(200).json({ status: "success", data: requests })
   }

@@ -8,7 +8,6 @@ const userFileFilter = async (
 ) => {
   const ext = file.mimetype.split("/")[1]
   const accepted = ["pdf"]
-  console.log(file.mimetype, accepted.includes(ext))
   if (!accepted.includes(ext)) {
     cb(new AppError(400, `Only ["pdf"] files allowed`), false)
   } else {

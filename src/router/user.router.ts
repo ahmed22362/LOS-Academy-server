@@ -1,4 +1,4 @@
-import { Router } from "express"
+import { Router } from "express";
 import {
   checkJWT,
   createUser,
@@ -10,42 +10,41 @@ import {
   getMySubscription,
   getReceivedSessionRescheduleRequests,
   getUser,
-  
   getUserLatestSession,
-  
   getUserOngoingSession,
   getUserRemainSessions,
   getUserSessions,
+  getUserStatistics,
   getUserUpcomingSession,
   protectUser,
   setUserIdToParams,
   setUserOrTeacherId,
   updateUser,
   updateUserPlan,
-} from "../controller/user.controller"
-import authRouter from "./auth.router"
-import { getUserReports } from "../controller/report.controller"
+} from "../controller/user.controller";
+import authRouter from "./auth.router";
+import { getUserReports } from "../controller/report.controller";
 import {
   getUserSessionReq,
   updateSessionReqDate,
-} from "../controller/sessionReq.controller"
-import { protectTeacher } from "../controller/teacher.controller"
-import { restrictTo } from "../controller/auth.controller"
-import { RoleType } from "../db/models/teacher.model"
-import validate from "../middleware/validate"
-import { createUserSchema } from "../schema/user.schema"
+} from "../controller/sessionReq.controller";
+import { protectTeacher } from "../controller/teacher.controller";
+import { restrictTo } from "../controller/auth.controller";
+import { RoleType } from "../db/models/teacher.model";
+import validate from "../middleware/validate";
+import { createUserSchema } from "../schema/user.schema";
 import {
   cancelSessionRescheduleRequest,
   getUserContinueStatus,
   requestSessionReschedule,
   updateStatusSessionReschedule,
-} from "../controller/session.controller"
-import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
-import { cancelRequestSchema } from "../schema/session.schema"
+} from "../controller/session.controller";
+import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model";
+import { cancelRequestSchema } from "../schema/session.schema";
 
-const userRouter = Router()
+const userRouter = Router();
 
-userRouter.use("/auth", authRouter)
+userRouter.use("/auth", authRouter);
 
 userRouter
   .route("/")
@@ -53,112 +52,118 @@ userRouter
     protectTeacher,
     restrictTo(RoleType.ADMIN),
     validate(createUserSchema),
-    createUser
+    createUser,
   )
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllUsers)
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllUsers);
 userRouter
   .route("/me")
   .get(protectUser, setUserIdToParams, getUser)
-  .patch(protectUser, setUserIdToParams, updateUser)
+  .patch(protectUser, setUserIdToParams, updateUser);
 userRouter.get(
   "/mySubscription",
   protectUser,
   setUserOrTeacherId,
-  getMySubscription
-)
+  getMySubscription,
+);
 userRouter.get(
   "/mySessionReq",
   protectUser,
   setUserOrTeacherId,
-  getUserSessionReq
-)
+  getUserSessionReq,
+);
 userRouter
   .route("/requestReschedule")
   .post(protectUser, setUserOrTeacherId, requestSessionReschedule)
-  .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests)
+  .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests);
 userRouter
   .route("/cancelRescheduleRequest")
   .post(
     protectUser,
     setUserOrTeacherId,
     validate(cancelRequestSchema),
-    cancelSessionRescheduleRequest
-  )
+    cancelSessionRescheduleRequest,
+  );
 userRouter
   .route("/receivedRescheduleRequests")
-  .get(protectUser, setUserOrTeacherId, getReceivedSessionRescheduleRequests)
+  .get(protectUser, setUserOrTeacherId, getReceivedSessionRescheduleRequests);
 userRouter
   .route("/allRescheduleRequests")
-  .get(protectUser, setUserOrTeacherId, getAllSessionRescheduleRequests)
+  .get(protectUser, setUserOrTeacherId, getAllSessionRescheduleRequests);
 userRouter
   .route("/acceptReschedule")
   .post(
     protectUser,
     setUserOrTeacherId,
-    updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED)
-  )
+    updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED),
+  );
 userRouter
   .route("/declineReschedule")
   .post(
     protectUser,
     setUserOrTeacherId,
-    updateStatusSessionReschedule(RescheduleRequestStatus.DECLINED)
-  )
+    updateStatusSessionReschedule(RescheduleRequestStatus.DECLINED),
+  );
 userRouter.patch(
   "/mySessionReq/:id",
   protectUser,
   setUserOrTeacherId,
-  updateSessionReqDate
-)
+  updateSessionReqDate,
+);
 userRouter.get(
   "/myHistorySessions",
   protectUser,
   setUserOrTeacherId,
-  getMyHistorySessions
-)
+  getMyHistorySessions,
+);
 userRouter.get(
   "/remainSessions",
   protectUser,
   setUserOrTeacherId,
-  getUserRemainSessions
-)
+  getUserRemainSessions,
+);
 userRouter.get(
   "/upcomingSession",
   protectUser,
   setUserOrTeacherId,
-  getUserUpcomingSession
-)
+  getUserUpcomingSession,
+);
 userRouter.get(
   "/ongoingSession",
   protectUser,
   setUserOrTeacherId,
-  getUserOngoingSession
-)
+  getUserOngoingSession,
+);
 userRouter.get(
   "/myLatestSession",
   protectUser,
   setUserOrTeacherId,
-  getUserLatestSession
-)
-userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions)
-userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports)
+  getUserLatestSession,
+);
+userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports);
+userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions);
+userRouter.get(
+  "/myStatistics",
+  protectUser,
+  setUserOrTeacherId,
+  getUserStatistics,
+);
 userRouter.get(
   "/myContinueStatus",
   protectUser,
   setUserOrTeacherId,
-  getUserContinueStatus
-)
-userRouter.get("/updateMyPlan", protectUser, updateUserPlan)
-userRouter.get("/checkJWT", checkJWT)
+  getUserContinueStatus,
+);
+userRouter.get("/updateMyPlan", protectUser, updateUserPlan);
+userRouter.get("/checkJWT", checkJWT);
 userRouter
   .route("/:id")
   .patch(
     protectTeacher,
     restrictTo(RoleType.ADMIN),
     setUserOrTeacherId,
-    updateUser
+    updateUser,
   )
   .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteUser)
-  .get(protectTeacher, getUser)
+  .get(protectTeacher, getUser);
 
-export default userRouter
+export default userRouter;
