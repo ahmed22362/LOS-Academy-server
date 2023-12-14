@@ -10,6 +10,7 @@ import dotenv from "dotenv"
 import {
   UserResponse,
   createUserService,
+  getUserByResetTokenService,
   getUserByService,
   updateUserService,
 } from "../service/user.service"
@@ -265,9 +266,7 @@ export const resetPassword = catchAsync(
       .createHash("sha256")
       .update(token)
       .digest("hex")
-    const user = await getUserByService({
-      findOptions: { where: { passwordResetCode:hashedToken } },
-    })
+    const user = await getUserByResetTokenService({hashedToken})
     if (!user) {
       return res.render("resetPasswordError", { error: "Link is not valid!" })
     }
