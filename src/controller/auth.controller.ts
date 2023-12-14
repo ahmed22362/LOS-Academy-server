@@ -266,7 +266,7 @@ export const resetPassword = catchAsync(
       .update(token)
       .digest("hex")
     const user = await getUserByService({
-      findOptions: { where: { hashedToken } },
+      findOptions: { where: { passwordResetCode:hashedToken } },
     })
     if (!user) {
       return res.render("resetPasswordError", { error: "Link is not valid!" })
