@@ -5,6 +5,7 @@ import {
   WhereOptions,
   fn,
   literal,
+  col,
 } from "sequelize";
 import Session, { SessionStatus } from "../db/models/session.model";
 import { SessionType } from "../db/models/session.model";
@@ -28,8 +29,6 @@ import {
   scheduleUpdateSessionToOngoing,
 } from "../utils/scheduler";
 import { THREE_MINUTES_IN_MILLISECONDS } from "../controller/session.controller";
-import { sequelize } from "../db/sequelize";
-import { Sequelize } from "sequelize-typescript";
 
 export interface IInfoBody {
   userId: string;
@@ -847,10 +846,7 @@ export async function getUserSessionStats({ userId }: { userId: string }) {
   const sessionInfoIds = sessionInfo.map((info) => info.id);
 
   const sessionCounts = (await Session.findAll({
-    attributes: [
-      "status",
-      [Sequelize.fn("COUNT", Sequelize.col("status")), "count"],
-    ],
+    attributes: ["status", [fn("COUNT", col("status")), "count"]],
     where: {
       sessionInfoId: {
         [Op.in]: sessionInfoIds,

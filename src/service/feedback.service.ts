@@ -1,80 +1,99 @@
-import { getUserAttr } from "../controller/user.controller"
-import FeedBack from "../db/models/feedback.model"
-import User from "../db/models/user.model"
-import AppError from "../utils/AppError"
+import { WhereOptions } from "sequelize";
+import { getUserAttr } from "../controller/user.controller";
+import FeedBack from "../db/models/feedback.model";
+import User from "../db/models/user.model";
+import AppError from "../utils/AppError";
 import {
   createModelService,
   deleteModelService,
   getModelByIdService,
   getModelsService,
   updateModelService,
-} from "./factory.services"
+} from "./factory.services";
 
 interface createFeedBackBody {
-  userId: string
-  feedback: string
+  userId: string;
+  feedback: string;
 }
 export async function createFeedBackService({
   body,
 }: {
-  body: createFeedBackBody
+  body: createFeedBackBody;
 }) {
   try {
     const feedback = await createModelService({
       ModelClass: FeedBack,
       data: body,
-    })
+    });
     if (!feedback) {
-      throw new AppError(400, "Can't Create feedback!")
+      throw new AppError(400, "Can't Create feedback!");
     }
-    return feedback
+    return feedback;
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While creating product or feedback!: ${error.message}`
-    )
+      `Error While creating product or feedback!: ${error.message}`,
+    );
   }
 }
 export async function getAllFeedBacksService({
   page,
   limit,
+  show,
 }: {
-  page?: number
-  limit?: number
+  page?: number;
+  limit?: number;
+  show?: boolean;
 }) {
   try {
+    let where: WhereOptions = {};
+    if (show) {
+      where.show = show;
+    }
     const feedbacks = await getModelsService({
       ModelClass: FeedBack,
       page,
       limit,
       findOptions: {
         include: [{ model: User, attributes: getUserAttr }],
-        where: { show: true },
+        where,
       },
-    })
+    });
     if (!feedbacks) {
-      throw new AppError(400, `Error while retrieving feedback`)
+      throw new AppError(400, `Error while retrieving feedback`);
     }
-    return feedbacks
+    return <FeedBack[]>feedbacks;
   } catch (error: any) {
-    throw new AppError(400, `Error while retrieving feedback: ${error.message}`)
+    throw new AppError(
+      400,
+      `Error while retrieving feedback: ${error.message}`,
+    );
   }
+}
+export async function getAllShownFeedBacksService({
+  page,
+  limit,
+}: {
+  page?: number;
+  limit?: number;
+}) {
+  return await getAllFeedBacksService({ page, limit });
 }
 export async function updateFeedBackService({
   id,
   updatedData,
 }: {
-  id: number
-  updatedData: any
+  id: number;
+  updatedData: any;
 }) {
   return (await updateModelService({
     ModelClass: FeedBack,
     id,
     updatedData,
-  })) as FeedBack
+  })) as FeedBack;
 }
 export async function deleteFeedBackService({ id }: { id: number }) {
-  return await deleteModelService({ ModelClass: FeedBack, id: id })
+  return await deleteModelService({ ModelClass: FeedBack, id: id });
 }
 export async function getFeedBackService({ id }: { id: number }) {
   return (await getModelByIdService({
@@ -83,5 +102,5 @@ export async function getFeedBackService({ id }: { id: number }) {
     findOptions: {
       include: { model: User, attributes: getUserAttr },
     },
-  })) as FeedBack
+  })) as FeedBack;
 }
