@@ -863,7 +863,6 @@ export const userContinueWithTeacher = catchAsync(
     const sessionInfo = await getSessionInfoService({
       id: session.sessionInfoId,
     });
-    console.log(sessionInfo.toJSON());
     if (typeof sessionInfo.willContinue === "boolean") {
       return next(new AppError(400, "already responded to!"));
     }
