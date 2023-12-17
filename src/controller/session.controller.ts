@@ -919,6 +919,11 @@ export const userPlaceHisSessions = catchAsync(
       sessionDatesLength: sessionDates.length,
     });
 
+    await isTeacherHasOverlappingSessions({
+      teacherId: sessionInfo.teacherId!,
+      wantedSessionDates: sessionDates,
+      wantedSessionDuration: subscription.plan.sessionDuration,
+    });
     const transaction = await sequelize.transaction();
     try {
       await updateTeacherBalance({
