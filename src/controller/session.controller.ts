@@ -9,6 +9,7 @@ import {
   getAllSessionsServiceByStatus,
   getOneSessionDetailsService,
   getOneSessionService,
+  getUserLatestNotPendingSessionService,
   isSessionAfterItsTimeRange,
   isSessionWithinTimeRange,
   isTeacherHasOverlappingSessions,
@@ -975,8 +976,12 @@ export const userPlaceHisSessions = catchAsync(
 export const getUserContinueStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.body;
+    const session = await getUserLatestNotPendingSessionService({ userId });
+    if (!session) {
+      return next(new AppError(400, "Can't get this user sessions"));
+    }
     const sessionInfo = await getOneSessionInfoServiceBy({
-      where: { userId },
+      where: { id: session[0].sessionInfoId },
       include: [
         { model: User, attributes: getUserAttr },
         { model: Teacher, attributes: getTeacherAtt },
