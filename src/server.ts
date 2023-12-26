@@ -26,7 +26,7 @@ const io = setupSocket(server);
 server.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
   await connectDB();
-  await rescheduleJobs();
+  rescheduleJobs();
   cleanupJobsWeekly();
   routes(app);
 });

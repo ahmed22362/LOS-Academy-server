@@ -17,10 +17,13 @@ import feedBackRouter from "./router/feedback.router"
 import { getSocketByUserId } from "./connect/socket"
 import { verifyToken } from "./utils/jwt"
 import catchAsync from "./utils/catchAsync"
+import swaggerJsdoc from "../swagger-output.json"
+import swaggerUi from "swagger-ui-express"
 
 const PRE_API_V1: string = "/api/v1"
 
 export default function routes(app: Express) {
+  app.get('/api-doc',swaggerUi.serve,swaggerUi.setup(swaggerJsdoc))
   app.get("/", (req, res) => {
     res.send(
       `<h1 style="text-align:center; padding-top:100px" >LOS Academy Up And Running🚀</h1>`

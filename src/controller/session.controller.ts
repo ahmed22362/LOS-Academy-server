@@ -982,7 +982,7 @@ export const getUserContinueStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.body;
     const session = await getUserLatestNotPendingSessionService({ userId });
-    if (!session) {
+    if (!session || session.length == 0) {
       return next(new AppError(400, "Can't get this user sessions"));
     }
     const sessionInfo = await getOneSessionInfoServiceBy({
