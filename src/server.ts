@@ -7,6 +7,7 @@ import rescheduleJobs, {
 } from "./utils/processSchedulerJobs";
 import { createServer } from "node:http";
 import { setupSocket } from "./connect/socket";
+import ZoomService from "./connect/zoom";
 const PORT = process.env.PORT || 3000;
 
 process.on("uncaughtException", (err) => {
@@ -29,4 +30,10 @@ server.listen(PORT, async () => {
   rescheduleJobs();
   cleanupJobsWeekly();
   routes(app);
+  // const zoom = await new ZoomService().createMeeting({
+  //   topic: "Session",
+  //   duration: 10,
+  //   startDateTime: new Date(),
+  // });
+  // console.log(zoom);
 });

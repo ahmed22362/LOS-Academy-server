@@ -1,49 +1,44 @@
-import schedule from "node-schedule"
-import Mail from "../connect/sendMail"
-import logger from "./logger"
-import { getOneSessionDetailsService } from "../service/session.service"
-import {
-  getOneRescheduleRequestService,
-  updateRescheduleRequestService,
-} from "../service/rescheduleReq.service"
-import { RoleType } from "../db/models/teacher.model"
-import { createJobService } from "../service/scheduleJob.service"
-import jobCallbacks, { callbacksNames } from "./schedulerJobsCallbacks"
-import AppError from "./AppError"
+import schedule from "node-schedule";
+import Mail from "../connect/sendMail";
+import logger from "./logger";
+import { getOneSessionDetailsService } from "../service/session.service";
+import { getOneRescheduleRequestService } from "../service/rescheduleReq.service";
+import { RoleType } from "../db/models/teacher.model";
+import { createJobService } from "../service/scheduleJob.service";
+import jobCallbacks, { callbacksNames } from "./schedulerJobsCallbacks";
+import AppError from "./AppError";
 import {
   getRescheduleRequestJobName,
   getSessionFinishedJobName,
   getSessionOngoingJobName,
   getSessionReminderJobName,
   getSessionStartedJobName,
-} from "./processSchedulerJobs"
-import { log } from "console"
-import ScheduleJob from "../db/models/scheduleJob.model"
-import { Transaction } from "sequelize"
-import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
+} from "./processSchedulerJobs";
+import ScheduleJob from "../db/models/scheduleJob.model";
+import { Transaction } from "sequelize";
 
-const MS_IN_MINUTE = 1000 * 60
+const MS_IN_MINUTE = 1000 * 60;
 
 export function scheduleVerifyMailJob({
   to,
   name,
   link,
 }: {
-  to: string
-  name: string
-  link: string
+  to: string;
+  name: string;
+  link: string;
 }) {
   try {
-    const mail = new Mail(to, name)
+    const mail = new Mail(to, name);
 
-    logger.info("in send verify mail schedule!")
-    const date = new Date(new Date().getTime() + 1000)
+    logger.info("in send verify mail schedule!");
+    const date = new Date(new Date().getTime() + 1000);
     schedule.scheduleJob(date, async () => {
-      await mail.sendVerifyMail({ link })
-      logger.info("One time send verify mail executed!")
-    })
+      await mail.sendVerifyMail({ link });
+      logger.info("One time send verify mail executed!");
+    });
   } catch (error: any) {
-    logger.error(`Error while send verify mail: ${error.message}`)
+    logger.error(`Error while send verify mail: ${error.message}`);
   }
 }
 export function scheduleSuccessSubscriptionMailJob({
@@ -53,45 +48,45 @@ export function scheduleSuccessSubscriptionMailJob({
   subscriptionCycle,
   subscriptionTitle,
 }: {
-  to: string
-  name: string
-  subscriptionTitle: string
-  subscriptionAmount: number
-  subscriptionCycle: string
+  to: string;
+  name: string;
+  subscriptionTitle: string;
+  subscriptionAmount: number;
+  subscriptionCycle: string;
 }) {
   try {
-    const mail = new Mail(to, name)
-    logger.info("in send subscription success mail schedule!")
-    const date = new Date(new Date().getTime() + 1000)
+    const mail = new Mail(to, name);
+    logger.info("in send subscription success mail schedule!");
+    const date = new Date(new Date().getTime() + 1000);
     schedule.scheduleJob(date, async () => {
       await mail.sendSubscriptionCreateMail({
         subscriptionAmount,
         subscriptionCycle,
         subscriptionTitle,
-      })
-      logger.info("One time send subscription success mail executed!")
-    })
+      });
+      logger.info("One time send subscription success mail executed!");
+    });
   } catch (error: any) {
-    logger.error(`Error while subscription success mail: ${error.message}`)
+    logger.error(`Error while subscription success mail: ${error.message}`);
   }
 }
 export function scheduleSubscriptionCanceledMailJob({
   to,
   name,
 }: {
-  to: string
-  name: string
+  to: string;
+  name: string;
 }) {
   try {
-    const mail = new Mail(to, name)
-    logger.info("in send subscription cancelled mail schedule!")
-    const date = new Date(new Date().getTime() + 1000)
+    const mail = new Mail(to, name);
+    logger.info("in send subscription cancelled mail schedule!");
+    const date = new Date(new Date().getTime() + 1000);
     schedule.scheduleJob(date, async () => {
-      await mail.sendSubscriptionCanceledMail()
-      logger.info("One time send subscription cancelled executed!")
-    })
+      await mail.sendSubscriptionCanceledMail();
+      logger.info("One time send subscription cancelled executed!");
+    });
   } catch (error: any) {
-    logger.error(`Error while subscription cancelled mail: ${error.message}`)
+    logger.error(`Error while subscription cancelled mail: ${error.message}`);
   }
 }
 export function scheduleSessionPlacedMailJob({
@@ -101,26 +96,26 @@ export function scheduleSessionPlacedMailJob({
   teacherName,
   sessionDate,
 }: {
-  userEmail: string
-  userName: string
-  teacherEmail: string
-  teacherName: string
-  sessionDate: Date
+  userEmail: string;
+  userName: string;
+  teacherEmail: string;
+  teacherName: string;
+  sessionDate: Date;
 }) {
   try {
-    logger.info("in send session placed mail schedule!")
-    const date = new Date(new Date().getTime() + 1000)
+    logger.info("in send session placed mail schedule!");
+    const date = new Date(new Date().getTime() + 1000);
     schedule.scheduleJob(`Session`, date, async () => {
       await new Mail(userEmail, userName).sendSessionPlacesMail({
         sessionDate: sessionDate.toUTCString(),
-      })
+      });
       await new Mail(teacherEmail, teacherName).sendSessionPlacesMail({
         sessionDate: sessionDate.toUTCString(),
-      })
-      logger.info("One time session placed mail executed!")
-    })
+      });
+      logger.info("One time session placed mail executed!");
+    });
   } catch (error: any) {
-    logger.error(`Error while session placed mail: ${error.message}`)
+    logger.error(`Error while session placed mail: ${error.message}`);
   }
 }
 export function scheduleSessionRescheduleRequestMailJob({
@@ -129,42 +124,42 @@ export function scheduleSessionRescheduleRequestMailJob({
   newDatesOptions,
   requestedBy,
 }: {
-  sessionId: number
-  sessionOldDate: Date
-  newDatesOptions: Date[]
-  requestedBy: RoleType
+  sessionId: number;
+  sessionOldDate: Date;
+  newDatesOptions: Date[];
+  requestedBy: RoleType;
 }) {
   try {
-    logger.info("in session reschedule request mail schedule!")
-    const date = new Date(new Date().getTime() + 1000)
-    let email: string, name: string, receiverName: string
+    logger.info("in session reschedule request mail schedule!");
+    const date = new Date(new Date().getTime() + 1000);
+    let email: string, name: string, receiverName: string;
     const job = schedule.scheduleJob(
       `Reschedule Session #${sessionId}`,
       date,
       async () => {
-        const session = await getOneSessionDetailsService({ sessionId })
+        const session = await getOneSessionDetailsService({ sessionId });
         if (requestedBy === RoleType.USER) {
-          email = session.SessionInfo.teacher!.email
-          receiverName = session.SessionInfo.teacher!.name
-          name = session.SessionInfo.user!.name
+          email = session.SessionInfo.teacher!.email;
+          receiverName = session.SessionInfo.teacher!.name;
+          name = session.SessionInfo.user!.name;
         }
         if (requestedBy === RoleType.TEACHER) {
-          email = session.SessionInfo.user!.email
-          receiverName = session.SessionInfo.user!.name
-          name = session.SessionInfo.teacher!.name
+          email = session.SessionInfo.user!.email;
+          receiverName = session.SessionInfo.user!.name;
+          name = session.SessionInfo.teacher!.name;
         }
         await new Mail(email, name).sendSessionRescheduleRequestMail({
           receiverName,
           sessionOldDate,
           newDatesOptions,
-        })
-        logger.info("One time session reschedule request mail executed!")
-      }
-    )
+        });
+        logger.info("One time session reschedule request mail executed!");
+      },
+    );
   } catch (error: any) {
     logger.error(
-      `Error while session reschedule request mail: ${error.message}`
-    )
+      `Error while session reschedule request mail: ${error.message}`,
+    );
   }
 }
 export function scheduleSessionRescheduleRequestUpdateMailJob({
@@ -172,34 +167,34 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
   status,
   requestedBy,
 }: {
-  rescheduleRequestId: number
+  rescheduleRequestId: number;
 
-  status: string
-  requestedBy: RoleType
+  status: string;
+  requestedBy: RoleType;
 }) {
   try {
-    logger.info("in session reschedule request status update mail schedule!")
-    const date = new Date(new Date().getTime() + 1000)
-    let email: string, name: string, senderName: string
+    logger.info("in session reschedule request status update mail schedule!");
+    const date = new Date(new Date().getTime() + 1000);
+    let email: string, name: string, senderName: string;
     const job = schedule.scheduleJob(
       `Reschedule Request ${rescheduleRequestId}`,
       date,
       async () => {
         const rescheduleRequest = await getOneRescheduleRequestService({
           id: rescheduleRequestId,
-        })
+        });
         const session = await getOneSessionDetailsService({
           sessionId: rescheduleRequest.sessionId,
-        })
+        });
         if (requestedBy === RoleType.TEACHER) {
-          email = session.SessionInfo.user!.email
-          name = session.SessionInfo.user!.name
-          senderName = session.SessionInfo.teacher!.name
+          email = session.SessionInfo.user!.email;
+          name = session.SessionInfo.user!.name;
+          senderName = session.SessionInfo.teacher!.name;
         }
         if (requestedBy === RoleType.USER) {
-          email = session.SessionInfo.teacher!.email
-          name = session.SessionInfo.teacher!.name
-          senderName = session.SessionInfo.user!.name
+          email = session.SessionInfo.teacher!.email;
+          name = session.SessionInfo.teacher!.name;
+          senderName = session.SessionInfo.user!.name;
         }
         await new Mail(email, name).sendSessionRescheduleRequestUpdateMail({
           status,
@@ -207,36 +202,36 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
           sessionOldDate: session.sessionDate,
           newDatesOptions: rescheduleRequest.newDatesOptions,
           sessionNewDate: session.sessionDate,
-        })
-        logger.info("One time session reminder mail executed!")
-      }
-    )
+        });
+        logger.info("One time session reminder mail executed!");
+      },
+    );
   } catch (error: any) {
     logger.error(
-      `Error while session reschedule request status update mail: ${error.message}`
-    )
+      `Error while session reschedule request status update mail: ${error.message}`,
+    );
   }
 }
 export function schedulePayoutRequestMailJob({
   teacherName,
   amount,
 }: {
-  teacherName: string
-  amount: number
+  teacherName: string;
+  amount: number;
 }) {
   try {
-    logger.info("in payout request mail schedule!")
-    const date = new Date(new Date().getTime() + 1000)
+    logger.info("in payout request mail schedule!");
+    const date = new Date(new Date().getTime() + 1000);
 
     const job = schedule.scheduleJob(date, async () => {
       await new Mail(
         process.env.ADMIN_EMAIL as string,
-        "admin"
-      ).sendPayoutRequestMail({ teacherName, amount })
-      logger.info("One time payout request mail executed!")
-    })
+        "admin",
+      ).sendPayoutRequestMail({ teacherName, amount });
+      logger.info("One time payout request mail executed!");
+    });
   } catch (error: any) {
-    logger.error(`Error while payout request mail: ${error.message}`)
+    logger.error(`Error while payout request mail: ${error.message}`);
   }
 }
 export function schedulePayoutStatusUpdateMailJob({
@@ -244,25 +239,25 @@ export function schedulePayoutStatusUpdateMailJob({
   teacherEmail,
   status,
 }: {
-  teacherEmail: string
-  teacherName: string
-  status: string
+  teacherEmail: string;
+  teacherName: string;
+  status: string;
 }) {
   try {
-    logger.info("in payout status updated mail schedule!")
-    const date = new Date(new Date().getTime() + 1000)
+    logger.info("in payout status updated mail schedule!");
+    const date = new Date(new Date().getTime() + 1000);
 
     const job = schedule.scheduleJob(date, async () => {
       await new Mail(
         teacherEmail,
-        teacherName
+        teacherName,
       ).sendPayoutRequestStatusUpdatedMail({
         status,
-      })
-      logger.info("One payout status updated mail executed!")
-    })
+      });
+      logger.info("One payout status updated mail executed!");
+    });
   } catch (error: any) {
-    logger.error(`Error while payout status updated mail: ${error.message}`)
+    logger.error(`Error while payout status updated mail: ${error.message}`);
   }
 }
 // here if there is no response from both side update it to be no response
@@ -271,15 +266,15 @@ export async function scheduleSessionRescheduleRequestStatus({
   sessionDate,
   transaction,
 }: {
-  rescheduleRequestId: number
-  sessionDate: Date
-  transaction?: Transaction
+  rescheduleRequestId: number;
+  sessionDate: Date;
+  transaction?: Transaction;
 }) {
-  logger.info("in Reschedule Session update schedule!")
-  const TEN_MIN_IN_MS = 10 * MS_IN_MINUTE
-  const jobDate = new Date(sessionDate.getTime() - TEN_MIN_IN_MS)
-  const jobName = getRescheduleRequestJobName(rescheduleRequestId)
-  const callbackName = callbacksNames.UPDATE_SESSION_RESCHEDULE_STATUS
+  logger.info("in Reschedule Session update schedule!");
+  const TEN_MIN_IN_MS = 10 * MS_IN_MINUTE;
+  const jobDate = new Date(sessionDate.getTime() - TEN_MIN_IN_MS);
+  const jobName = getRescheduleRequestJobName(rescheduleRequestId);
+  const callbackName = callbacksNames.UPDATE_SESSION_RESCHEDULE_STATUS;
   try {
     const dbJob = await createJobService({
       body: {
@@ -292,19 +287,19 @@ export async function scheduleSessionRescheduleRequestStatus({
         },
       },
       transaction,
-    })
-    const rescheduleUpdateCallback = jobCallbacks.get(callbackName)
+    });
+    const rescheduleUpdateCallback = jobCallbacks.get(callbackName);
     if (!rescheduleUpdateCallback) {
       throw new AppError(
         404,
-        `Can't find callback with this name ${callbackName}`
-      )
+        `Can't find callback with this name ${callbackName}`,
+      );
     }
     schedule.scheduleJob(jobName, jobDate, async () => {
-      await rescheduleUpdateCallback({ rescheduleRequestId, jobId: dbJob.id })
-    })
+      await rescheduleUpdateCallback({ rescheduleRequestId, jobId: dbJob.id });
+    });
   } catch (error: any) {
-    logger.error(`Error while session reminder mail: ${error.message}`)
+    logger.error(`Error while session reminder mail: ${error.message}`);
   }
 }
 
@@ -314,40 +309,40 @@ export async function rescheduleSessionJobs({
   sessionDuration,
   transaction,
 }: {
-  sessionId: number
-  newDate: Date
-  sessionDuration: number
-  transaction?: Transaction
+  sessionId: number;
+  newDate: Date;
+  sessionDuration: number;
+  transaction?: Transaction;
 }) {
-  const jobReminderName = getSessionReminderJobName(sessionId)
-  const jobStartedName = getSessionStartedJobName(sessionId)
-  const jobOngoingName = getSessionOngoingJobName(sessionId)
-  const jobFinishedName = getSessionFinishedJobName(sessionId)
-  const ThirtyMinInMS = 30 * MS_IN_MINUTE
-  const ThreeMinInMS = 4 * MS_IN_MINUTE
-  const jobs = schedule.scheduledJobs
-  const reminderJob = jobs[jobReminderName]
-  const sessionStartedJob = jobs[jobStartedName]
-  const sessionOngoingJob = jobs[jobOngoingName]
-  const sessionFinishedJob = jobs[jobFinishedName]
-  const reminderNewDate = new Date(newDate.getTime() - ThirtyMinInMS)
-  const startedNewDate = new Date(newDate.getTime() + ThreeMinInMS)
-  const ongoingNewDate = new Date(newDate.getTime() - MS_IN_MINUTE)
+  const jobReminderName = getSessionReminderJobName(sessionId);
+  const jobStartedName = getSessionStartedJobName(sessionId);
+  const jobOngoingName = getSessionOngoingJobName(sessionId);
+  const jobFinishedName = getSessionFinishedJobName(sessionId);
+  const ThirtyMinInMS = 30 * MS_IN_MINUTE;
+  const ThreeMinInMS = 4 * MS_IN_MINUTE;
+  const jobs = schedule.scheduledJobs;
+  const reminderJob = jobs[jobReminderName];
+  const sessionStartedJob = jobs[jobStartedName];
+  const sessionOngoingJob = jobs[jobOngoingName];
+  const sessionFinishedJob = jobs[jobFinishedName];
+  const reminderNewDate = new Date(newDate.getTime() - ThirtyMinInMS);
+  const startedNewDate = new Date(newDate.getTime() + ThreeMinInMS);
+  const ongoingNewDate = new Date(newDate.getTime() - MS_IN_MINUTE);
   const finishedNewDate = new Date(
-    newDate.getTime() + sessionDuration * MS_IN_MINUTE
-  )
+    newDate.getTime() + sessionDuration * MS_IN_MINUTE,
+  );
   try {
-    const session = await getOneSessionDetailsService({ sessionId })
+    const session = await getOneSessionDetailsService({ sessionId });
     if (reminderJob) {
       reminderJob.reschedule(reminderNewDate.getTime())
         ? logger.info("reschedule reminderJob success")
-        : logger.error("reschedule reminderJob fail")
+        : logger.error("reschedule reminderJob fail");
       await ScheduleJob.update(
         { scheduledTime: startedNewDate },
-        { where: { name: jobReminderName }, transaction }
-      )
+        { where: { name: jobReminderName }, transaction },
+      );
     } else {
-      logger.info("there is no reminder job! and created one! ")
+      logger.info("there is no reminder job! and created one! ");
       await scheduleSessionReminderMailJob({
         sessionDate: newDate,
         sessionId,
@@ -356,58 +351,58 @@ export async function rescheduleSessionJobs({
         teacherName: session.SessionInfo.teacher!.name,
         teacherEmail: session.SessionInfo.teacher!.email,
         transaction,
-      })
+      });
     }
     if (sessionStartedJob) {
       sessionStartedJob.reschedule(startedNewDate.getTime())
         ? logger.info("reschedule sessionStartedJob success")
-        : logger.error("reschedule sessionStartedJob fail")
+        : logger.error("reschedule sessionStartedJob fail");
       await ScheduleJob.update(
         { scheduledTime: startedNewDate },
-        { where: { name: jobStartedName }, transaction }
-      )
+        { where: { name: jobStartedName }, transaction },
+      );
     } else {
-      logger.info("there is no session started job! and created one! ")
+      logger.info("there is no session started job! and created one! ");
       await scheduleSessionStartReminderMailJob({
         sessionId,
         sessionDate: newDate,
         transaction,
-      })
+      });
     }
     if (sessionOngoingJob) {
       sessionOngoingJob.reschedule(ongoingNewDate.getTime())
         ? logger.info("reschedule sessionOngoingJob success")
-        : logger.error("reschedule sessionOngoingJob fail")
+        : logger.error("reschedule sessionOngoingJob fail");
       await ScheduleJob.update(
         { scheduledTime: ongoingNewDate },
-        { where: { name: jobOngoingName }, transaction }
-      )
+        { where: { name: jobOngoingName }, transaction },
+      );
     } else {
-      logger.info("there is no updated session to ongoing! and created one! ")
+      logger.info("there is no updated session to ongoing! and created one! ");
       await scheduleUpdateSessionToOngoing({
         sessionId,
         sessionDate: newDate,
         transaction,
-      })
+      });
     }
     if (sessionFinishedJob) {
       sessionFinishedJob.reschedule(finishedNewDate.getTime())
         ? logger.info("reschedule sessionFinishedJob success")
-        : logger.error("reschedule sessionFinishedJob fail")
+        : logger.error("reschedule sessionFinishedJob fail");
       await ScheduleJob.update(
         { scheduledTime: finishedNewDate },
-        { where: { name: jobFinishedName }, transaction }
-      )
+        { where: { name: jobFinishedName }, transaction },
+      );
     } else {
       await scheduleUpdateSessionToFinished({
         sessionId,
         sessionDate: newDate,
         sessionDuration: session.sessionDuration,
         transaction,
-      })
+      });
     }
   } catch (error: any) {
-    throw new AppError(400, `Error While rescheduling: ${error.message}`)
+    throw new AppError(400, `Error While rescheduling: ${error.message}`);
   }
 }
 export async function scheduleSessionReminderMailJob({
@@ -419,24 +414,24 @@ export async function scheduleSessionReminderMailJob({
   teacherEmail,
   transaction,
 }: {
-  sessionDate: Date
-  sessionId: number
-  studentName: string
-  studentEmail: string
-  teacherName: string
-  teacherEmail: string
-  transaction?: Transaction
+  sessionDate: Date;
+  sessionId: number;
+  studentName: string;
+  studentEmail: string;
+  teacherName: string;
+  teacherEmail: string;
+  transaction?: Transaction;
 }) {
   try {
-    logger.info("in session reminder mail schedule!")
-    const ThirtyMinInMS = 30 * MS_IN_MINUTE
-    const date = new Date(sessionDate.getTime() - ThirtyMinInMS)
-    const currentDate = new Date()
+    logger.info("in session reminder mail schedule!");
+    const OFFSET_REMINDER = 40 * MS_IN_MINUTE;
+    const date = new Date(sessionDate.getTime() - OFFSET_REMINDER);
+    const currentDate = new Date();
     if (currentDate > date) {
-      return
+      return;
     }
-    const jobName = getSessionReminderJobName(sessionId)
-    const callbackName = callbacksNames.SESSION_REMINDER_MAIL
+    const jobName = getSessionReminderJobName(sessionId);
+    const callbackName = callbacksNames.SESSION_REMINDER_MAIL;
     const dbJob = await createJobService({
       body: {
         name: jobName,
@@ -451,13 +446,13 @@ export async function scheduleSessionReminderMailJob({
         },
       },
       transaction,
-    })
-    const sessionReminderCallback = jobCallbacks.get(callbackName)
+    });
+    const sessionReminderCallback = jobCallbacks.get(callbackName);
     if (!sessionReminderCallback) {
       throw new AppError(
         404,
-        `Can't find callback with this name ${callbackName}`
-      )
+        `Can't find callback with this name ${callbackName}`,
+      );
     }
     schedule.scheduleJob(jobName, date, async () => {
       await sessionReminderCallback({
@@ -467,10 +462,10 @@ export async function scheduleSessionReminderMailJob({
         teacherName,
         teacherEmail,
         jobId: dbJob.id,
-      })
-    })
+      });
+    });
   } catch (error: any) {
-    logger.error(`Error while session reminder mail: ${error.message}`)
+    logger.error(`Error while session reminder mail: ${error.message}`);
   }
 }
 export async function scheduleSessionStartReminderMailJob({
@@ -478,17 +473,17 @@ export async function scheduleSessionStartReminderMailJob({
   sessionDate,
   transaction,
 }: {
-  sessionId: number
-  sessionDate: Date
-  transaction?: Transaction
+  sessionId: number;
+  sessionDate: Date;
+  transaction?: Transaction;
 }) {
   try {
-    logger.info("in session started mail schedule!")
+    logger.info("in session started mail schedule!");
     // add 4 mins to the session start to check if the user attend
-    const ThreeMinInMS = 3 * MS_IN_MINUTE
-    const date = new Date(sessionDate.getTime() + ThreeMinInMS)
-    const jobName = getSessionStartedJobName(sessionId)
-    const callbackName = callbacksNames.SESSION_STARTED_MAIL
+    const ThreeMinInMS = 3 * MS_IN_MINUTE;
+    const date = new Date(sessionDate.getTime() + ThreeMinInMS);
+    const jobName = getSessionStartedJobName(sessionId);
+    const callbackName = callbacksNames.SESSION_STARTED_MAIL;
     const dbJob = await createJobService({
       body: {
         name: jobName,
@@ -497,19 +492,19 @@ export async function scheduleSessionStartReminderMailJob({
         data: { sessionId },
       },
       transaction,
-    })
-    const sessionStartedCallback = jobCallbacks.get(callbackName)
+    });
+    const sessionStartedCallback = jobCallbacks.get(callbackName);
     if (!sessionStartedCallback) {
       throw new AppError(
         404,
-        `Can't find callback with this name ${callbackName}`
-      )
+        `Can't find callback with this name ${callbackName}`,
+      );
     }
     const job = schedule.scheduleJob(jobName, date, async () => {
-      await sessionStartedCallback({ sessionId, jobId: dbJob.id })
-    })
+      await sessionStartedCallback({ sessionId, jobId: dbJob.id });
+    });
   } catch (error: any) {
-    logger.error(`Error while session started reminder mail: ${error.message}`)
+    logger.error(`Error while session started reminder mail: ${error.message}`);
   }
 }
 export async function scheduleUpdateSessionToOngoing({
@@ -517,41 +512,44 @@ export async function scheduleUpdateSessionToOngoing({
   sessionDate,
   transaction,
 }: {
-  sessionId: number
-  sessionDate: Date
-  transaction?: Transaction
+  sessionId: number;
+  sessionDate: Date;
+  transaction?: Transaction;
 }) {
   try {
-    logger.info("in update session to ongoing schedule!")
-    const jobName = getSessionOngoingJobName(sessionId)
-    const callbackName = callbacksNames.UPDATE_SESSION_TO_ONGOING
-    const scheduleTimeWithErrorMargin =  new Date(sessionDate.getTime() - MS_IN_MINUTE/2)
+    logger.info("in update session to ongoing schedule!");
+    const jobName = getSessionOngoingJobName(sessionId);
+    const callbackName = callbacksNames.UPDATE_SESSION_TO_ONGOING;
+    const MS_ERROR_MARGIN = MS_IN_MINUTE / 4;
+    const scheduleTimeWithErrorMargin = new Date(
+      sessionDate.getTime() - MS_ERROR_MARGIN,
+    );
     const dbJob = await createJobService({
       body: {
         name: jobName,
-        scheduledTime:scheduleTimeWithErrorMargin,
+        scheduledTime: scheduleTimeWithErrorMargin,
         callbackName,
         data: {
           sessionId,
         },
       },
       transaction,
-    })
-    const sessionUpdateCallback = jobCallbacks.get(callbackName)
+    });
+    const sessionUpdateCallback = jobCallbacks.get(callbackName);
     if (!sessionUpdateCallback) {
       throw new AppError(
         404,
-        `Can't find callback with this name ${callbackName}`
-      )
+        `Can't find callback with this name ${callbackName}`,
+      );
     }
     schedule.scheduleJob(jobName, scheduleTimeWithErrorMargin, async () => {
       await sessionUpdateCallback({
         sessionId,
         jobId: dbJob.id,
-      })
-    })
+      });
+    });
   } catch (error: any) {
-    logger.error(`Error while session ongoing: ${error.message}`)
+    logger.error(`Error while session ongoing: ${error.message}`);
   }
 }
 export async function scheduleUpdateSessionToFinished({
@@ -560,16 +558,18 @@ export async function scheduleUpdateSessionToFinished({
   sessionDuration,
   transaction,
 }: {
-  sessionId: number
-  sessionDate: Date
-  sessionDuration: number
-  transaction?: Transaction
+  sessionId: number;
+  sessionDate: Date;
+  sessionDuration: number;
+  transaction?: Transaction;
 }) {
   try {
-    logger.info("in update session to finished schedule!")
-    const jobName = getSessionFinishedJobName(sessionId)
-    const callbackName = callbacksNames.UPDATE_SESSION_TO_FINISHED
-    const scheduledTime =new Date(sessionDate.getTime() + sessionDuration * MS_IN_MINUTE)
+    logger.info("in update session to finished schedule!");
+    const jobName = getSessionFinishedJobName(sessionId);
+    const callbackName = callbacksNames.UPDATE_SESSION_TO_FINISHED;
+    const scheduledTime = new Date(
+      sessionDate.getTime() + sessionDuration * MS_IN_MINUTE,
+    );
     const dbJob = await createJobService({
       body: {
         name: jobName,
@@ -580,21 +580,21 @@ export async function scheduleUpdateSessionToFinished({
         },
       },
       transaction,
-    })
-    const sessionUpdateCallback = jobCallbacks.get(callbackName)
+    });
+    const sessionUpdateCallback = jobCallbacks.get(callbackName);
     if (!sessionUpdateCallback) {
       throw new AppError(
         404,
-        `Can't find callback with this name ${callbackName}`
-      )
+        `Can't find callback with this name ${callbackName}`,
+      );
     }
-    schedule.scheduleJob(jobName,scheduledTime, async () => {
+    schedule.scheduleJob(jobName, scheduledTime, async () => {
       await sessionUpdateCallback({
         sessionId,
         jobId: dbJob.id,
-      })
-    })
+      });
+    });
   } catch (error: any) {
-    logger.error(`Error while update session to finished: ${error.message}`)
+    logger.error(`Error while update session to finished: ${error.message}`);
   }
 }

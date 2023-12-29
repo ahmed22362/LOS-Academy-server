@@ -7,8 +7,8 @@ import {
   Model,
   PrimaryKey,
   Table,
-} from "sequelize-typescript"
-import SessionInfo from "./sessionInfo.model"
+} from "sequelize-typescript";
+import SessionInfo from "./sessionInfo.model";
 
 export enum SessionStatus {
   PENDING = "pending",
@@ -34,61 +34,61 @@ export default class Session extends Model<Session> {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  id!: number
+  id!: number;
 
   @BelongsTo(() => SessionInfo)
-  SessionInfo!: SessionInfo
+  SessionInfo!: SessionInfo;
 
   @ForeignKey(() => SessionInfo)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  sessionInfoId!: number
+  sessionInfoId!: number;
   @Column({
     type: DataType.DATE,
     allowNull: false,
   })
-  sessionDate!: Date
+  sessionDate!: Date;
 
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  sessionDuration!: number
+  sessionDuration!: number;
 
   @Column({
     type: DataType.ENUM({ values: Object.values(SessionStatus) }),
     defaultValue: SessionStatus.PENDING,
   })
-  status!: SessionStatus
+  status!: SessionStatus;
   @Column({
     type: DataType.ENUM({ values: Object.values(SessionType) }),
     defaultValue: SessionType.NOT_ASSIGN,
   })
-  type!: SessionType
+  type!: SessionType;
 
   @Column({ type: DataType.BOOLEAN, defaultValue: false, allowNull: false })
-  teacherAttended!: boolean
+  teacherAttended!: boolean;
   @Column({ type: DataType.BOOLEAN, defaultValue: false, allowNull: false })
-  studentAttended!: boolean
+  studentAttended!: boolean;
 
   @Column({
     type: DataType.STRING,
     allowNull: true,
   })
-  meetingLink?: string
+  meetingLink?: string;
 
   @Column({
     type: DataType.INTEGER,
     defaultValue: 0,
-    validate: { min: 0, max: 2 },
+    validate: { min: 0, max: 4 },
   })
-  reschedule_request_count!: number
+  reschedule_request_count!: number;
 
   @Column({
     type: DataType.BOOLEAN,
     defaultValue: false,
   })
-  hasReport!: boolean
+  hasReport!: boolean;
 }

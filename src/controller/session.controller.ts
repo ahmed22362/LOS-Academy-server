@@ -421,7 +421,7 @@ export const requestSessionReschedule = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId, userId, sessionId, newDatesOptions } = req.body;
     const session = await getOneSessionService({ sessionId });
-    const MAX_NUMBER_OF_REQUESTS = 2;
+    const MAX_NUMBER_OF_REQUESTS = 4;
     if (session.reschedule_request_count >= MAX_NUMBER_OF_REQUESTS) {
       return next(
         new AppError(
@@ -471,7 +471,7 @@ export const requestSessionReschedule = catchAsync(
         return next(
           new AppError(
             400,
-            `Please provide date and time that is at least one hour form now!`,
+            `Please provide date and time that is at least one hour from now!`,
           ),
         );
       }

@@ -5,9 +5,8 @@ import {
 } from "../connect/socket";
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model";
 import { scheduledJobStatus } from "../db/models/scheduleJob.model";
-import { SessionStatus, SessionType } from "../db/models/session.model";
+import { SessionStatus } from "../db/models/session.model";
 import { RoleType } from "../db/models/teacher.model";
-import { sequelize } from "../db/sequelize";
 import {
   getOneRescheduleRequestService,
   updateRescheduleRequestService,
@@ -20,10 +19,8 @@ import {
   generateMeetingLinkAndUpdateSession,
   getOneSessionDetailsService,
   getOneSessionWithSessionInfoOnlyService,
-  updateSessionService,
+  handleSessionFinishedService,
 } from "../service/session.service";
-import { updateTeacherBalance } from "../service/teacher.service";
-import { updateUserRemainSessionService } from "../service/user.service";
 import logger from "./logger";
 
 interface JobCallback {
@@ -181,63 +178,18 @@ const sessionUpdateToFinished: JobCallback = async function ({
   sessionId: number;
   jobId: number;
 }) {
-  const session = await getOneSessionDetailsService({ sessionId });
-  const transaction = await sequelize.transaction();
-  let updatedSession;
   try {
-    if (!session.studentAttended) {
-      logger.info("student absent");
-      updatedSession = await updateSessionService({
-        sessionId,
-        updatedData: { status: SessionStatus.USER_ABSENT },
-        transaction,
-      });
-      if (session.type === SessionType.PAID) {
-        await updateTeacherBalance({
-          teacherId: session.SessionInfo.teacherId!,
-          numOfSessions: 1,
-          transaction,
-        });
-        await updateUserRemainSessionService({
-          userId: session.SessionInfo.userId!,
-          amountOfSessions: -1,
-          transaction,
-        });
-      }
-    }
-    if (!session.teacherAttended) {
-      logger.info("teacher absent");
-      updatedSession = await updateSessionService({
-        sessionId,
-        updatedData: { status: SessionStatus.TEACHER_ABSENT },
-        transaction,
-      });
-      await updateTeacherBalance({
-        teacherId: session.SessionInfo.teacherId!,
-        committed: false,
-        numOfSessions: -1,
-        transaction,
-      });
-    }
-    if (session.studentAttended && session.teacherAttended) {
-      logger.info("both attended");
-
-      updatedSession = await updateSessionService({
-        sessionId,
-        updatedData: { status: SessionStatus.TAKEN },
-        transaction,
-      });
-      if (session.type === SessionType.PAID) {
-        await updateUserRemainSessionService({
-          userId: session.SessionInfo.userId!,
-          amountOfSessions: -1,
-          transaction,
-        });
-      }
-    }
-    await transaction.commit();
-    emitSessionFinishedForUser(session.SessionInfo.userId!, updatedSession);
-    emitSessionFinishedForUser(session.SessionInfo.teacherId!, updatedSession);
+    const data = await handleSessionFinishedService({
+      sessionId,
+    });
+    emitSessionFinishedForUser(
+      data!.session.SessionInfo.userId!,
+      data!.updatedSession,
+    );
+    emitSessionFinishedForUser(
+      data!.session.SessionInfo.teacherId!,
+      data!.updatedSession,
+    );
     await deleteJobService({ id: jobId });
     logger.info(`One time session Finished with status executed!`);
   } catch (error: any) {
@@ -245,7 +197,6 @@ const sessionUpdateToFinished: JobCallback = async function ({
       id: jobId,
       updatedData: { status: scheduledJobStatus.FAILED },
     });
-    await transaction.rollback();
     logger.error(`Can't update the fished session's status: ${error}`);
   }
 };

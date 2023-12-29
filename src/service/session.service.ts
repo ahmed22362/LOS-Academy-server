@@ -1,12 +1,5 @@
-import {
-  FindOptions,
-  Op,
-  Transaction,
-  WhereOptions,
-  fn,
-  literal,
-  col,
-} from "sequelize";
+import { FindOptions, Op, Transaction, WhereOptions, fn, col } from "sequelize";
+import { sequelize } from "../db/sequelize";
 import Session, { SessionStatus } from "../db/models/session.model";
 import { SessionType } from "../db/models/session.model";
 import AppError from "../utils/AppError";
@@ -29,6 +22,9 @@ import {
   scheduleUpdateSessionToOngoing,
 } from "../utils/scheduler";
 import { THREE_MINUTES_IN_MILLISECONDS } from "../controller/session.controller";
+import { updateTeacherBalance } from "./teacher.service";
+import { updateUserRemainSessionService } from "./user.service";
+import logger from "../utils/logger";
 
 export interface IInfoBody {
   userId: string;
@@ -650,6 +646,73 @@ export async function getAdminSessionsStatisticsService() {
     group: "status",
   });
   return sessionStats;
+}
+
+export async function handleSessionFinishedService({
+  sessionId,
+}: {
+  sessionId: number;
+}) {
+  const session = await getOneSessionDetailsService({ sessionId });
+  const transaction = await sequelize.transaction();
+  let updatedSession;
+  try {
+    if (!session.studentAttended) {
+      logger.info("student absent");
+      updatedSession = await updateSessionService({
+        sessionId,
+        updatedData: { status: SessionStatus.USER_ABSENT },
+        transaction,
+      });
+      if (session.type === SessionType.PAID) {
+        await updateTeacherBalance({
+          teacherId: session.SessionInfo.teacherId!,
+          numOfSessions: 1,
+          transaction,
+        });
+        await updateUserRemainSessionService({
+          userId: session.SessionInfo.userId!,
+          amountOfSessions: -1,
+          transaction,
+        });
+      }
+    }
+    if (!session.teacherAttended) {
+      logger.info("teacher absent");
+      updatedSession = await updateSessionService({
+        sessionId,
+        updatedData: { status: SessionStatus.TEACHER_ABSENT },
+        transaction,
+      });
+      await updateTeacherBalance({
+        teacherId: session.SessionInfo.teacherId!,
+        committed: false,
+        numOfSessions: -1,
+        transaction,
+      });
+    }
+    if (session.studentAttended && session.teacherAttended) {
+      logger.info("both attended");
+
+      updatedSession = await updateSessionService({
+        sessionId,
+        updatedData: { status: SessionStatus.TAKEN },
+        transaction,
+      });
+      if (session.type === SessionType.PAID) {
+        await updateUserRemainSessionService({
+          userId: session.SessionInfo.userId!,
+          amountOfSessions: -1,
+          transaction,
+        });
+      }
+    }
+    await transaction.commit();
+    return {updatedSession,session};
+  } catch (error: any) {
+    await transaction.rollback();
+    logger.error(`Can't update the fished session's status: ${error}`);
+  }
 }
 // helper functions
 
