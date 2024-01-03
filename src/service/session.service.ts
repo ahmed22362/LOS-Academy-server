@@ -421,6 +421,7 @@ export async function getUserUpcomingSessionService({
     upcoming: true,
     orderAssociation: OrderAssociation.ASC,
   });
+
   return session;
 }
 export async function getUserOngoingSessionService({
@@ -708,7 +709,7 @@ export async function handleSessionFinishedService({
       }
     }
     await transaction.commit();
-    return {updatedSession,session};
+    return { updatedSession, session };
   } catch (error: any) {
     await transaction.rollback();
     logger.error(`Can't update the fished session's status: ${error}`);
@@ -754,19 +755,13 @@ export async function allTeacherOrUserSessionsService({
     return;
   }
   const sessionInfoIds = sessionInfo.map((info) => info.id);
-  let where: WhereOptions = {
+
+  const where: WhereOptions = {
     sessionInfoId: { [Op.in]: sessionInfoIds },
+    ...(status && { status }),
+    ...(upcoming && { sessionDate: { [Op.gte]: new Date() } }),
+    ...whereObj,
   };
-  if (status) {
-    where.status = status;
-  }
-  if (upcoming) {
-    const currentDate = new Date();
-    where.sessionDate = { [Op.gte]: { currentDate } };
-  }
-  if (whereObj) {
-    where = { ...where, ...whereObj };
-  }
   let limit;
   let offset;
 

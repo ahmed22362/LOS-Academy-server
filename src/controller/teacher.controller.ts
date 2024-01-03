@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from "express"
-import catchAsync from "../utils/catchAsync"
+import { NextFunction, Request, Response } from "express";
+import catchAsync from "../utils/catchAsync";
 import {
   createTeacherService,
   deleteTeacherService,
@@ -7,10 +7,10 @@ import {
   getTeacherStudentsService,
   getTeachersService,
   updateTeacherService,
-} from "../service/teacher.service"
-import AppError from "../utils/AppError"
-import Teacher, { ITeacherInput } from "../db/models/teacher.model"
-import { decodedToken, login, protect } from "./auth.controller"
+} from "../service/teacher.service";
+import AppError from "../utils/AppError";
+import Teacher, { ITeacherInput } from "../db/models/teacher.model";
+import { decodedToken, login, protect } from "./auth.controller";
 import {
   getAdminSessionsStatisticsService,
   getOneSessionService,
@@ -21,15 +21,15 @@ import {
   getTeacherSessionsStatisticsService,
   getTeacherTakenSessionsService,
   getTeacherUpcomingSessionService,
-} from "../service/session.service"
-import { verifyToken } from "../utils/jwt"
-import { getStripeBalance } from "../service/stripe.service"
+} from "../service/session.service";
+import { verifyToken } from "../utils/jwt";
+import { getStripeBalance } from "../service/stripe.service";
 import {
   getTeacherAllRescheduleRequestsService,
   getTeacherReceivedRescheduleRequestsService,
   getTeacherRescheduleRequestsService,
-} from "../service/rescheduleReq.service"
-import { getPaginationParameter } from "./user.controller"
+} from "../service/rescheduleReq.service";
+import { getPaginationParameter } from "./user.controller";
 
 export const getTeacherAtt = [
   "id",
@@ -40,12 +40,12 @@ export const getTeacherAtt = [
   "sessionCost",
   "committedSessions",
   "balance",
-]
+];
 
 export const createTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, email, password, phone, nationalId, role, sessionCost } =
-      req.body
+      req.body;
     const body = {
       name,
       email,
@@ -54,53 +54,53 @@ export const createTeacher = catchAsync(
       nationalId,
       role,
       sessionCost,
-    } as ITeacherInput
-    const newTeacher = await createTeacherService(body)
+    } as ITeacherInput;
+    const newTeacher = await createTeacherService(body);
     if (!newTeacher) {
-      return next(new AppError(400, "Can't create new Teacher!"))
+      return next(new AppError(400, "Can't create new Teacher!"));
     }
-    res.status(200).json({ status: "success", data: newTeacher })
-  }
-)
+    res.status(200).json({ status: "success", data: newTeacher });
+  },
+);
 export const getAllTeachers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
-    let offset
+    let page = req.query.page;
+    let limit = req.query.limit;
+    let nPage;
+    let nLimit;
+    let offset;
     if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
-      offset = nPage * nLimit
+      nPage = Number(page);
+      nLimit = Number(limit);
+      offset = nPage * nLimit;
     }
     const teachers = await getTeachersService({
       findOptions: { attributes: getTeacherAtt, limit: nLimit, offset },
-    })
+    });
     if (!teachers) {
-      return next(new AppError(400, "Error getting all teachers!"))
+      return next(new AppError(400, "Error getting all teachers!"));
     }
     res
       .status(200)
-      .json({ status: "success", length: teachers.length, data: teachers })
-  }
-)
+      .json({ status: "success", length: teachers.length, data: teachers });
+  },
+);
 export const deleteTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id
+    const id = req.params.id;
 
-    const deleteState = await deleteTeacherService({ id })
+    const deleteState = await deleteTeacherService({ id });
     if (!deleteState) {
-      return next(new AppError(400, "Error Deleting Teacher!"))
+      return next(new AppError(400, "Error Deleting Teacher!"));
     }
     res
       .status(200)
-      .json({ status: "success", message: "teacher Deleted successfully" })
-  }
-)
+      .json({ status: "success", message: "teacher Deleted successfully" });
+  },
+);
 export const updateTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id
+    const id = req.params.id;
     const {
       name,
       sessionCost,
@@ -110,7 +110,7 @@ export const updateTeacher = catchAsync(
       role,
       password,
       balance,
-    } = req.body
+    } = req.body;
     const body = {
       name,
       email,
@@ -120,235 +120,235 @@ export const updateTeacher = catchAsync(
       sessionCost,
       password,
       balance,
-    } as ITeacherInput
+    } as ITeacherInput;
     const teacher = await updateTeacherService({
       teacherId: id,
       updatedData: body,
-    })
+    });
     if (!teacher) {
       return next(
         new AppError(
           404,
-          "No Data has changed the teacher is not found or entered data is wrong"
-        )
-      )
+          "No Data has changed the teacher is not found or entered data is wrong",
+        ),
+      );
     }
     res.status(200).json({
       status: "success",
       message: "teacher updated successfully",
       data: teacher,
-    })
-  }
-)
+    });
+  },
+);
 export const updateMeTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id
-    const { name, email, phone, password } = req.body
+    const id = req.params.id;
+    const { name, email, phone, password } = req.body;
     const body = {
       name,
       email,
       phone,
       password,
-    } as ITeacherInput
+    } as ITeacherInput;
     const teacher = await updateTeacherService({
       teacherId: id,
       updatedData: body,
-    })
+    });
     if (!teacher) {
       return next(
         new AppError(
           404,
-          "No Data has changed the teacher is not found or entered data is wrong"
-        )
-      )
+          "No Data has changed the teacher is not found or entered data is wrong",
+        ),
+      );
     }
     res.status(200).json({
       status: "success",
       message: "teacher updated successfully",
       data: teacher,
-    })
-  }
-)
+    });
+  },
+);
 export const getTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id
+    const id = req.params.id;
     const teacher = await getTeacherByIdService({
       id,
       findOptions: {
         attributes: getTeacherAtt,
       },
-    })
+    });
     if (!teacher) {
-      return next(new AppError(404, "Can't find teacher with this id!"))
+      return next(new AppError(404, "Can't find teacher with this id!"));
     }
-    res.status(200).json({ status: "success", data: teacher })
-  }
-)
+    res.status(200).json({ status: "success", data: teacher });
+  },
+);
 export const getTeacherRemainSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    const sessions = await getTeacherRemainSessionsService({ teacherId })
+    const teacherId = req.body.teacherId;
+    const sessions = await getTeacherRemainSessionsService({ teacherId });
     if (!sessions) {
-      return next(new AppError(400, "can't get this teacher Sessions"))
+      return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions })
-  }
-)
+      .json({ status: "success", length: sessions.length, data: sessions });
+  },
+);
 export const getTeacherTakenSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    const sessions = await getTeacherTakenSessionsService({ teacherId })
+    const teacherId = req.body.teacherId;
+    const sessions = await getTeacherTakenSessionsService({ teacherId });
     if (!sessions) {
-      return next(new AppError(400, "can't get this teacher Sessions"))
+      return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions })
-  }
-)
+      .json({ status: "success", length: sessions.length, data: sessions });
+  },
+);
 export const getTeacherUpcomingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    const sessions = await getTeacherUpcomingSessionService({ teacherId })
+    const teacherId = req.body.teacherId;
+    const sessions = await getTeacherUpcomingSessionService({ teacherId });
     if (!sessions) {
-      return next(new AppError(400, "can't get this teacher Sessions"))
+      return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions })
-  }
-)
+      .json({ status: "success", length: sessions.length, data: sessions });
+  },
+);
 export const getTeacherOngoingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    const sessions = await getTeacherOngoingSessionService({ teacherId })
+    const teacherId = req.body.teacherId;
+    const sessions = await getTeacherOngoingSessionService({ teacherId });
     if (!sessions) {
-      return next(new AppError(400, "can't get this teacher Sessions"))
+      return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions })
-  }
-)
+      .json({ status: "success", length: sessions.length, data: sessions });
+  },
+);
 export const getTeacherLatestTakenSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    const sessions = await getTeacherLatestTakenSessionService({ teacherId })
+    const teacherId = req.body.teacherId;
+    const sessions = await getTeacherLatestTakenSessionService({ teacherId });
     if (!sessions) {
-      return next(new AppError(400, "can't get this teacher Sessions"))
+      return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions })
-  }
-)
+      .json({ status: "success", length: sessions.length, data: sessions });
+  },
+);
 export const getTeacherAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
+    const teacherId = req.body.teacherId;
 
-    let offset
-    const { nPage, nLimit, status } = getPaginationParameter(req)
+    let offset;
+    const { nPage, nLimit, status } = getPaginationParameter(req);
     if (nPage && nLimit) {
-      offset = nPage * nLimit
+      offset = nPage * nLimit;
     }
     const sessions = await getTeacherAllSessionsService({
       teacherId,
       page: nPage,
       pageSize: nLimit,
       status: status as string,
-    })
+    });
     res
       .status(200)
-      .json({ status: "success", length: sessions!.length, sessions })
-  }
-)
+      .json({ status: "success", length: sessions!.length, sessions });
+  },
+);
 export const getTeacherAllStudents = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    const student = await getTeacherStudentsService({ teacherId })
-    res.status(200).json({ status: "success", data: student })
-  }
-)
+    const teacherId = req.body.teacherId;
+    const student = await getTeacherStudentsService({ teacherId });
+    res.status(200).json({ status: "success", data: student });
+  },
+);
 export const checkJWT = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.query.token
-    const decoded = (await verifyToken(token as string)) as decodedToken
+    const token = req.query.token;
+    const decoded = (await verifyToken(token as string)) as decodedToken;
 
-    const teacher = await getTeacherByIdService({ id: decoded.id })
+    const teacher = await getTeacherByIdService({ id: decoded.id });
     res.status(200).json({
       status: "success",
       message: "The token is verified!",
       role: teacher.role,
-    })
-  }
-)
+    });
+  },
+);
 export const getAdminBalance = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const balance = await getStripeBalance()
-    res.status(200).json({ status: "success", balance: balance.available })
-  }
-)
+    const balance = await getStripeBalance();
+    res.status(200).json({ status: "success", balance: balance.available });
+  },
+);
 export const getSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    const { nPage, nLimit, status } = getPaginationParameter(req)
+    const teacherId = req.body.teacherId;
+    const { nPage, nLimit, status } = getPaginationParameter(req);
     const rescheduleRequests = await getTeacherRescheduleRequestsService({
       teacherId,
       status: status as any,
       page: nPage,
       pageSize: nLimit,
-    })
+    });
     res.status(200).json({
       status: "success",
       length: rescheduleRequests.length,
       data: rescheduleRequests,
-    })
-  }
-)
+    });
+  },
+);
 export const getReceivedSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    const { nPage, nLimit, status } = getPaginationParameter(req)
+    const teacherId = req.body.teacherId;
+    const { nPage, nLimit, status } = getPaginationParameter(req);
     const rescheduleRequests =
       await getTeacherReceivedRescheduleRequestsService({
         teacherId,
         page: nPage,
         pageSize: nLimit,
         status: status as any,
-      })
+      });
     res.status(200).json({
       status: "success",
       length: rescheduleRequests.length,
       data: rescheduleRequests,
-    })
-  }
-)
+    });
+  },
+);
 export const getAllSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const teacherId = req.body.teacherId
-    const { nPage, nLimit, status } = getPaginationParameter(req)
+    const teacherId = req.body.teacherId;
+    const { nPage, nLimit, status } = getPaginationParameter(req);
     const rescheduleRequests = await getTeacherAllRescheduleRequestsService({
       teacherId,
       page: nPage,
       pageSize: nLimit,
       status: status as any,
-    })
+    });
     res.status(200).json({
       status: "success",
       length: rescheduleRequests.length,
       data: rescheduleRequests,
-    })
-  }
-)
+    });
+  },
+);
 export const getMySessionsStats = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { teacherId } = req.body
-    const stats = await getTeacherSessionsStatisticsService({ teacherId })
-    res.status(200).json({ status: "success", data: stats })
-  }
-)
-export const loginTeacher = login(Teacher)
+    const { teacherId } = req.body;
+    const stats = await getTeacherSessionsStatisticsService({ teacherId });
+    res.status(200).json({ status: "success", data: stats });
+  },
+);
+export const loginTeacher = login(Teacher);
 
-export const protectTeacher = protect(Teacher)
+export const protectTeacher = protect(Teacher);
