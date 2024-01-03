@@ -229,7 +229,7 @@ export const getMySubscription = catchAsync(
       subscriptionStartAt,
       subscriptionEndAt,
     };
-    res.status(200).json({ status: "success", data: subscriptionRes });
+    res.status(200).json({ status: "success", data: [subscriptionRes] });
   },
 );
 export const updateUserPlan = catchAsync(
