@@ -848,7 +848,7 @@ export const updateStatusSessionReschedule = (
   });
 export const userContinueWithTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionId, willContinue, userId } = req.body;
+    const { sessionId, sessionDates, userId } = req.body;
     const { exist, session } = await userOwnThisSession({ userId, sessionId });
     if (!exist) {
       return next(new AppError(400, "User don't own this session"));
@@ -866,33 +866,6 @@ export const userContinueWithTeacher = catchAsync(
     });
     if (typeof sessionInfo.willContinue === "boolean") {
       return next(new AppError(400, "already responded to!"));
-    }
-    sessionInfo.willContinue = willContinue;
-    await sessionInfo.save();
-    const message = willContinue
-      ? `The user chose to continue with that teacher now choose plan and pay for it after the plan \n 
-    go and choose the date for your sessions`
-      : `The user choose to NOT continue with teacher you can always request a new session free or paid!`;
-    res.status(200).json({
-      status: "success",
-      message,
-      data: sessionInfo,
-    });
-  },
-);
-export const userPlaceHisSessions = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, sessionDates } = req.body;
-    const sessionInfo = await getOneSessionInfoServiceBy({
-      where: { userId, willContinue: true },
-    });
-    if (!sessionInfo) {
-      return next(
-        new AppError(
-          403,
-          "Can't place session dates the user didn't choose to continue with any teacher! you can request paid session",
-        ),
-      );
     }
     const user = await getUserByIdService({ userId });
     if (user.sessionPlaced) {
@@ -918,12 +891,6 @@ export const userPlaceHisSessions = catchAsync(
       userId,
       sessionDatesLength: sessionDates.length,
     });
-
-    await isTeacherHasOverlappingSessions({
-      teacherId: sessionInfo.teacherId!,
-      wantedSessionDates: sessionDates,
-      wantedSessionDuration: subscription.plan.sessionDuration,
-    });
     const transaction = await sequelize.transaction();
     try {
       await updateTeacherBalance({
@@ -946,6 +913,11 @@ export const userPlaceHisSessions = catchAsync(
         }
         newSessionDates.push(new Date(date));
       }
+      await isTeacherHasOverlappingSessions({
+        teacherId: sessionInfo.teacherId!,
+        wantedSessionDates: newSessionDates,
+        wantedSessionDuration: subscription.plan.sessionDuration,
+      });
       const teacher = await getTeacherByIdService({
         id: sessionInfo.teacherId!,
       });
@@ -966,16 +938,48 @@ export const userPlaceHisSessions = catchAsync(
         updatedData: { sessionPlaced: true },
         transaction,
       });
+      sessionInfo.willContinue = true;
+      await sessionInfo.save({ transaction });
       await transaction.commit();
       res.status(201).json({
         status: "success",
-        message: "the user placed his session successfully!",
+        message:
+          "The user chose to continue with that teacher and placed his session successfully!",
         data: paidSessions,
       });
     } catch (error: any) {
       await transaction.rollback();
       return next(new AppError(400, `Error Placed Session: ${error.message}`));
     }
+  },
+);
+export const userWontContinueWithTeacher = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { sessionId, userId } = req.body;
+    const { exist, session } = await userOwnThisSession({ userId, sessionId });
+    if (!exist) {
+      return next(new AppError(400, "User don't own this session"));
+    }
+    if (session.type !== SessionType.FREE) {
+      return next(
+        new AppError(
+          400,
+          "Can't choose continue option with teacher from paid session!",
+        ),
+      );
+    }
+    const sessionInfo = await getSessionInfoService({
+      id: session.sessionInfoId,
+    });
+    if (typeof sessionInfo.willContinue === "boolean") {
+      return next(new AppError(400, "already responded to!"));
+    }
+    sessionInfo.willContinue = false;
+    await sessionInfo.save();
+    res.status(200).json({
+      status: "success",
+      message: "user chose to NOT continue with teacher!",
+    });
   },
 );
 export const getUserContinueStatus = catchAsync(

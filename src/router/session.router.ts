@@ -19,7 +19,7 @@ import {
   updateSessionAttendance,
   updateSessionStatus,
   userContinueWithTeacher,
-  userPlaceHisSessions,
+  userWontContinueWithTeacher,
 } from "../controller/session.controller";
 import { restrictTo } from "../controller/auth.controller";
 import { RoleType } from "../db/models/teacher.model";
@@ -32,7 +32,7 @@ import {
   requireEitherTeacherOrUser,
   updateSessionStatusSchema,
   userContinueWithTeacherSchema,
-  userPlacedSessionDatesSchema,
+  userWontContinueWithTeacherSchema,
 } from "../schema/session.schema";
 const sessionRouter = Router();
 
@@ -94,12 +94,12 @@ sessionRouter
     userContinueWithTeacher,
   );
 sessionRouter
-  .route("/placeSessionDates")
+  .route("/wontContinueWithTeacher")
   .post(
     protectUser,
     setUserOrTeacherId,
-    validate(userPlacedSessionDatesSchema),
-    userPlaceHisSessions,
+    validate(userWontContinueWithTeacherSchema),
+    userWontContinueWithTeacher,
   );
 sessionRouter
   .route("/assignTeacher")
