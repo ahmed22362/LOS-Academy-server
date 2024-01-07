@@ -9,6 +9,7 @@ import {
   getAllSessionsServiceByStatus,
   getOneSessionDetailsService,
   getOneSessionService,
+  getSessionsCoursesService,
   getUserLatestNotPendingSessionService,
   isSessionAfterItsTimeRange,
   isSessionWithinTimeRange,
@@ -1003,5 +1004,20 @@ export const getAdminSessionStats = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const sessionStats = await getAdminSessionsStatisticsService();
     res.status(200).json({ status: "success", data: sessionStats });
+  },
+);
+export const getSessionCourses = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { sessionId } = req.query;
+    if (isNaN(+sessionId!)) {
+      return next(new AppError(400, "please provide session id as number"));
+    }
+    const courses = await getSessionsCoursesService({ sessionId: +sessionId! });
+    if (!courses) {
+      return next(new AppError(404, "there is no courses for this session!"));
+    }
+    res
+      .status(200)
+      .json({ status: "success", length: courses.length, data: courses });
   },
 );

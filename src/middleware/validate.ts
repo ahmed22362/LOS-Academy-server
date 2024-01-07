@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from "express"
-import { AnyZodObject } from "zod"
+import { Request, Response, NextFunction } from "express";
+import { AnyZodObject } from "zod";
 
 const validate =
   (schema: AnyZodObject) =>
@@ -9,10 +9,10 @@ const validate =
         body: req.body,
         params: req.params,
         query: req.query,
-      })
-      next()
+      });
+      next();
     } catch (e: any) {
-      return res.status(400).send(e.errors)
+      return res.status(400).send(e.errors);
     }
-  }
-export default validate
+  };
+export default validate;

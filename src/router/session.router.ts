@@ -15,6 +15,7 @@ import {
   getAllRescheduleRequestsForAdmin,
   getAllSessionsByStatus,
   getOneSessionInfo,
+  getSessionCourses,
   replaceSessionInfoTeacher,
   updateSessionAttendance,
   updateSessionStatus,
@@ -28,6 +29,7 @@ import {
   assignTeacherSchema,
   cancelRequestSchema,
   generateLinkSchema,
+  getSessionCoursesSchema,
   replaceSessionInfoTeacherSchema,
   requireEitherTeacherOrUser,
   updateSessionStatusSchema,
@@ -124,6 +126,9 @@ sessionRouter
     restrictTo(RoleType.ADMIN),
     getAllRescheduleRequestsForAdmin,
   );
+sessionRouter
+  .route("/sessionCourses")
+  .get(validate(getSessionCoursesSchema), getSessionCourses);
 sessionRouter
   .route("/:id")
   .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo);

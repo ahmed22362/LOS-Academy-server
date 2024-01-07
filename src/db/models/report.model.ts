@@ -7,8 +7,8 @@ import {
   Model,
   PrimaryKey,
   Table,
-} from "sequelize-typescript"
-import Session from "./session.model"
+} from "sequelize-typescript";
+import Session from "./session.model";
 
 export enum GradeOptions {
   EXCELLENT = "excellent",
@@ -17,7 +17,11 @@ export enum GradeOptions {
   AVERAGE = "average",
   BELOW_AVERAGE = "below average",
 }
-
+export interface ReportsCourses {
+  courseName: string;
+  courseGrade: GradeOptions;
+  courseComment?: GradeOptions;
+}
 @Table({ tableName: "report", timestamps: true, freezeTableName: true })
 export default class Report extends Model {
   @PrimaryKey
@@ -26,36 +30,29 @@ export default class Report extends Model {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  id!: number
+  id!: number;
 
-  @Column({ type: DataType.TEXT, allowNull: true })
-  arabic?: string | null
-  @Column({ type: DataType.TEXT, allowNull: true })
-  arabicComment?: string | null
-  @Column({ type: DataType.TEXT, allowNull: true })
-  islamic?: string | null
-  @Column({ type: DataType.TEXT, allowNull: true })
-  islamicComment?: string | null
-  @Column({ type: DataType.TEXT, allowNull: true })
-  quran?: string | null
-  @Column({ type: DataType.TEXT, allowNull: true })
-  quranComment?: string | null
+  @Column({
+    type: DataType.ARRAY(DataType.JSONB),
+    allowNull: false,
+  })
+  reportCourses!: ReportsCourses[];
 
   @Column({
     type: DataType.ENUM({ values: Object.values(GradeOptions) }),
     defaultValue: GradeOptions.AVERAGE,
   })
-  grade!: GradeOptions
+  grade!: GradeOptions;
 
   @Column({ type: DataType.TEXT, allowNull: true })
-  comment?: string
+  comment?: string;
 
   @ForeignKey(() => Session)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  sessionId!: number
+  sessionId!: number;
   @BelongsTo(() => Session)
-  session!: Session
+  session!: Session;
 }

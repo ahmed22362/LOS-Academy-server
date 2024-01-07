@@ -6,6 +6,7 @@ import AppError from "../utils/AppError";
 import { deleteModelService, updateModelService } from "./factory.services";
 import { DATE_PATTERN, FREE_SESSION_DURATION } from "./sessionReq.service";
 import {
+  getOneSessionInfoServiceBy,
   getTeacherSessionInfoService,
   getUserSessionInfoService,
 } from "./sessionInfo.service";
@@ -25,6 +26,7 @@ import { THREE_MINUTES_IN_MILLISECONDS } from "../controller/session.controller"
 import { updateTeacherBalance } from "./teacher.service";
 import { updateUserRemainSessionService } from "./user.service";
 import logger from "../utils/logger";
+import SessionReq from "../db/models/sessionReq.model";
 
 export interface IInfoBody {
   userId: string;
@@ -1014,4 +1016,16 @@ export async function isTeacherHasOverlappingSessions({
     }
   }
   return false;
+}
+export async function getSessionsCoursesService({
+  sessionId,
+}: {
+  sessionId: number;
+}) {
+  const session = await getOneSessionWithSessionInfoOnlyService({ sessionId });
+  const sessionInfo = await getOneSessionInfoServiceBy({
+    where: { id: session.sessionInfoId },
+    include: [{ model: SessionReq, attributes: ["courses"] }],
+  });
+  return sessionInfo?.sessionRequest?.courses;
 }

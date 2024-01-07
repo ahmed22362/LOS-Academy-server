@@ -1,6 +1,6 @@
 import { z } from "zod";
 const sessionId = z.number({
-  required_error: "please provide sessionid in the boy!",
+  required_error: "please provide sessionid in the body!",
 });
 const teacherId = z.string({
   required_error: "Please provide teacherId in the body!",
@@ -30,6 +30,9 @@ export const sessionDates = z
   .refine((data) => data.length > 0, {
     message: "Array of Session Dates is required Received empty []",
   });
+export const courses = z.array(z.string()).refine((data) => data.length > 0, {
+  message: "Please provide at least one course!",
+});
 export const SessionTypeSchema = z.enum(["free", "paid", "not assign"]);
 
 export const generateLinkSchema = z.object({
@@ -83,6 +86,7 @@ export const createSessionRequestSchema = z.object({
   body: z.object({
     userId,
     sessionDates,
+    courses,
   }),
 });
 export const acceptSessionRequestSchema = z.object({
@@ -104,4 +108,11 @@ export const createSessionByAdminSchema = z.object({
         (data.userId !== undefined && data.teacherId !== undefined),
       { message: "please provide session info id or the userId and teacherId" },
     ),
+});
+export const getSessionCoursesSchema = z.object({
+  query: z.object({
+    sessionId: z.string({
+      required_error: "please provide sessionId as query",
+    }),
+  }),
 });
