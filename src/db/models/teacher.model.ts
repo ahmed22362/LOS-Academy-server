@@ -4,19 +4,19 @@ import {
   Model,
   DataType,
   BeforeSave,
-} from "sequelize-typescript"
-import { ulid } from "ulid"
-import bcrypt from "bcrypt"
+} from "sequelize-typescript";
+import { ulid } from "ulid";
+import bcrypt from "bcrypt";
 
 export interface ITeacherInput {
-  name: string
-  nationalId: string
-  email: string
-  password: string
-  phone: string
-  customerId?: string
-  sessionCost: number
-  balance?: number
+  name: string;
+  nationalId: string;
+  email: string;
+  password: string;
+  phone: string;
+  customerId?: string;
+  sessionCost: number;
+  balance?: number;
 }
 export enum RoleType {
   TEACHER = "teacher",
@@ -35,30 +35,30 @@ export default class Teacher extends Model<Teacher> {
     primaryKey: true,
     allowNull: false,
   })
-  id!: string
+  id!: string;
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  name!: string
+  name!: string;
 
   @Column({
     type: DataType.TEXT,
     allowNull: false,
     unique: true,
   })
-  nationalId!: string
+  nationalId!: string;
   @Column({
     type: DataType.STRING,
     allowNull: true,
   })
-  phone?: string
+  phone?: string;
 
   @Column({
     type: DataType.STRING,
     allowNull: true,
   })
-  customerId?: string
+  customerId?: string;
   @Column({
     type: DataType.STRING,
     allowNull: false,
@@ -67,53 +67,53 @@ export default class Teacher extends Model<Teacher> {
     },
     unique: true,
   })
-  email!: string
+  email!: string;
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  password!: string
+  password!: string;
 
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  sessionCost!: number
-
-  @Column({ type: DataType.INTEGER, defaultValue: 0 })
-  committedSessions!: number
+  @Column({ type: DataType.FLOAT, allowNull: false })
+  sessionCost!: number;
 
   @Column({ type: DataType.INTEGER, defaultValue: 0 })
-  balance!: number
+  committedSessions!: number;
+
+  @Column({ type: DataType.INTEGER, defaultValue: 0 })
+  balance!: number;
 
   @Column(DataType.DATE)
-  passwordChangedAt?: Date
+  passwordChangedAt?: Date;
 
   @Column({
     type: DataType.ENUM({ values: Object.values(RoleType) }),
     defaultValue: RoleType.TEACHER,
   })
-  role!: RoleType
+  role!: RoleType;
 
   @BeforeSave
   static async hashPassword(instance: Teacher) {
     if (instance.changed("password")) {
-      const salt = await bcrypt.genSalt(12)
-      instance.password = await bcrypt.hash(instance.password, salt)
-      instance.passwordChangedAt = new Date(Date.now())
+      const salt = await bcrypt.genSalt(12);
+      instance.password = await bcrypt.hash(instance.password, salt);
+      instance.passwordChangedAt = new Date(Date.now());
     }
   }
 
   async correctPassword(candidatePassword: string, userPassword: string) {
-    return await bcrypt.compare(candidatePassword, userPassword)
+    return await bcrypt.compare(candidatePassword, userPassword);
   }
 
   changedPasswordAfter(JWTTimestamp: number) {
     if (this.passwordChangedAt) {
       const changedPasswordSec = parseInt(
         String(this.passwordChangedAt.getTime() / 1000),
-        10
-      )
-      return JWTTimestamp < changedPasswordSec
+        10,
+      );
+      return JWTTimestamp < changedPasswordSec;
     }
-    return false
+    return false;
   }
 }

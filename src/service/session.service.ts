@@ -959,8 +959,10 @@ export function canRescheduleSession(sessionDate: Date) {
 export function canAttendSession(sessionDate: Date) {
   const currentDate = new Date();
   const attendanceMargin = 15;
+  const ErrorMarginMins = 2;
   if (
-    sessionDate.getTime() <= currentDate.getTime() &&
+    sessionDate.getTime() <=
+      currentDate.getTime() - ErrorMarginMins * MS_IN_MINUTE &&
     currentDate.getTime() <=
       sessionDate.getTime() + attendanceMargin * MS_IN_MINUTE
   ) {
