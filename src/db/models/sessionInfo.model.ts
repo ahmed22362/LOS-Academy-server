@@ -9,10 +9,10 @@ import {
   UpdatedAt,
   AutoIncrement,
   PrimaryKey,
-} from "sequelize-typescript"
-import User from "./user.model"
-import Teacher from "./teacher.model"
-import SessionReq from "./sessionReq.model"
+} from "sequelize-typescript";
+import User from "./user.model";
+import Teacher from "./teacher.model";
+import SessionReq from "./sessionReq.model";
 
 @Table({
   tableName: "session_info",
@@ -26,44 +26,44 @@ export default class SessionInfo extends Model<SessionInfo> {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  id!: number
+  id!: number;
 
   @ForeignKey(() => User)
   @Column({
     type: DataType.STRING,
     unique: "user_teacher",
   })
-  userId?: string
+  userId?: string;
 
   @BelongsTo(() => User, { foreignKey: "userId" })
-  user?: User
+  user?: User;
 
   @ForeignKey(() => Teacher)
   @Column({
     type: DataType.STRING,
     unique: "user_teacher",
   })
-  teacherId?: string
+  teacherId?: string;
 
   @BelongsTo(() => Teacher, { foreignKey: "teacherId" })
-  teacher?: Teacher
+  teacher?: Teacher;
 
   @ForeignKey(() => SessionReq)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  sessionRequestId?: number
+  sessionRequestId?: number;
 
   @BelongsTo(() => SessionReq, { foreignKey: "sessionRequestId" })
-  sessionRequest?: SessionReq
+  sessionRequest?: SessionReq;
 
   @Column({ type: DataType.BOOLEAN, allowNull: true })
-  willContinue?: boolean
+  willContinue?: boolean;
 
   @CreatedAt
-  createdAt!: Date
+  createdAt!: Date;
 
   @UpdatedAt
-  updatedAt!: Date
+  updatedAt!: Date;
 }
