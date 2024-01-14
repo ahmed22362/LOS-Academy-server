@@ -6,6 +6,7 @@ import {
   createPaidSessionsService,
   generateMeetingLinkAndUpdateSession,
   getAdminSessionsStatisticsService,
+  getAllSessionsService,
   getAllSessionsServiceByStatus,
   getOneSessionDetailsService,
   getOneSessionService,
@@ -70,6 +71,7 @@ import {
 } from "../utils/scheduler";
 import {
   createSessionInfoService,
+  getAllSessionsInfoService,
   getOneSessionInfoServiceBy,
   getSessionInfoService,
   updateOneSessionInfoService,
@@ -1019,5 +1021,56 @@ export const getSessionCourses = catchAsync(
     res
       .status(200)
       .json({ status: "success", length: courses.length, data: courses });
+  },
+);
+export const getContinueWithTeacherAbstract = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { nLimit, offset } = getPaginationParameter(req);
+    const sessionDateMap: Record<number, string> = {};
+    const freeSessions = await getAllSessionsService({
+      findOptions: {
+        where: { type: SessionType.FREE },
+        limit: nLimit,
+        offset: offset ?? 0,
+      },
+    });
+    const sessionInfoIds: number[] = freeSessions.map((session) => {
+      return session.sessionInfoId;
+    });
+    freeSessions.forEach((session) => {
+      sessionDateMap[session.sessionInfoId] =
+        session.sessionDate.toLocaleString("en-US", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        });
+    });
+    const sessionInfo = await getAllSessionsInfoService({
+      findOptions: {
+        where: { id: sessionInfoIds },
+        include: [
+          { model: User, attributes: getUserAttr },
+          { model: Teacher, attributes: getTeacherAtt },
+        ],
+      },
+    });
+    const formattedData = sessionInfo.map((info) => ({
+      sessionInfoId: info.id,
+      sessionDate: sessionDateMap[info.id],
+      continueStatus: info.willContinue,
+      userName: info.user?.name,
+      userEmail: info.user?.email,
+      teacherName: info.teacher?.name,
+      teacherEmail: info.teacher?.email,
+    }));
+    res.status(200).json({
+      status: "success",
+      length: sessionInfo.length,
+      data: formattedData,
+    });
   },
 );

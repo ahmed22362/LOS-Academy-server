@@ -14,6 +14,7 @@ import {
   getAdminSessionStats,
   getAllRescheduleRequestsForAdmin,
   getAllSessionsByStatus,
+  getContinueWithTeacherAbstract,
   getOneSessionInfo,
   getSessionCourses,
   replaceSessionInfoTeacher,
@@ -39,6 +40,13 @@ import {
 const sessionRouter = Router();
 
 sessionRouter.route("/session-requests").get(protectTeacher, getAllSessionsReq);
+sessionRouter
+  .route("/continueAbstract")
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    getContinueWithTeacherAbstract,
+  );
 sessionRouter
   .route("/statistics")
   .get(protectTeacher, restrictTo(RoleType.ADMIN), getAdminSessionStats);

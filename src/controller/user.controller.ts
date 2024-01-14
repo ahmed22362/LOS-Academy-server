@@ -403,9 +403,11 @@ export function getPaginationParameter(req: Request) {
   let limit = req.query.limit;
   let nPage;
   let nLimit;
+  let offset;
   if (page && limit) {
     nPage = Number(page);
     nLimit = Number(limit);
+    offset = (nPage - 1) * nLimit;
   }
-  return { nLimit, nPage, status };
+  return { nLimit, nPage, offset, status };
 }
