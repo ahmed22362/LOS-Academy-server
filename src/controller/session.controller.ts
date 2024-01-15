@@ -40,6 +40,7 @@ import RescheduleRequest, {
   RescheduleRequestStatus,
 } from "../db/models/rescheduleReq.model";
 import Session, {
+  SESSION_TABLE_NAME,
   SessionStatus,
   SessionType,
 } from "../db/models/session.model";
@@ -82,33 +83,36 @@ import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs";
 import { Transaction } from "sequelize";
 import { SubscriptionStatus } from "../db/models/subscription.model";
 import { emitRescheduleRequestForUser } from "../connect/socket";
+import { estimateRowCount } from "../utils/getTableRowCount";
 export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000;
 export const HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 const DEFAULT_COURSES = ["arabic"];
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit, status } = getPaginationParameter(req);
+    const { nPage, nLimit, status, offset } = getPaginationParameter(req);
     const sessions = await getAllSessionsServiceByStatus({
       status: status as SessionStatus,
-      page: nPage,
-      pageSize: nLimit,
-    });
-    res
-      .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
-  },
-);
-export const getAllSessionsByStatus = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { nLimit, nPage, status } = getPaginationParameter(req);
-    const sessions = await getAllSessionsServiceByStatus({
-      status: status as any,
-      page: nPage,
+      offset,
       pageSize: nLimit,
     });
     res.status(200).json({
       status: "success",
-      length: sessions.length,
+      length: estimateRowCount(SESSION_TABLE_NAME),
+      data: sessions,
+    });
+  },
+);
+export const getAllSessionsByStatus = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { nLimit, nPage, status, offset } = getPaginationParameter(req);
+    const sessions = await getAllSessionsServiceByStatus({
+      status: status as any,
+      offset,
+      pageSize: nLimit,
+    });
+    res.status(200).json({
+      status: "success",
+      length: await estimateRowCount(SESSION_TABLE_NAME),
       data: sessions,
     });
   },

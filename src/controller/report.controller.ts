@@ -19,7 +19,7 @@ import Session, {
   SessionType,
 } from "../db/models/session.model";
 import User from "../db/models/user.model";
-import { getUserAttr } from "./user.controller";
+import { getPaginationParameter, getUserAttr } from "./user.controller";
 import Teacher from "../db/models/teacher.model";
 import { getTeacherAtt } from "./teacher.controller";
 import SessionInfo from "../db/models/sessionInfo.model";
@@ -27,6 +27,8 @@ import logger from "../utils/logger";
 import { updateTeacherBalance } from "../service/teacher.service";
 import { sequelize } from "../db/sequelize";
 import { emitReportAddedForUser } from "../connect/socket";
+import { estimateRowCount } from "../utils/getTableRowCount";
+import { REPORT_TABLE_NAME } from "../db/models/report.model";
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -169,16 +171,7 @@ export const deleteReport = catchAsync(
 );
 export const getAllReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page;
-    let limit = req.query.limit;
-    let nPage;
-    let nLimit;
-    let offset;
-    if (page && limit) {
-      nPage = Number(page);
-      nLimit = Number(limit);
-      offset = nPage * nLimit;
-    }
+    const { offset, nLimit } = getPaginationParameter(req);
 
     const reports = await getAllReportsService({
       findOptions: {
@@ -204,19 +197,16 @@ export const getAllReports = catchAsync(
     });
     res
       .status(200)
-      .json({ status: "success", length: reports.length, data: reports });
+      .json({
+        status: "success",
+        length: await estimateRowCount(REPORT_TABLE_NAME),
+        data: reports,
+      });
   },
 );
 export const getUserReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page;
-    let limit = req.query.limit;
-    let nPage;
-    let nLimit;
-    if (page && limit) {
-      nPage = Number(page);
-      nLimit = Number(limit);
-    }
+    const { nPage, nLimit } = getPaginationParameter(req);
     const userId = req.query.userId || req.body.userId;
     const reports = await getUserOrTeacherReportsService({
       userId,
@@ -230,14 +220,7 @@ export const getUserReports = catchAsync(
 );
 export const getTeacherReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page;
-    let limit = req.query.limit;
-    let nPage;
-    let nLimit;
-    if (page && limit) {
-      nPage = Number(page);
-      nLimit = Number(limit);
-    }
+    const { nPage, nLimit } = getPaginationParameter(req);
     const teacherId = req.query.teacherId || req.body.teacherId;
     const reports = await getUserOrTeacherReportsService({
       teacherId,

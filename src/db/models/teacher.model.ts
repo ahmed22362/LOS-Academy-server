@@ -4,6 +4,7 @@ import {
   Model,
   DataType,
   BeforeSave,
+  DeletedAt,
 } from "sequelize-typescript";
 import { ulid } from "ulid";
 import bcrypt from "bcrypt";
@@ -23,8 +24,10 @@ export enum RoleType {
   ADMIN = "admin",
   USER = "user",
 }
+export const TEACHER_TABLE_NAME = "teacher";
+
 @Table({
-  tableName: "teacher",
+  tableName: TEACHER_TABLE_NAME,
   timestamps: true,
   freezeTableName: true,
 })
@@ -92,6 +95,9 @@ export default class Teacher extends Model<Teacher> {
     defaultValue: RoleType.TEACHER,
   })
   role!: RoleType;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 
   @BeforeSave
   static async hashPassword(instance: Teacher) {

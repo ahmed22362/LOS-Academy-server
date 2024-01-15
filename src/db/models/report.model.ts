@@ -3,6 +3,7 @@ import {
   BelongsTo,
   Column,
   DataType,
+  DeletedAt,
   ForeignKey,
   Model,
   PrimaryKey,
@@ -22,7 +23,13 @@ export interface ReportsCourses {
   courseGrade: GradeOptions;
   courseComment?: GradeOptions;
 }
-@Table({ tableName: "report", timestamps: true, freezeTableName: true })
+export const REPORT_TABLE_NAME = "report";
+
+@Table({
+  tableName: REPORT_TABLE_NAME,
+  timestamps: true,
+  freezeTableName: true,
+})
 export default class Report extends Model {
   @PrimaryKey
   @AutoIncrement
@@ -55,4 +62,7 @@ export default class Report extends Model {
   sessionId!: number;
   @BelongsTo(() => Session)
   session!: Session;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 }

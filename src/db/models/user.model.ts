@@ -5,6 +5,7 @@ import {
   DataType,
   BeforeSave,
   HasMany,
+  DeletedAt,
 } from "sequelize-typescript";
 import { ulid } from "ulid";
 import bcrypt from "bcrypt";
@@ -28,9 +29,10 @@ export enum Gender {
   MALE = "male",
   FEMALE = "female",
 }
+export const USER_TABLE_NAME = "user";
 
 @Table({
-  tableName: "user",
+  tableName: USER_TABLE_NAME,
   freezeTableName: true,
   timestamps: true,
 })
@@ -134,6 +136,9 @@ export default class User extends Model<User> {
 
   @HasMany(() => FreeSession)
   sessions!: FreeSession[];
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 
   @BeforeSave
   static async hashPassword(instance: User) {

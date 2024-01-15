@@ -2,12 +2,17 @@ import {
   AutoIncrement,
   Column,
   DataType,
+  DeletedAt,
   Model,
   PrimaryKey,
   Table,
-} from "sequelize-typescript"
-
-@Table({ tableName: "course", timestamps: true, freezeTableName: true })
+} from "sequelize-typescript";
+export const COURSE_TABLE_NAME = "course";
+@Table({
+  tableName: COURSE_TABLE_NAME,
+  timestamps: true,
+  freezeTableName: true,
+})
 export default class Course extends Model {
   @PrimaryKey
   @AutoIncrement
@@ -15,25 +20,28 @@ export default class Course extends Model {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  id!: number
+  id!: number;
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  title!: string
+  title!: string;
 
   @Column({
     type: DataType.STRING,
   })
-  description!: string
+  description!: string;
 
   @Column({
     type: DataType.TEXT,
   })
-  details!: string
+  details!: string;
 
   @Column({
     type: DataType.STRING,
   })
-  stripeProductId!: string
+  stripeProductId!: string;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 }

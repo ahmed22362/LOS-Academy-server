@@ -4,17 +4,19 @@ import {
   BeforeSave,
   Column,
   DataType,
+  DeletedAt,
   Model,
   PrimaryKey,
   Table,
-} from "sequelize-typescript"
+} from "sequelize-typescript";
 
 export enum PlanType {
   STANDARD = "standard",
   CUSTOM = "custom",
 }
+export const PLAN_TABLE_NAME = "plan";
 
-@Table({ tableName: "plan", timestamps: true, freezeTableName: true })
+@Table({ tableName: PLAN_TABLE_NAME, timestamps: true, freezeTableName: true })
 export default class Plan extends Model {
   @PrimaryKey
   @AutoIncrement
@@ -22,65 +24,68 @@ export default class Plan extends Model {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  id!: number
+  id!: number;
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  title!: string
+  title!: string;
 
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  sessionDuration!: number
+  sessionDuration!: number;
 
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  sessionsCount!: number
+  sessionsCount!: number;
 
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  sessionsPerWeek!: number
+  sessionsPerWeek!: number;
 
   @Column({
     type: DataType.DOUBLE,
     allowNull: false,
   })
-  price!: number
+  price!: number;
 
   @Column({
     type: DataType.BOOLEAN,
     defaultValue: true,
   })
-  active!: boolean
+  active!: boolean;
 
   @Column({
     type: DataType.BOOLEAN,
     defaultValue: false,
   })
-  recommended!: boolean
+  recommended!: boolean;
 
   @Column({
     type: DataType.DOUBLE,
     allowNull: true,
   })
-  discount?: number
+  discount?: number;
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  stripePriceId!: string
+  stripePriceId!: string;
 
   @Column({
     type: DataType.ENUM({ values: Object.values(PlanType) }),
     defaultValue: PlanType.CUSTOM,
   })
-  type!: PlanType
+  type!: PlanType;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 }

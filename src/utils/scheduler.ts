@@ -427,7 +427,10 @@ export async function scheduleSessionReminderMailJob({
     const OFFSET_REMINDER = 40 * MS_IN_MINUTE;
     const date = new Date(sessionDate.getTime() - OFFSET_REMINDER);
     const currentDate = new Date();
-    if (currentDate > date) {
+    if (currentDate.getTime() > date.getTime()) {
+      console.log(
+        "won't create session started reminder job because time is passed",
+      );
       return;
     }
     const jobName = getSessionReminderJobName(sessionId);
@@ -482,6 +485,12 @@ export async function scheduleSessionStartReminderMailJob({
     // add 4 mins to the session start to check if the user attend
     const ThreeMinInMS = 3 * MS_IN_MINUTE;
     const date = new Date(sessionDate.getTime() + ThreeMinInMS);
+    if (new Date().getTime() > date.getTime()) {
+      console.log(
+        "won't create session started reminder job because time is passed",
+      );
+      return;
+    }
     const jobName = getSessionStartedJobName(sessionId);
     const callbackName = callbacksNames.SESSION_STARTED_MAIL;
     const dbJob = await createJobService({

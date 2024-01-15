@@ -12,12 +12,16 @@ import {
 import { createPlanService } from "../service/plan.service";
 import Plan, { PlanType } from "../db/models/plan.model";
 import User from "../db/models/user.model";
-import { getUserAttr } from "./user.controller";
+import { getPaginationParameter, getUserAttr } from "./user.controller";
 import { getPlanAtt } from "./plan.controller";
-import { SubscriptionStatus } from "../db/models/subscription.model";
+import {
+  SUBSCRIPTION_TABLE_NAME,
+  SubscriptionStatus,
+} from "../db/models/subscription.model";
 import { sequelize } from "../db/sequelize";
 import AppError from "../utils/AppError";
 import logger from "../utils/logger";
+import { estimateRowCount } from "../utils/getTableRowCount";
 
 export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -137,16 +141,7 @@ export const updateSubscription = catchAsync(
 );
 export const getAllUsersSubscriptions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page;
-    let limit = req.query.limit;
-    let nPage;
-    let nLimit;
-    let offset;
-    if (page && limit) {
-      nPage = Number(page);
-      nLimit = Number(limit);
-      offset = nPage * nLimit;
-    }
+    const { nLimit, offset } = getPaginationParameter(req);
     const subscriptions = await getAllSubscriptionsService({
       findOptions: {
         limit: nLimit,
@@ -159,7 +154,7 @@ export const getAllUsersSubscriptions = catchAsync(
     });
     res.status(200).json({
       status: "success",
-      length: subscriptions.length,
+      length: await estimateRowCount(SUBSCRIPTION_TABLE_NAME),
       data: subscriptions,
     });
   },

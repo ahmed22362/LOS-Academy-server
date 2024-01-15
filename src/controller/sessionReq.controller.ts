@@ -29,6 +29,10 @@ import {
   emitSessionRequestForTeachers,
   getSocketByUserId,
 } from "../connect/socket";
+import { estimateRowCount } from "../utils/getTableRowCount";
+import { SESSION_REQUEST_TABLE_NAME } from "../db/models/sessionReq.model";
+
+export const MS_IN_HOUR = 3600000; // Number of milliseconds in one hour
 
 export const requestSession = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -51,12 +55,23 @@ export const requestSession = (type: SessionType) =>
     }
     const newSessionDates: Date[] = [];
     const currentDate = new Date();
+    const twelveHoursFromNow = new Date(
+      currentDate.getTime() + 12 * MS_IN_HOUR,
+    );
     for (let date of sessionDates) {
       checkDateFormat(date);
       const sessionDate = new Date(date);
       if (sessionDate < currentDate) {
         return next(
           new AppError(400, "Can't request session to have date in the past!"),
+        );
+      }
+      if (sessionDate < twelveHoursFromNow) {
+        return next(
+          new AppError(
+            400,
+            "Session date must be at least 12 hours in the future!",
+          ),
         );
       }
       newSessionDates.push(sessionDate);
@@ -96,16 +111,7 @@ export const requestSession = (type: SessionType) =>
   });
 export const getAllAvailableSessionsReq = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page;
-    let limit = req.query.limit;
-    let nPage;
-    let nLimit;
-    let offset;
-    if (page && limit) {
-      nPage = Number(page);
-      nLimit = Number(limit);
-      offset = nPage * nLimit;
-    }
+    const { nPage, nLimit, offset } = getPaginationParameter(req);
     const sessions = await getAllSessionsRequestService({
       findOptions: {
         where: { type, status: SessionStatus.PENDING },
@@ -120,11 +126,7 @@ export const getAllAvailableSessionsReq = (type: SessionType) =>
   });
 export const getAllSessionsReq = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nLimit, nPage, status } = getPaginationParameter(req);
-    let offset;
-    if (nLimit && nPage) {
-      offset = nLimit * nPage;
-    }
+    const { nLimit, nPage, status, offset } = getPaginationParameter(req);
     const sessions = await getAllSessionsRequestService({
       findOptions: {
         include: { model: User, attributes: getUserAttr },
@@ -133,9 +135,11 @@ export const getAllSessionsReq = catchAsync(
         where: { status: status ? status : undefined },
       },
     });
-    res
-      .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
+    res.status(200).json({
+      status: "success",
+      length: await estimateRowCount(SESSION_REQUEST_TABLE_NAME),
+      data: sessions,
+    });
   },
 );
 export const getOneSessionReq = catchAsync(
@@ -181,7 +185,6 @@ export const updateSessionReqDate = catchAsync(
         new AppError(403, "Can't update request of and accepted request!"),
       );
     }
-    const userSubscription = await [];
     const sessionRequestUpdated = await updateSessionRequestService({
       id: +id,
       updateBody: body,

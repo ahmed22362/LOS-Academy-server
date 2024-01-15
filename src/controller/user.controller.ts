@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import User, { IUserInput } from "../db/models/user.model";
+import User, { IUserInput, USER_TABLE_NAME } from "../db/models/user.model";
 import catchAsync from "../utils/catchAsync";
 import {
   createUserService,
@@ -41,6 +41,7 @@ import {
 import { SubscriptionStatus } from "../db/models/subscription.model";
 import { getTeacherByIdService } from "../service/teacher.service";
 import { RoleType } from "../db/models/teacher.model";
+import { estimateRowCount } from "../utils/getTableRowCount";
 export const setUserOrTeacherId = (
   req: IRequestWithUser,
   res: Response,
@@ -111,9 +112,11 @@ export const getAllUsers = catchAsync(
     if (!users) {
       return next(new AppError(400, "Error getting all users!"));
     }
-    res
-      .status(200)
-      .json({ status: "success", length: users.length, data: users });
+    res.status(200).json({
+      status: "success",
+      length: await estimateRowCount(USER_TABLE_NAME),
+      data: users,
+    });
   },
 );
 export const deleteUser = catchAsync(
@@ -404,10 +407,15 @@ export function getPaginationParameter(req: Request) {
   let nPage;
   let nLimit;
   let offset;
-  if (page && limit) {
+  if (page) {
     nPage = Number(page);
+  }
+  if (limit) {
     nLimit = Number(limit);
-    offset = (nPage - 1) * nLimit;
+  }
+  if (page && limit) {
+    offset = (nPage! - 1) * nLimit!;
+    console.log("here is the offset", offset);
   }
   return { nLimit, nPage, offset, status };
 }

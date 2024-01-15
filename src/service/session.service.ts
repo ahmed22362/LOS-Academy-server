@@ -284,21 +284,18 @@ export async function getAllSessionsService({
 }
 export async function getAllSessionsServiceByStatus({
   status,
-  page,
+  offset,
   pageSize,
 }: {
   status?: SessionStatus;
-  page?: number;
+  offset?: number;
   pageSize?: number;
 }) {
   let limit;
-  let offset;
   let where: WhereOptions = {};
 
   if (pageSize) limit = pageSize;
-  if (page && pageSize) offset = page * pageSize;
   if (status) where.status = status;
-
   const sessions = await Session.findAll({
     include: [
       {
@@ -312,7 +309,7 @@ export async function getAllSessionsServiceByStatus({
     ],
     where,
     limit,
-    offset,
+    offset: offset ?? 0,
   });
   if (!sessions) {
     throw new AppError(400, "Can't get sessions!");
@@ -960,8 +957,9 @@ export function canAttendSession(sessionDate: Date) {
   const currentDate = new Date();
   const attendanceMargin = 15;
   const ErrorMarginMins = 2;
+
   if (
-    sessionDate.getTime() <=
+    sessionDate.getTime() >=
       currentDate.getTime() - ErrorMarginMins * MS_IN_MINUTE &&
     currentDate.getTime() <=
       sessionDate.getTime() + attendanceMargin * MS_IN_MINUTE
@@ -971,6 +969,7 @@ export function canAttendSession(sessionDate: Date) {
     return false;
   }
 }
+
 export async function isTeacherHasOverlappingSessions({
   teacherId,
   wantedSessionDates,

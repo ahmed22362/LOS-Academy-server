@@ -3,14 +3,20 @@ import {
   BelongsTo,
   Column,
   DataType,
+  DeletedAt,
   ForeignKey,
   Model,
   PrimaryKey,
   Table,
 } from "sequelize-typescript";
 import User from "./user.model";
+export const FEEDBACK_TABLE_NAME = "feedback";
 
-@Table({ tableName: "feedback", timestamps: true, freezeTableName: true })
+@Table({
+  tableName: FEEDBACK_TABLE_NAME,
+  timestamps: true,
+  freezeTableName: true,
+})
 export default class Feedback extends Model {
   @PrimaryKey
   @AutoIncrement
@@ -33,4 +39,7 @@ export default class Feedback extends Model {
 
   @Column({ type: DataType.BOOLEAN, defaultValue: false })
   show!: boolean;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 }

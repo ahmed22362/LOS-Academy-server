@@ -3,13 +3,14 @@ import {
   BelongsTo,
   Column,
   DataType,
+  DeletedAt,
   ForeignKey,
   Model,
   PrimaryKey,
   Table,
-} from "sequelize-typescript"
-import Session from "./session.model"
-import { RoleType } from "./teacher.model"
+} from "sequelize-typescript";
+import Session from "./session.model";
+import { RoleType } from "./teacher.model";
 
 export enum RescheduleRequestStatus {
   PENDING = "pending",
@@ -17,9 +18,10 @@ export enum RescheduleRequestStatus {
   DECLINED = "declined",
   NO_RESPONSE = "no_response",
 }
+export const RESCHEDULE_REQUEST_TABLE_NAME = "reschedule_request";
 
 @Table({
-  tableName: "reschedule_request",
+  tableName: RESCHEDULE_REQUEST_TABLE_NAME,
   timestamps: true,
 })
 export default class RescheduleRequest extends Model<RescheduleRequest> {
@@ -29,32 +31,32 @@ export default class RescheduleRequest extends Model<RescheduleRequest> {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  id!: number
+  id!: number;
   @ForeignKey(() => Session)
   @Column({ type: DataType.INTEGER, allowNull: false })
-  sessionId!: number
+  sessionId!: number;
 
   @BelongsTo(() => Session, { foreignKey: "sessionId" })
-  session!: Session
+  session!: Session;
 
   @Column({ type: DataType.DATE, allowNull: false })
-  oldDate!: Date
+  oldDate!: Date;
 
   @Column({ type: DataType.ARRAY(DataType.DATE), allowNull: false })
-  newDatesOptions!: Date[]
+  newDatesOptions!: Date[];
 
   @Column({ type: DataType.DATE })
-  newDate!: Date
+  newDate!: Date;
 
   @Column({
     type: DataType.ENUM({ values: Object.values(RoleType) }),
     defaultValue: RoleType.USER,
   })
-  requestedBy!: RoleType
+  requestedBy!: RoleType;
 
   @Column({
     type: DataType.ENUM({ values: Object.values(RescheduleRequestStatus) }),
     defaultValue: RescheduleRequestStatus.PENDING,
   })
-  status!: RescheduleRequestStatus
+  status!: RescheduleRequestStatus;
 }

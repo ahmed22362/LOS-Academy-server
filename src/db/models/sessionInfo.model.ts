@@ -9,13 +9,16 @@ import {
   UpdatedAt,
   AutoIncrement,
   PrimaryKey,
+  DeletedAt,
 } from "sequelize-typescript";
 import User from "./user.model";
 import Teacher from "./teacher.model";
 import SessionReq from "./sessionReq.model";
 
+export const SESSION_INFO_TABLE_NAME = "session_info";
+
 @Table({
-  tableName: "session_info",
+  tableName: SESSION_INFO_TABLE_NAME,
   timestamps: true,
   freezeTableName: true,
 })
@@ -66,4 +69,7 @@ export default class SessionInfo extends Model<SessionInfo> {
 
   @UpdatedAt
   updatedAt!: Date;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 }

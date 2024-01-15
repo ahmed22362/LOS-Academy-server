@@ -3,6 +3,7 @@ import {
   BelongsTo,
   Column,
   DataType,
+  DeletedAt,
   ForeignKey,
   Model,
   PrimaryKey,
@@ -22,8 +23,10 @@ export enum SessionType {
   PAID = "paid",
   NOT_ASSIGN = "not_assign",
 }
+export const SESSION_TABLE_NAME = "session";
+
 @Table({
-  tableName: "session",
+  tableName: SESSION_TABLE_NAME,
   timestamps: true,
   freezeTableName: true,
 })
@@ -91,4 +94,7 @@ export default class Session extends Model<Session> {
     defaultValue: false,
   })
   hasReport!: boolean;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 }

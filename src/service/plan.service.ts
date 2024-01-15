@@ -12,7 +12,7 @@ import { createStripePrice, updateStripeProduct } from "./stripe.service";
 import { planCreateInput } from "../controller/plan.controller";
 import AppError from "../utils/AppError";
 export const STANDARD_CURRENCY_USD = "usd";
-const STANDARD_SESSION_MIN_PRICE = 0.16; // minute price is .5$
+const STANDARD_SESSION_MIN_PRICE = 0.15; // minute price is .5$
 const STRIPE_PRODUCT_ID = "prod_OsxQ3q3vRj8fhT"; // replace it to get if from course!
 
 interface IPlanCreateData {

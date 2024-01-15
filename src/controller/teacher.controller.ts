@@ -9,11 +9,12 @@ import {
   updateTeacherService,
 } from "../service/teacher.service";
 import AppError from "../utils/AppError";
-import Teacher, { ITeacherInput } from "../db/models/teacher.model";
+import Teacher, {
+  ITeacherInput,
+  TEACHER_TABLE_NAME,
+} from "../db/models/teacher.model";
 import { decodedToken, login, protect } from "./auth.controller";
 import {
-  getAdminSessionsStatisticsService,
-  getOneSessionService,
   getTeacherAllSessionsService,
   getTeacherLatestTakenSessionService,
   getTeacherOngoingSessionService,
@@ -30,6 +31,7 @@ import {
   getTeacherRescheduleRequestsService,
 } from "../service/rescheduleReq.service";
 import { getPaginationParameter } from "./user.controller";
+import { estimateRowCount } from "../utils/getTableRowCount";
 
 export const getTeacherAtt = [
   "id",
@@ -64,25 +66,18 @@ export const createTeacher = catchAsync(
 );
 export const getAllTeachers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page;
-    let limit = req.query.limit;
-    let nPage;
-    let nLimit;
-    let offset;
-    if (page && limit) {
-      nPage = Number(page);
-      nLimit = Number(limit);
-      offset = nPage * nLimit;
-    }
+    const { nLimit, offset } = getPaginationParameter(req);
     const teachers = await getTeachersService({
       findOptions: { attributes: getTeacherAtt, limit: nLimit, offset },
     });
     if (!teachers) {
       return next(new AppError(400, "Error getting all teachers!"));
     }
-    res
-      .status(200)
-      .json({ status: "success", length: teachers.length, data: teachers });
+    res.status(200).json({
+      status: "success",
+      length: await estimateRowCount(TEACHER_TABLE_NAME),
+      data: teachers,
+    });
   },
 );
 export const deleteTeacher = catchAsync(

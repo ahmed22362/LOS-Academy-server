@@ -10,6 +10,8 @@ import {
 } from "../service/feedback.service";
 import AppError from "../utils/AppError";
 import { getPaginationParameter } from "./user.controller";
+import { estimateRowCount } from "../utils/getTableRowCount";
+import { FEEDBACK_TABLE_NAME } from "../db/models/feedback.model";
 
 export const createFeedBack = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -43,9 +45,11 @@ export const getAllShownFeedbacks = catchAsync(
       page: nPage,
       limit: nLimit,
     });
-    res
-      .status(200)
-      .json({ status: "success", length: feedbacks.length, data: feedbacks });
+    res.status(200).json({
+      status: "success",
+      length: await estimateRowCount(FEEDBACK_TABLE_NAME),
+      data: feedbacks,
+    });
   },
 );
 export const getFeedBack = catchAsync(

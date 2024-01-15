@@ -3,15 +3,22 @@ import {
   BelongsTo,
   Column,
   DataType,
+  DeletedAt,
   ForeignKey,
   Model,
   PrimaryKey,
   Table,
-} from "sequelize-typescript"
-import { GradeOptions } from "./report.model"
-import User from "./user.model"
+} from "sequelize-typescript";
+import { GradeOptions } from "./report.model";
+import User from "./user.model";
 
-@Table({ tableName: "monthly_report", timestamps: true, freezeTableName: true })
+export const MONTHLY_REPORT_TABLE_NAME = "monthly_report";
+
+@Table({
+  tableName: MONTHLY_REPORT_TABLE_NAME,
+  timestamps: true,
+  freezeTableName: true,
+})
 export default class MonthlyReport extends Model {
   @PrimaryKey
   @AutoIncrement
@@ -19,39 +26,42 @@ export default class MonthlyReport extends Model {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  id!: number
+  id!: number;
   @Column({ type: DataType.INTEGER, allowNull: true })
-  arabicToPage?: number
+  arabicToPage?: number;
   @Column({
     type: DataType.ENUM({ values: Object.values(GradeOptions) }),
     defaultValue: GradeOptions.AVERAGE,
   })
-  arabicGrade?: GradeOptions
+  arabicGrade?: GradeOptions;
   @Column({ type: DataType.INTEGER, allowNull: true })
-  quranToPage?: number
+  quranToPage?: number;
   @Column({
     type: DataType.ENUM({ values: Object.values(GradeOptions) }),
     defaultValue: GradeOptions.AVERAGE,
   })
-  quranGrade?: GradeOptions
+  quranGrade?: GradeOptions;
   @Column({ type: DataType.INTEGER, allowNull: true })
-  islamicToPage?: number
+  islamicToPage?: number;
   @Column({
     type: DataType.ENUM({ values: Object.values(GradeOptions) }),
     defaultValue: GradeOptions.AVERAGE,
   })
-  islamicGrade?: GradeOptions
+  islamicGrade?: GradeOptions;
 
   @Column({ type: DataType.TEXT, allowNull: true })
-  comment?: string
+  comment?: string;
 
   @ForeignKey(() => User)
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  userId!: string
+  userId!: string;
 
   @BelongsTo(() => User)
-  user!: User
+  user!: User;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 }

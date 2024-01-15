@@ -1,10 +1,10 @@
-import { sequelize } from "../db/sequelize"
-import logger from "../utils/logger"
+import { sequelize } from "../db/sequelize";
+import logger from "../utils/logger";
 
-let force = false
+let force = false;
 if (process.argv[2] === "force") {
-  console.log("database force deleted successfully!")
-  force = true
+  console.log("database force deleted successfully!");
+  force = true;
 }
 
 async function connectDB() {
@@ -16,11 +16,11 @@ async function connectDB() {
       },
     })
     .then(() => {
-      logger.info("database connected SUCCESSFULLY!")
+      logger.info("database connected SUCCESSFULLY!");
     })
     .catch((err) => {
-      logger.error("Database connection failed:", err)
-    })
+      logger.error("Database connection failed:", err);
+    });
 }
 
-export default connectDB
+export default connectDB;

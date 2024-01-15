@@ -3,16 +3,19 @@ import {
   BelongsTo,
   Column,
   DataType,
+  DeletedAt,
   ForeignKey,
   Model,
   PrimaryKey,
   Table,
-} from "sequelize-typescript"
-import User from "./user.model"
-import { SessionStatus, SessionType } from "./session.model"
+} from "sequelize-typescript";
+import User from "./user.model";
+import { SessionStatus, SessionType } from "./session.model";
+
+export const SESSION_REQUEST_TABLE_NAME = "session_request";
 
 @Table({
-  tableName: "session_request",
+  tableName: SESSION_REQUEST_TABLE_NAME,
   timestamps: true,
   freezeTableName: true,
 })
@@ -23,37 +26,40 @@ export default class SessionReq extends Model<SessionReq> {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  id!: number
+  id!: number;
 
   @ForeignKey(() => User)
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  userId!: string
+  userId!: string;
 
   @BelongsTo(() => User)
-  user!: User
+  user!: User;
 
   @Column({
     type: DataType.ARRAY(DataType.DATE),
   })
-  sessionDates!: Date[]
+  sessionDates!: Date[];
 
   @Column({
     type: DataType.ARRAY(DataType.STRING),
   })
-  courses!: string[]
+  courses!: string[];
 
   @Column({
     type: DataType.ENUM({ values: Object.values(SessionStatus) }),
     defaultValue: SessionStatus.PENDING,
   })
-  status!: SessionStatus
+  status!: SessionStatus;
 
   @Column({
     type: DataType.ENUM({ values: Object.values(SessionType) }),
     defaultValue: SessionType.NOT_ASSIGN,
   })
-  type!: SessionType
+  type!: SessionType;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 }

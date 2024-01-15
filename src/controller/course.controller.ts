@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from "express"
-import catchAsync from "../utils/catchAsync"
+import { NextFunction, Request, Response } from "express";
+import catchAsync from "../utils/catchAsync";
 import {
   createCourseBody,
   createCourseService,
@@ -7,73 +7,77 @@ import {
   getAllCoursesService,
   getCourseService,
   updateCourseService,
-} from "../service/course.service"
+} from "../service/course.service";
 import {
   deleteStripeProduct,
   updateStripeProduct,
-} from "../service/stripe.service"
-import AppError from "../utils/AppError"
+} from "../service/stripe.service";
+import AppError from "../utils/AppError";
+import { estimateRowCount } from "../utils/getTableRowCount";
+import { COURSE_TABLE_NAME } from "../db/models/course.model";
 
 export const createCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { title, description, details } = req.body
-    const body: createCourseBody = { title, description, details }
+    const { title, description, details } = req.body;
+    const body: createCourseBody = { title, description, details };
     const course = await createCourseService({
       body,
-    })
+    });
     res.status(201).json({
       status: "success",
       message: "course created successfully!",
       data: course,
-    })
-  }
-)
+    });
+  },
+);
 export const getAllCourses = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page
-    let limit = req.query.limit
-    let nPage
-    let nLimit
+    let page = req.query.page;
+    let limit = req.query.limit;
+    let nPage;
+    let nLimit;
     if (page && limit) {
-      nPage = Number(page)
-      nLimit = Number(limit)
+      nPage = Number(page);
+      nLimit = Number(limit);
     }
-    const courses = await getAllCoursesService({ page: nPage, limit: nLimit })
-    res
-      .status(200)
-      .json({ status: "success", length: courses.length, data: courses })
-  }
-)
+    const courses = await getAllCoursesService({ page: nPage, limit: nLimit });
+    res.status(200).json({
+      status: "success",
+      length: await estimateRowCount(COURSE_TABLE_NAME),
+      data: courses,
+    });
+  },
+);
 export const getCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id
-    const course = await getCourseService({ id })
+    const id = req.params.id;
+    const course = await getCourseService({ id });
     if (!course) {
-      return next(new AppError(404, "Can't find course with this id!"))
+      return next(new AppError(404, "Can't find course with this id!"));
     }
-    res.status(200).json({ status: "success", data: course })
-  }
-)
+    res.status(200).json({ status: "success", data: course });
+  },
+);
 export const updateCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id
-    const { title, description, details } = req.body
+    const id = req.params.id;
+    const { title, description, details } = req.body;
     const course = await updateCourseService({
       id,
       updatedData: { title, description, details },
-    })
-    res.status(200).json({ status: "success", data: course })
-  }
-)
+    });
+    res.status(200).json({ status: "success", data: course });
+  },
+);
 export const deleteCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id
-    const course = await getCourseService({ id })
+    const id = req.params.id;
+    const course = await getCourseService({ id });
     await deleteCourseService({
       id: course?.id,
-    })
+    });
     res
       .status(200)
-      .json({ status: "success", message: "course deleted successfully" })
-  }
-)
+      .json({ status: "success", message: "course deleted successfully" });
+  },
+);

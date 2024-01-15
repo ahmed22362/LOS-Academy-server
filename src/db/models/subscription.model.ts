@@ -3,13 +3,14 @@ import {
   BelongsTo,
   Column,
   DataType,
+  DeletedAt,
   ForeignKey,
   Model,
   PrimaryKey,
   Table,
-} from "sequelize-typescript"
-import User from "./user.model"
-import Plan from "./plan.model"
+} from "sequelize-typescript";
+import User from "./user.model";
+import Plan from "./plan.model";
 export enum SubscriptionStatus {
   INCOMPLETE = "incomplete",
   INCOMPLETE_EXPIRED = "incomplete_expired",
@@ -19,7 +20,13 @@ export enum SubscriptionStatus {
   CANCELED = "canceled",
   UNPAID = "unpaid",
 }
-@Table({ tableName: "subscription", timestamps: true, freezeTableName: true })
+export const SUBSCRIPTION_TABLE_NAME = "subscription";
+
+@Table({
+  tableName: SUBSCRIPTION_TABLE_NAME,
+  timestamps: true,
+  freezeTableName: true,
+})
 export default class Subscription extends Model {
   @PrimaryKey
   @AutoIncrement
@@ -27,37 +34,40 @@ export default class Subscription extends Model {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  id!: number
+  id!: number;
 
   @Column({
     type: DataType.ENUM({ values: Object.values(SubscriptionStatus) }),
     defaultValue: SubscriptionStatus.INCOMPLETE,
   })
-  status!: string
+  status!: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
-  stripe_subscription_id?: string | null
+  stripe_subscription_id?: string | null;
 
   @Column
-  stripe_checkout_session_id!: string
+  stripe_checkout_session_id!: string;
 
   @ForeignKey(() => User)
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  userId!: string
+  userId!: string;
 
   @BelongsTo(() => User)
-  user!: User
+  user!: User;
 
   @ForeignKey(() => Plan)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  planId!: number
+  planId!: number;
 
   @BelongsTo(() => Plan)
-  plan!: Plan
+  plan!: Plan;
+
+  @DeletedAt
+  declare deletedAt: Date | null;
 }
