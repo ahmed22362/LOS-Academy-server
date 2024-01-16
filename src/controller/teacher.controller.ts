@@ -68,7 +68,11 @@ export const getAllTeachers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { nLimit, offset } = getPaginationParameter(req);
     const teachers = await getTeachersService({
-      findOptions: { attributes: getTeacherAtt, limit: nLimit, offset },
+      findOptions: {
+        attributes: [...getTeacherAtt, "createdAt"],
+        limit: nLimit,
+        offset,
+      },
     });
     if (!teachers) {
       return next(new AppError(400, "Error getting all teachers!"));
