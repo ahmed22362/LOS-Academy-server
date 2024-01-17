@@ -96,16 +96,7 @@ export const createUser = catchAsync(
 );
 export const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page;
-    let limit = req.query.limit;
-    let nPage;
-    let nLimit;
-    let offset;
-    if (page && limit) {
-      nPage = Number(page);
-      nLimit = Number(limit);
-      offset = nPage * nLimit;
-    }
+    const { nLimit, offset } = getPaginationParameter(req);
     const users = await getUsersService({
       findOptions: { attributes: getUserAttr, limit: nLimit, offset },
     });
@@ -122,8 +113,12 @@ export const getAllUsers = catchAsync(
 export const deleteUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
+    const force = <string>req.query.force;
 
-    const deleteState = await deleteUserService({ userId: id });
+    const deleteState = await deleteUserService({
+      userId: id,
+      force,
+    });
     if (!deleteState) {
       return next(new AppError(400, "Error Deleting User!"));
     }
@@ -415,7 +410,6 @@ export function getPaginationParameter(req: Request) {
   }
   if (page && limit) {
     offset = (nPage! - 1) * nLimit!;
-    console.log("here is the offset", offset);
   }
   return { nLimit, nPage, offset, status };
 }

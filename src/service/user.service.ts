@@ -139,17 +139,20 @@ async function updateUserRemainSessionService({
 }
 async function deleteUserService({
   userId,
+  force,
 }: {
   userId: string;
+  force?: string;
 }): Promise<boolean> {
   try {
     const user = await User.findByPk(userId);
     if (!user) {
       return false;
     }
+    var boolValue = force === "true"; //returns true
 
     // Delete the user from the database
-    await user.destroy();
+    await user.destroy({ force: boolValue });
 
     return true;
   } catch (error: any) {
