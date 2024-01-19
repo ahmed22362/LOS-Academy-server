@@ -10,6 +10,7 @@ import freeSessionRouter from "./session.free.router";
 import paidSessionRouter from "./session.paid.router";
 import { protectUser, setUserOrTeacherId } from "../controller/user.controller";
 import {
+  createSessionAdmin,
   generateSessionLink,
   getAdminSessionStats,
   getAllRescheduleRequestsForAdmin,
@@ -29,6 +30,7 @@ import validate from "../middleware/validate";
 import {
   assignTeacherSchema,
   cancelRequestSchema,
+  createSessionByAdminSchema,
   generateLinkSchema,
   getSessionCoursesSchema,
   replaceSessionInfoTeacherSchema,
@@ -137,6 +139,14 @@ sessionRouter
 sessionRouter
   .route("/sessionCourses")
   .get(validate(getSessionCoursesSchema), getSessionCourses);
+sessionRouter
+  .route("/createSession")
+  .post(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    validate(createSessionByAdminSchema),
+    createSessionAdmin,
+  );
 sessionRouter
   .route("/:id")
   .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo);

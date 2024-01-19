@@ -78,9 +78,9 @@ export const createPlan = catchAsync(
 );
 export const getPlans = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit } = getPaginationParameter(req);
+    const { offset, nLimit } = getPaginationParameter(req);
     const plans = await getPlansService({
-      page: nPage,
+      offset: offset,
       limit: nLimit,
       findOptions: { where: { type: PlanType.STANDARD } },
     });

@@ -3,6 +3,7 @@ import catchAsync from "../utils/catchAsync";
 import {
   canRescheduleSession,
   checkDateFormat,
+  createFreeSessionService,
   createPaidSessionsService,
   generateMeetingLinkAndUpdateSession,
   getAdminSessionsStatisticsService,
@@ -188,10 +189,18 @@ export const replaceSessionInfoTeacher = catchAsync(
     }
   },
 );
-export const createPaidSessionAdmin = catchAsync(
+export const createSessionAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let { sessionInfoId, userId, teacherId, sessionDates, sessionDuration } =
-      req.body;
+    let {
+      sessionInfoId,
+      userId,
+      teacherId,
+      sessionDates,
+      sessionDuration,
+      sessionCount,
+      sessionsPerWeek,
+      type,
+    } = req.body;
     let sessionReqId;
     const newSessionDates: Date[] = [];
     const currentDate = new Date();
@@ -207,11 +216,11 @@ export const createPaidSessionAdmin = catchAsync(
       }
       newSessionDates.push(new Date(date));
     }
-    if (newSessionDates.length > 1) {
+    if (sessionsPerWeek !== sessionDates.length) {
       return next(
         new AppError(
           400,
-          "you can only create one session per time provide one date",
+          "please provide dates that have the same length of sessions per week!",
         ),
       );
     }
@@ -238,17 +247,27 @@ export const createPaidSessionAdmin = catchAsync(
       }
       const teacher = await getTeacherByIdService({ id: teacherId });
       const user = await getTeacherByIdService({ id: userId });
-      const session = createPaidSessionsService({
+      const sessionBody = {
         sessionInfoId,
-        sessionCount: 1,
         sessionDates,
         sessionDuration,
-        sessionsPerWeek: 1,
         transaction: t,
         studentEmail: user.email,
         studentName: user.name,
         teacherEmail: teacher.email,
         teacherName: teacher.name,
+      };
+      let session;
+      if (type === SessionType.FREE) {
+        session = await createFreeSessionService({
+          ...sessionBody,
+          sessionDate: sessionDates[0],
+        });
+      }
+      session = await createPaidSessionsService({
+        ...sessionBody,
+        sessionCount: sessionCount ?? sessionsPerWeek * 4, // 4 weeks per month
+        sessionsPerWeek,
       });
       await t.commit();
       res.status(201).json({ status: "success", data: session });

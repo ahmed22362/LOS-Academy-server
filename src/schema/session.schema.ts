@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SessionType } from "../db/models/session.model";
 const sessionId = z.number({
   required_error: "please provide sessionid in the body!",
 });
@@ -25,6 +26,7 @@ export const SessionStatusSchema = z.enum([
   "user_absent",
   "teacher_absent",
 ]);
+const sessionType = z.enum([SessionType.FREE, SessionType.PAID]);
 export const sessionDates = z
   .array(z.string())
   .refine((data) => data.length > 0, {
@@ -100,6 +102,9 @@ export const createSessionByAdminSchema = z.object({
       teacherId,
       sessionDates,
       sessionDuration,
+      sessionCount: z.number(),
+      type: sessionType,
+      sessionsPerWeek: z.number(),
     })
     .partial()
     .refine(

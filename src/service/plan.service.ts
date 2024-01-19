@@ -63,17 +63,17 @@ export async function createPlanService({ data }: { data: planCreateInput }) {
 }
 export async function getPlansService({
   findOptions,
-  page,
+  offset,
   limit,
 }: {
   findOptions?: FindOptions;
-  page?: number;
+  offset?: number;
   limit?: number;
 }) {
   const plan = await getModelsService({
     ModelClass: Plan,
     findOptions,
-    page,
+    offset,
     limit,
   });
   if (!plan) {

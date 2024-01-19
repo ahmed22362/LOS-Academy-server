@@ -1,6 +1,6 @@
-import Teacher from "../db/models/teacher.model"
-import { FindOptions, Op, Transaction } from "sequelize"
-import { ITeacherInput } from "../db/models/teacher.model"
+import Teacher from "../db/models/teacher.model";
+import { FindOptions, Op, Transaction } from "sequelize";
+import { ITeacherInput } from "../db/models/teacher.model";
 import {
   createModelService,
   deleteModelService,
@@ -9,61 +9,61 @@ import {
   getModelsService,
   getOneModelByService,
   updateModelService,
-} from "./factory.services"
-import { createStripeCustomer } from "./stripe.service"
-import AppError from "../utils/AppError"
-import SessionInfo from "../db/models/sessionInfo.model"
-import User from "../db/models/user.model"
-import { getUserAttr } from "../controller/user.controller"
+} from "./factory.services";
+import { createStripeCustomer } from "./stripe.service";
+import AppError from "../utils/AppError";
+import SessionInfo from "../db/models/sessionInfo.model";
+import User from "../db/models/user.model";
+import { getUserAttr } from "../controller/user.controller";
 
 export async function createTeacherService(body: ITeacherInput) {
   const stripeCustomer = await createStripeCustomer({
     email: body.email,
     name: body.name,
     phone: body.phone,
-  })
-  body.customerId = stripeCustomer.id
-  return await createModelService({ ModelClass: Teacher, data: body })
+  });
+  body.customerId = stripeCustomer.id;
+  return await createModelService({ ModelClass: Teacher, data: body });
 }
 export async function deleteTeacherService({ id }: { id: string | number }) {
-  return await deleteModelService({ ModelClass: Teacher, id: id })
+  return await deleteModelService({ ModelClass: Teacher, id: id });
 }
 export async function getTeacherByIdService({
   id,
   findOptions,
 }: {
-  id: string | number
-  findOptions?: FindOptions
+  id: string | number;
+  findOptions?: FindOptions;
 }) {
   const teacher = await getModelByIdService({
     ModelClass: Teacher,
     Id: id,
     findOptions,
-  })
+  });
   if (!teacher) {
-    throw new AppError(404, "Can't find teacher with this id!")
+    throw new AppError(404, "Can't find teacher with this id!");
   }
-  return teacher as Teacher
+  return teacher as Teacher;
 }
 export async function getTeachersService({
   findOptions,
 }: {
-  findOptions?: FindOptions
+  findOptions?: FindOptions;
 }) {
-  return await getModelsService({ ModelClass: Teacher, findOptions })
+  return await getModelsService({ ModelClass: Teacher, findOptions });
 }
 export async function updateTeacherService({
   updatedData,
   teacherId,
 }: {
-  updatedData: Partial<Teacher>
-  teacherId: string
+  updatedData: Partial<Teacher>;
+  teacherId: string;
 }) {
   return await updateModelService({
     ModelClass: Teacher,
     id: teacherId,
     updatedData: updatedData,
-  })
+  });
 }
 export async function updateTeacherBalance({
   teacherId,
@@ -72,44 +72,44 @@ export async function updateTeacherBalance({
   committed,
   transaction,
 }: {
-  teacherId: string
-  amount?: number
-  committed?: boolean
-  numOfSessions?: number
-  transaction?: Transaction
+  teacherId: string;
+  amount?: number;
+  committed?: boolean;
+  numOfSessions?: number;
+  transaction?: Transaction;
 }) {
-  const teacher = await getTeacherByIdService({ id: teacherId })
+  const teacher = await getTeacherByIdService({ id: teacherId });
   if (!amount) {
-    amount = numOfSessions * teacher.sessionCost
+    amount = numOfSessions * teacher.sessionCost;
   }
   const updated = await teacher.increment(
-    { balance: amount, committedSessions: committed ? 1 : 0 },
+    { balance: amount ?? 0, committedSessions: committed ? 1 : 0 },
     {
       transaction,
-    }
-  )
-  return updated
+    },
+  );
+  return updated;
 }
 export async function getTeacherByService({
   findOptions,
 }: {
-  findOptions: FindOptions
+  findOptions: FindOptions;
 }): Promise<Teacher | null> {
-  return await getOneModelByService({ Model: Teacher, findOptions })
+  return await getOneModelByService({ Model: Teacher, findOptions });
 }
 
 export async function getTeacherStudentsService({
   teacherId,
 }: {
-  teacherId: string
+  teacherId: string;
 }) {
   const sessionInfos = await SessionInfo.findAll({
     where: { teacherId },
     include: [{ model: User, attributes: getUserAttr }],
-  })
-  const students = sessionInfos.map((info) => info.user)
+  });
+  const students = sessionInfos.map((info) => info.user);
   const unique: User[] = [
     ...new Set(students.map((item) => JSON.stringify(item))),
-  ].map((item) => JSON.parse(item))
-  return unique
+  ].map((item) => JSON.parse(item));
+  return unique;
 }

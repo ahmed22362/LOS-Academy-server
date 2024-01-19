@@ -668,6 +668,7 @@ export async function handleSessionFinishedService({
         await updateTeacherBalance({
           teacherId: session.SessionInfo.teacherId!,
           numOfSessions: 1,
+          committed: true,
           transaction,
         });
         await updateUserRemainSessionService({
@@ -697,6 +698,11 @@ export async function handleSessionFinishedService({
       updatedSession = await updateSessionService({
         sessionId,
         updatedData: { status: SessionStatus.TAKEN },
+        transaction,
+      });
+      await updateTeacherBalance({
+        teacherId: session.SessionInfo.teacherId!,
+        committed: true,
         transaction,
       });
       if (session.type === SessionType.PAID) {
