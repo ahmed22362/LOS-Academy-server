@@ -348,7 +348,7 @@ export const updateSessionStatus = catchAsync(
       const session = await getOneSessionDetailsService({ sessionId });
       switch (status) {
         case SessionStatus.ONGOING:
-          updatedSession = generateMeetingLinkAndUpdateSession({
+          updatedSession = await generateMeetingLinkAndUpdateSession({
             sessionId,
             status: SessionStatus.ONGOING,
             transaction: t,
@@ -410,6 +410,12 @@ export const updateSessionStatus = catchAsync(
           break;
         default:
           console.error("Can't update session status with unknown status!");
+          return next(
+            new AppError(
+              400,
+              "Can't update session status with unknown status!",
+            ),
+          );
           break;
       }
       await t.commit();
