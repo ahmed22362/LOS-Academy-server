@@ -37,11 +37,11 @@ export async function createFeedBackService({
   }
 }
 export async function getAllFeedBacksService({
-  page,
+  offset,
   limit,
   show,
 }: {
-  page?: number;
+  offset?: number;
   limit?: number;
   show?: boolean;
 }) {
@@ -52,7 +52,7 @@ export async function getAllFeedBacksService({
     }
     const feedbacks = await getModelsService({
       ModelClass: FeedBack,
-      page,
+      offset,
       limit,
       findOptions: {
         include: [{ model: User, attributes: getUserAttr }],
@@ -71,13 +71,13 @@ export async function getAllFeedBacksService({
   }
 }
 export async function getAllShownFeedBacksService({
-  page,
+  offset,
   limit,
 }: {
-  page?: number;
+  offset?: number;
   limit?: number;
 }) {
-  return await getAllFeedBacksService({ page, limit });
+  return await getAllFeedBacksService({ offset, limit });
 }
 export async function updateFeedBackService({
   id,

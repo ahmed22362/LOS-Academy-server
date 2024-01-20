@@ -28,9 +28,9 @@ export const createFeedBack = catchAsync(
 );
 export const getAllFeedBacks = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit } = getPaginationParameter(req);
+    const { offset, nLimit } = getPaginationParameter(req);
     const feedbacks = await getAllFeedBacksService({
-      page: nPage,
+      offset,
       limit: nLimit,
     });
     res
@@ -40,9 +40,9 @@ export const getAllFeedBacks = catchAsync(
 );
 export const getAllShownFeedbacks = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit } = getPaginationParameter(req);
+    const { offset, nLimit } = getPaginationParameter(req);
     const feedbacks = await getAllShownFeedBacksService({
-      page: nPage,
+      offset,
       limit: nLimit,
     });
     res.status(200).json({
