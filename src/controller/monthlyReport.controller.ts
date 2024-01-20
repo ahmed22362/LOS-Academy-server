@@ -47,9 +47,9 @@ export const createMonthlyReport = catchAsync(
 );
 export const getAllMonthlyReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nLimit, nPage } = getPaginationParameter(req);
+    const { nLimit, nPage, offset } = getPaginationParameter(req);
     const monthlyReports = await getAllMonthlyReportsService({
-      page: nPage,
+      offset,
       limit: nLimit,
     });
     res.status(200).json({

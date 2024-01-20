@@ -1,8 +1,8 @@
-import { getUserAttr } from "../controller/user.controller"
-import MonthlyReport from "../db/models/monthlyReport.model"
-import { GradeOptions } from "../db/models/report.model"
-import User from "../db/models/user.model"
-import AppError from "../utils/AppError"
+import { getUserAttr } from "../controller/user.controller";
+import MonthlyReport from "../db/models/monthlyReport.model";
+import { GradeOptions } from "../db/models/report.model";
+import User from "../db/models/user.model";
+import AppError from "../utils/AppError";
 import {
   createModelService,
   deleteModelService,
@@ -10,94 +10,94 @@ import {
   getModelByIdService,
   getModelsService,
   updateModelService,
-} from "./factory.services"
+} from "./factory.services";
 
 interface createMonthlyReportBody {
-  userId: string
-  arabicToPage?: number
-  arabicGrade?: GradeOptions
-  quranToPage?: number
-  quranGrade?: GradeOptions
-  islamicToPage?: number
-  islamicGrade?: GradeOptions
-  comment?: string
+  userId: string;
+  arabicToPage?: number;
+  arabicGrade?: GradeOptions;
+  quranToPage?: number;
+  quranGrade?: GradeOptions;
+  islamicToPage?: number;
+  islamicGrade?: GradeOptions;
+  comment?: string;
 }
 export async function createMonthlyReportService({
   body,
 }: {
-  body: createMonthlyReportBody
+  body: createMonthlyReportBody;
 }) {
   try {
     const monthlyReport = await createModelService({
       ModelClass: MonthlyReport,
       data: body,
-    })
+    });
     if (!monthlyReport) {
-      throw new AppError(400, "Can't Create monthlyReport!")
+      throw new AppError(400, "Can't Create monthlyReport!");
     }
-    return monthlyReport
+    return monthlyReport;
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While creating monthlyReport!: ${error.message}`
-    )
+      `Error While creating monthlyReport!: ${error.message}`,
+    );
   }
 }
 export async function getAllMonthlyReportsService({
-  page,
   limit,
+  offset,
 }: {
-  page?: number
-  limit?: number
+  limit?: number;
+  offset?: number;
 }) {
   try {
     const monthlyReports = await getModelsService({
       ModelClass: MonthlyReport,
       findOptions: { include: [{ model: User, attributes: getUserAttr }] },
-      page,
+      offset,
       limit,
-    })
+    });
     if (!monthlyReports) {
-      throw new AppError(400, `Error while retrieving monthlyReport`)
+      throw new AppError(400, `Error while retrieving monthlyReport`);
     }
-    return monthlyReports
+    return monthlyReports;
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error while retrieving monthlyReport: ${error.message}`
-    )
+      `Error while retrieving monthlyReport: ${error.message}`,
+    );
   }
 }
 export async function updateMonthlyReportService({
   id,
   updatedData,
 }: {
-  id: number
-  updatedData: any
+  id: number;
+  updatedData: any;
 }) {
   return (await updateModelService({
     ModelClass: MonthlyReport,
     id,
     updatedData,
-  })) as MonthlyReport
+  })) as MonthlyReport;
 }
 export async function deleteMonthlyReportService({ id }: { id: number }) {
-  return await deleteModelService({ ModelClass: MonthlyReport, id: id })
+  return await deleteModelService({ ModelClass: MonthlyReport, id: id });
 }
 export async function getMonthlyReportService({ id }: { id: number }) {
   return (await getModelByIdService({
     ModelClass: MonthlyReport,
     Id: id,
-  })) as MonthlyReport
+  })) as MonthlyReport;
 }
 export async function getUserMonthlyReportService({
   userId,
   pageSize,
   page,
 }: {
-  userId: string
-  pageSize?: number
-  page?: number
+  userId: string;
+  pageSize?: number;
+  page?: number;
 }) {
   const reports = await getAllModelsByService({
     Model: MonthlyReport,
@@ -107,6 +107,6 @@ export async function getUserMonthlyReportService({
     },
     page,
     pageSize,
-  })
-  return reports as MonthlyReport[]
+  });
+  return reports as MonthlyReport[];
 }
