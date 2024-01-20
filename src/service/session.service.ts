@@ -253,7 +253,7 @@ export async function updateSessionStatusService({
   if (!updateModelService) {
     throw new AppError(400, "Can't update service!");
   }
-  return updatedSession;
+  return updatedSession as Session;
 }
 export async function updateSessionsService({
   values,

@@ -342,96 +342,73 @@ export const generateSessionLink = catchAsync(
 export const updateSessionStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { sessionId, teacherId, status } = req.body;
+    let updatedSession;
     const t = await sequelize.transaction();
     try {
-      const { exist, session } = await teacherOwnThisSession({
-        teacherId,
-        sessionId,
-      });
-      if (!exist) {
-        return next(
-          new AppError(401, "you can't update session that is not yours"),
-        );
-      }
-      // if (!session.studentAttended && status !== SessionStatus.USER_ABSENT) {
-      //   return next(
-      //     new AppError(
-      //       400,
-      //       "user must attend before you can update the session status!"
-      //     )
-      //   )
-      // }
-      if (
-        session.status !== SessionStatus.PENDING &&
-        session.status !== SessionStatus.ONGOING
-      ) {
-        return next(new AppError(400, "Session already updated!"));
-      }
-      if (status === SessionStatus.ONGOING) {
-        await isThereOngoingSessionForTheSameTeacher({ teacherId });
-        if (!isSessionWithinTimeRange(session.sessionDate)) {
-          return next(
-            new AppError(
-              400,
-              "Can't update session to be ongoing were it's time didn't come! you can always request a reschedule",
-            ),
-          );
-        }
-        if (!session.meetingLink) {
-          return next(
-            new AppError(
-              400,
-              "Can't make ongoing session before generating it's link! generate the link before update it status!",
-            ),
-          );
-        }
-      }
-      if (
-        status === SessionStatus.USER_ABSENT &&
-        !isSessionAfterItsTimeRange(
-          session.sessionDate,
-          session.sessionDuration,
-        )
-      ) {
-        return next(
-          new AppError(
-            400,
-            "You have to wait till the session duration end to update the student as absent",
-          ),
-        );
-      }
-      if (!session.teacherAttended && status !== SessionStatus.TEACHER_ABSENT) {
-        throw new AppError(
-          401,
-          "can't update status the session of absent teacher!",
-        );
+      const session = await getOneSessionDetailsService({ sessionId });
+      switch (status) {
+        case SessionStatus.ONGOING:
+          updatedSession = generateMeetingLinkAndUpdateSession({
+            sessionId,
+            status: SessionStatus.ONGOING,
+            transaction: t,
+          });
+          break;
+        case SessionStatus.TAKEN:
+          updatedSession = await updateSessionStatusService({
+            id: sessionId,
+            updatedData: { status },
+            transaction: t,
+          });
+          await updateUserRemainSessionService({
+            userId: session.SessionInfo.userId!,
+            amountOfSessions: -1,
+            transaction: t,
+          });
+          await updateTeacherBalance({
+            teacherId: session.SessionInfo.teacherId!,
+            committed: true,
+            transaction: t,
+          });
+          break;
+        case SessionStatus.PENDING:
+          updatedSession = await updateSessionStatusService({
+            id: sessionId,
+            updatedData: { status },
+            transaction: t,
+          });
+          break;
+        case SessionStatus.TEACHER_ABSENT:
+          updatedSession = await updateSessionStatusService({
+            id: sessionId,
+            updatedData: { status },
+            transaction: t,
+          });
+          await updateTeacherBalance({
+            teacherId: session.SessionInfo.teacherId!,
+            numOfSessions: -1,
+            transaction: t,
+          });
+          break;
+        case SessionStatus.USER_ABSENT:
+          updatedSession = await updateSessionStatusService({
+            id: sessionId,
+            updatedData: { status },
+            transaction: t,
+          });
+          updateTeacherBalance({
+            teacherId: session.SessionInfo.teacherId!,
+            committed: true,
+            numOfSessions: 1,
+            transaction: t,
+          });
       }
       await updateSessionStatusService({
         id: sessionId,
         updatedData: { status },
         transaction: t,
       });
-      if (status === SessionStatus.TAKEN) {
-        if (session.status !== SessionStatus.ONGOING) {
-          return next(
-            new AppError(
-              403,
-              "Can't update session to be taken that is never started!",
-            ),
-          );
-        }
-        if (session.type === SessionType.PAID) {
-          await updateUserRemainSessionService({
-            userId: session.SessionInfo.userId as string,
-            amountOfSessions: -1,
-            transaction: t,
-          });
-        }
-      }
       await t.commit();
-      const updatedSession = await getOneSessionDetailsService({
-        sessionId: session.id,
-      });
       res.status(200).json({
         status: "success",
         message: "session status updated successfully",

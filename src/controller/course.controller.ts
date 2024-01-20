@@ -15,6 +15,7 @@ import {
 import AppError from "../utils/AppError";
 import { estimateRowCount } from "../utils/getTableRowCount";
 import { COURSE_TABLE_NAME } from "../db/models/course.model";
+import { getPaginationParameter } from "./user.controller";
 
 export const createCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -32,15 +33,8 @@ export const createCourse = catchAsync(
 );
 export const getAllCourses = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page;
-    let limit = req.query.limit;
-    let nPage;
-    let nLimit;
-    if (page && limit) {
-      nPage = Number(page);
-      nLimit = Number(limit);
-    }
-    const courses = await getAllCoursesService({ page: nPage, limit: nLimit });
+    const { nLimit, offset } = getPaginationParameter(req);
+    const courses = await getAllCoursesService({ offset, limit: nLimit });
     res.status(200).json({
       status: "success",
       length: await estimateRowCount(COURSE_TABLE_NAME),
