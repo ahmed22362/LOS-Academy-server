@@ -341,7 +341,7 @@ export const generateSessionLink = catchAsync(
 );
 export const updateSessionStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionId, teacherId, status } = req.body;
+    const { sessionId, status } = req.body;
     let updatedSession;
     const t = await sequelize.transaction();
     try {
@@ -396,18 +396,22 @@ export const updateSessionStatus = catchAsync(
             updatedData: { status },
             transaction: t,
           });
-          updateTeacherBalance({
+          await updateTeacherBalance({
             teacherId: session.SessionInfo.teacherId!,
             committed: true,
             numOfSessions: 1,
             transaction: t,
           });
+          await updateUserRemainSessionService({
+            userId: session.SessionInfo.userId!,
+            amountOfSessions: -1,
+            transaction: t,
+          });
+          break;
+        default:
+          console.error("Can't update session status with unknown status!");
+          break;
       }
-      await updateSessionStatusService({
-        id: sessionId,
-        updatedData: { status },
-        transaction: t,
-      });
       await t.commit();
       res.status(200).json({
         status: "success",

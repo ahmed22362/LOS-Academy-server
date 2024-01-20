@@ -94,6 +94,7 @@ sessionRouter
   .post(
     protectTeacher,
     setUserOrTeacherId,
+    restrictTo(RoleType.ADMIN),
     validate(updateSessionStatusSchema),
     updateSessionStatus,
   );
