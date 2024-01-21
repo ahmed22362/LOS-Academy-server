@@ -195,7 +195,7 @@ export async function handelCheckoutSessionCompleted(
     await updateSubscriptionService({
       id: membership.id,
       updatedData: {
-        status: stripeSubscription.status as SubscriptionStatus,
+        status: stripeSubscription?.status as SubscriptionStatus,
         stripe_subscription_id: checkoutSession.subscription as string,
       },
       transaction: t,
