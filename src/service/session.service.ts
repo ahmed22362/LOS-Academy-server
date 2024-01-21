@@ -310,6 +310,7 @@ export async function getAllSessionsServiceByStatus({
     where,
     limit,
     offset: offset ?? 0,
+    order: [["sessionDate", "DESC"]],
   });
   if (!sessions) {
     throw new AppError(400, "Can't get sessions!");
@@ -1023,16 +1024,4 @@ export async function isTeacherHasOverlappingSessions({
     }
   }
   return false;
-}
-export async function getSessionsCoursesService({
-  sessionId,
-}: {
-  sessionId: number;
-}) {
-  const session = await getOneSessionWithSessionInfoOnlyService({ sessionId });
-  const sessionInfo = await getOneSessionInfoServiceBy({
-    where: { id: session.sessionInfoId },
-    include: [{ model: SessionReq, attributes: ["courses"] }],
-  });
-  return sessionInfo?.sessionRequest?.courses;
 }

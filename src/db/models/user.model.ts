@@ -137,9 +137,6 @@ export default class User extends Model<User> {
   @HasMany(() => FreeSession)
   sessions!: FreeSession[];
 
-  @DeletedAt
-  declare deletedAt: Date | null;
-
   @BeforeSave
   static async hashPassword(instance: User) {
     if (instance.changed("password")) {

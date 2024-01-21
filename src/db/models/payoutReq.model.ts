@@ -34,7 +34,7 @@ export default class PayOutRequest extends Model<PayOutRequest> {
   @Column({ type: DataType.STRING, allowNull: false })
   teacherId!: string;
 
-  @BelongsTo(() => Teacher, { foreignKey: "teacherId" })
+  @BelongsTo(() => Teacher, { foreignKey: "teacherId", onDelete: "CASCADE" })
   teacher!: Teacher;
 
   @Column({ type: DataType.INTEGER, allowNull: false })
@@ -45,7 +45,4 @@ export default class PayOutRequest extends Model<PayOutRequest> {
     defaultValue: PayoutRequestStatus.PENDING,
   })
   status!: PayoutRequestStatus;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

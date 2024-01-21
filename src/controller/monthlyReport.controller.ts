@@ -16,26 +16,14 @@ import { MONTHLY_REPORT_TABLE_NAME } from "../db/models/monthlyReport.model";
 
 export const createMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const {
-      userId,
-      arabicToPage,
-      arabicGrade,
-      quranToPage,
-      quranGrade,
-      islamicToPage,
-      islamicGrade,
-      comment,
-    } = req.body;
+    const { userId, sessionId, reportCourses, comment, teacherId, grade } =
+      req.body;
     const monthlyReportInstance = await createMonthlyReportService({
       body: {
         userId,
-        arabicGrade,
-        arabicToPage,
-        quranGrade,
-        quranToPage,
-        islamicGrade,
-        islamicToPage,
+        reportCourses,
         comment,
+        grade,
       },
     });
     res.status(201).json({
@@ -47,7 +35,7 @@ export const createMonthlyReport = catchAsync(
 );
 export const getAllMonthlyReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nLimit, nPage, offset } = getPaginationParameter(req);
+    const { nLimit, offset } = getPaginationParameter(req);
     const monthlyReports = await getAllMonthlyReportsService({
       offset,
       limit: nLimit,

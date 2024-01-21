@@ -33,6 +33,7 @@ export async function createPlanService({ data }: { data: planCreateInput }) {
         sessionsCount: data.sessionsCount,
         sessionDuration: data.sessionDuration,
         sessionsPerWeek: data.sessionsPerWeek,
+        type: PlanType.STANDARD,
       },
     },
   });

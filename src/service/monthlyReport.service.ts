@@ -1,6 +1,6 @@
 import { getUserAttr } from "../controller/user.controller";
 import MonthlyReport from "../db/models/monthlyReport.model";
-import { GradeOptions } from "../db/models/report.model";
+import { GradeOptions, ReportsCourses } from "../db/models/report.model";
 import User from "../db/models/user.model";
 import AppError from "../utils/AppError";
 import {
@@ -13,14 +13,10 @@ import {
 } from "./factory.services";
 
 interface createMonthlyReportBody {
-  userId: string;
-  arabicToPage?: number;
-  arabicGrade?: GradeOptions;
-  quranToPage?: number;
-  quranGrade?: GradeOptions;
-  islamicToPage?: number;
-  islamicGrade?: GradeOptions;
+  reportCourses: ReportsCourses;
   comment?: string;
+  grade: GradeOptions;
+  userId: string;
 }
 export async function createMonthlyReportService({
   body,

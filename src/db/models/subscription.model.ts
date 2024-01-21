@@ -55,7 +55,7 @@ export default class Subscription extends Model {
   })
   userId!: string;
 
-  @BelongsTo(() => User)
+  @BelongsTo(() => User, { onDelete: "CASCADE" })
   user!: User;
 
   @ForeignKey(() => Plan)
@@ -65,9 +65,6 @@ export default class Subscription extends Model {
   })
   planId!: number;
 
-  @BelongsTo(() => Plan)
+  @BelongsTo(() => Plan, { onDelete: "CASCADE" })
   plan!: Plan;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

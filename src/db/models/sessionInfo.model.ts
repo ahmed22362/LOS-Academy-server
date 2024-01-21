@@ -38,7 +38,7 @@ export default class SessionInfo extends Model<SessionInfo> {
   })
   userId?: string;
 
-  @BelongsTo(() => User, { foreignKey: "userId" })
+  @BelongsTo(() => User, { foreignKey: "userId", onDelete: "CASCADE" })
   user?: User;
 
   @ForeignKey(() => Teacher)
@@ -48,18 +48,8 @@ export default class SessionInfo extends Model<SessionInfo> {
   })
   teacherId?: string;
 
-  @BelongsTo(() => Teacher, { foreignKey: "teacherId" })
+  @BelongsTo(() => Teacher, { foreignKey: "teacherId", onDelete: "CASCADE" })
   teacher?: Teacher;
-
-  @ForeignKey(() => SessionReq)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  sessionRequestId?: number;
-
-  @BelongsTo(() => SessionReq, { foreignKey: "sessionRequestId" })
-  sessionRequest?: SessionReq;
 
   @Column({ type: DataType.BOOLEAN, allowNull: true })
   willContinue?: boolean;
@@ -69,7 +59,4 @@ export default class SessionInfo extends Model<SessionInfo> {
 
   @UpdatedAt
   updatedAt!: Date;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

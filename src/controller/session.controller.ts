@@ -11,12 +11,8 @@ import {
   getAllSessionsServiceByStatus,
   getOneSessionDetailsService,
   getOneSessionService,
-  getSessionsCoursesService,
   getUserLatestNotPendingSessionService,
-  isSessionAfterItsTimeRange,
-  isSessionWithinTimeRange,
   isTeacherHasOverlappingSessions,
-  isThereOngoingSessionForTheSameTeacher,
   teacherOwnThisSession,
   updateSessionService,
   updateSessionStatusService,
@@ -78,7 +74,6 @@ import {
   getSessionInfoService,
   updateOneSessionInfoService,
 } from "../service/sessionInfo.service";
-import { createSessionRequestService } from "../service/sessionReq.service";
 import { deleteJobServiceWhere } from "../service/scheduleJob.service";
 import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs";
 import { Transaction } from "sequelize";
@@ -90,7 +85,7 @@ export const HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 const DEFAULT_COURSES = ["arabic"];
 export const getAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit, status, offset } = getPaginationParameter(req);
+    const { nLimit, status, offset } = getPaginationParameter(req);
     const sessions = await getAllSessionsServiceByStatus({
       status: status as SessionStatus,
       offset,
@@ -105,7 +100,7 @@ export const getAllSessions = catchAsync(
 );
 export const getAllSessionsByStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nLimit, nPage, status, offset } = getPaginationParameter(req);
+    const { nLimit, status, offset } = getPaginationParameter(req);
     const sessions = await getAllSessionsServiceByStatus({
       status: status as any,
       offset,
@@ -143,7 +138,7 @@ export const replaceSessionInfoTeacher = catchAsync(
     }
     const transaction: Transaction = await sequelize.transaction();
     try {
-      const updatedSession = await updateOneSessionInfoService({
+      await updateOneSessionInfoService({
         id: oldSessionInfo.id,
         updatedData: { willContinue: false },
         transaction,
@@ -161,7 +156,6 @@ export const replaceSessionInfoTeacher = catchAsync(
         newSessionInfo = await createSessionInfoService({
           userId,
           teacherId: newTeacherId,
-          sessionReqId: updatedSession.sessionRequestId!,
           willContinue: true,
           transaction,
         });
@@ -192,7 +186,6 @@ export const replaceSessionInfoTeacher = catchAsync(
 export const createSessionAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     let {
-      sessionInfoId,
       userId,
       teacherId,
       sessionDates,
@@ -201,7 +194,6 @@ export const createSessionAdmin = catchAsync(
       sessionsPerWeek,
       type,
     } = req.body;
-    let sessionReqId;
     const newSessionDates: Date[] = [];
     const currentDate = new Date();
     for (let date of sessionDates) {
@@ -226,29 +218,21 @@ export const createSessionAdmin = catchAsync(
     }
     const t = await sequelize.transaction();
     try {
-      if (!sessionInfoId) {
-        const sessionReq = await createSessionRequestService({
-          body: {
-            courses: DEFAULT_COURSES,
-            userId,
-            sessionDates: newSessionDates,
-            type: SessionType.NOT_ASSIGN,
-          },
-          transaction: t,
-        });
-        sessionReqId = sessionReq.id;
-        const sessionInfo = await createSessionInfoService({
-          userId,
-          teacherId,
-          sessionReqId,
-          transaction: t,
-        });
-        sessionInfoId = sessionInfo.id;
-      }
       const teacher = await getTeacherByIdService({ id: teacherId });
       const user = await getTeacherByIdService({ id: userId });
+      let sessionInfo;
+      sessionInfo = await getOneSessionInfoServiceBy({
+        where: { userId, teacherId: teacherId },
+      });
+      if (!sessionInfo) {
+        sessionInfo = await createSessionInfoService({
+          userId,
+          teacherId,
+          transaction: t,
+        });
+      }
       const sessionBody = {
-        sessionInfoId,
+        sessionInfoId: sessionInfo.id,
         sessionDates,
         sessionDuration,
         transaction: t,
@@ -416,7 +400,6 @@ export const updateSessionStatus = catchAsync(
               "Can't update session status with unknown status!",
             ),
           );
-          break;
       }
       await t.commit();
       res.status(200).json({
@@ -1000,7 +983,7 @@ export const getUserContinueStatus = catchAsync(
     const { userId } = req.body;
     const session = await getUserLatestNotPendingSessionService({ userId });
     if (!session || session.length == 0) {
-      return next(new AppError(400, "Can't get this user sessions"));
+      return next(new AppError(400, "User had not session before!"));
     }
     const sessionInfo = await getOneSessionInfoServiceBy({
       where: { id: session[0].sessionInfoId },
@@ -1016,21 +999,6 @@ export const getAdminSessionStats = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const sessionStats = await getAdminSessionsStatisticsService();
     res.status(200).json({ status: "success", data: sessionStats });
-  },
-);
-export const getSessionCourses = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionId } = req.query;
-    if (isNaN(+sessionId!)) {
-      return next(new AppError(400, "please provide session id as number"));
-    }
-    const courses = await getSessionsCoursesService({ sessionId: +sessionId! });
-    if (!courses) {
-      return next(new AppError(404, "there is no courses for this session!"));
-    }
-    res
-      .status(200)
-      .json({ status: "success", length: courses.length, data: courses });
   },
 );
 export const getContinueWithTeacherAbstract = catchAsync(

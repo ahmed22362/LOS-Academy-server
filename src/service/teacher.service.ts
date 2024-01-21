@@ -68,7 +68,7 @@ export async function updateTeacherService({
 export async function updateTeacherBalance({
   teacherId,
   amount,
-  numOfSessions = 1,
+  numOfSessions,
   committed,
   transaction,
 }: {
@@ -80,7 +80,7 @@ export async function updateTeacherBalance({
 }) {
   const teacher = await getTeacherByIdService({ id: teacherId });
   if (!amount) {
-    amount = numOfSessions * teacher.sessionCost;
+    amount = (numOfSessions ?? 0) * teacher.sessionCost;
   }
   const updated = await teacher.increment(
     { balance: amount ?? 0, committedSessions: committed ? 1 : 0 },

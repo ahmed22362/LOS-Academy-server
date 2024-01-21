@@ -9,7 +9,7 @@ import {
   PrimaryKey,
   Table,
 } from "sequelize-typescript";
-import { GradeOptions } from "./report.model";
+import { GradeOptions, ReportsCourses } from "./report.model";
 import User from "./user.model";
 
 export const MONTHLY_REPORT_TABLE_NAME = "monthly_report";
@@ -27,27 +27,18 @@ export default class MonthlyReport extends Model {
     allowNull: false,
   })
   id!: number;
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  arabicToPage?: number;
+
+  @Column({
+    type: DataType.ARRAY(DataType.JSONB),
+    allowNull: false,
+  })
+  reportCourses!: ReportsCourses[];
+
   @Column({
     type: DataType.ENUM({ values: Object.values(GradeOptions) }),
     defaultValue: GradeOptions.AVERAGE,
   })
-  arabicGrade?: GradeOptions;
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  quranToPage?: number;
-  @Column({
-    type: DataType.ENUM({ values: Object.values(GradeOptions) }),
-    defaultValue: GradeOptions.AVERAGE,
-  })
-  quranGrade?: GradeOptions;
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  islamicToPage?: number;
-  @Column({
-    type: DataType.ENUM({ values: Object.values(GradeOptions) }),
-    defaultValue: GradeOptions.AVERAGE,
-  })
-  islamicGrade?: GradeOptions;
+  grade!: GradeOptions;
 
   @Column({ type: DataType.TEXT, allowNull: true })
   comment?: string;
@@ -59,9 +50,6 @@ export default class MonthlyReport extends Model {
   })
   userId!: string;
 
-  @BelongsTo(() => User)
+  @BelongsTo(() => User, { onDelete: "CASCADE" })
   user!: User;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

@@ -4,7 +4,7 @@ const { Sequelize } = require("sequelize");
 export async function estimateRowCount(tableName: string) {
   try {
     const result: any = await sequelize.query(
-      `SELECT count(*) FROM "${tableName}" WHERE "deletedAt" IS NULL;`,
+      `SELECT count(*) FROM "${tableName}";`,
     );
 
     // 'result' will contain the estimated row count

@@ -1,22 +1,25 @@
-import { FindOptions, Op, Transaction } from "sequelize";
+import {
+  FindOptions,
+  IncludeOptions,
+  Transaction,
+  WhereOptions,
+} from "sequelize";
 import sessionReport, {
   GradeOptions,
   ReportsCourses,
 } from "../db/models/report.model";
 import AppError from "../utils/AppError";
 import { updateModelService } from "./factory.services";
-import { getSessionInfosSessions } from "./session.service";
-import {
-  getTeacherSessionInfoService,
-  getUserSessionInfoService,
-} from "./sessionInfo.service";
-import Session from "../db/models/session.model";
-import SessionInfo from "../db/models/sessionInfo.model";
+import User from "../db/models/user.model";
+import Teacher from "../db/models/teacher.model";
+import { getUserAttr } from "../controller/user.controller";
+import { getTeacherAtt } from "../controller/teacher.controller";
 interface IReportBody {
   reportCourses: ReportsCourses;
   comment?: string;
   grade: GradeOptions;
-  sessionId: number;
+  teacherId: string;
+  userId: string;
 }
 
 export async function createReportService({
@@ -84,40 +87,30 @@ export async function getSessionReportService({
 export async function getUserOrTeacherReportsService({
   userId,
   teacherId,
-  page,
-  pageSize,
+  limit,
+  offset,
 }: {
   userId?: string;
   teacherId?: string;
-  page?: number;
-  pageSize?: number;
+  limit?: number;
+  offset?: number;
 }) {
-  let sessionInfos: SessionInfo[];
+  let where: WhereOptions = {};
   if (userId) {
-    sessionInfos = await getUserSessionInfoService({ userId });
+    where.userId = userId;
   } else if (teacherId) {
-    sessionInfos = await getTeacherSessionInfoService({
-      teacherId,
-    });
-  } else {
-    throw new AppError(404, "please provide user or teacher id");
+    where.teacherId = teacherId;
   }
-  const sessionInfoIds = sessionInfos.map((si) => si.id);
-  const sessions = await getSessionInfosSessions(sessionInfoIds);
-  const sessionsId = sessions.map((s) => s.id);
-  let limit;
-  let offset;
-  if (pageSize) limit = pageSize;
-  if (page && pageSize) offset = page * pageSize;
   const reports = await sessionReport.findAll({
-    where: {
-      sessionId: {
-        [Op.in]: sessionsId,
-      },
-    },
-    include: { model: Session, attributes: ["sessionDate"] },
+    where,
     limit,
-    offset,
+    offset: offset ?? 0,
+    include: [
+      {
+        model: userId ? Teacher : User,
+        attributes: userId ? getTeacherAtt : getUserAttr,
+      },
+    ],
   });
   return reports;
 }

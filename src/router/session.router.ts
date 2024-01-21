@@ -17,7 +17,6 @@ import {
   getAllSessionsByStatus,
   getContinueWithTeacherAbstract,
   getOneSessionInfo,
-  getSessionCourses,
   replaceSessionInfoTeacher,
   updateSessionAttendance,
   updateSessionStatus,
@@ -137,9 +136,6 @@ sessionRouter
     restrictTo(RoleType.ADMIN),
     getAllRescheduleRequestsForAdmin,
   );
-sessionRouter
-  .route("/sessionCourses")
-  .get(validate(getSessionCoursesSchema), getSessionCourses);
 sessionRouter
   .route("/createSession")
   .post(

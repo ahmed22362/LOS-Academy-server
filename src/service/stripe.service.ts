@@ -164,10 +164,7 @@ export async function getStripeSubscription(id: string) {
     const subscribe = await stripe.subscriptions.retrieve(id);
     return subscribe;
   } catch (err: any) {
-    throw new AppError(
-      404,
-      `Error While retrieve subscription: ${err.message}`,
-    );
+    console.error(404, `Error While retrieve subscription: ${err.message}`);
   }
 }
 export const createWebhook = (rawBody: any, sig: string) => {

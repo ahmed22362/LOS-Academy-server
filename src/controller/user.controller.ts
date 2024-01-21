@@ -42,6 +42,8 @@ import { SubscriptionStatus } from "../db/models/subscription.model";
 import { getTeacherByIdService } from "../service/teacher.service";
 import { RoleType } from "../db/models/teacher.model";
 import { estimateRowCount } from "../utils/getTableRowCount";
+
+export const MONTH_IN_MS = 2629800000;
 export const setUserOrTeacherId = (
   req: IRequestWithUser,
   res: Response,
@@ -204,16 +206,25 @@ export const getMySubscription = catchAsync(
     let subscriptionStartAt;
     let subscriptionEndAt;
 
-    if (userSubscription.status === SubscriptionStatus.ACTIVE) {
-      stripeSubscription = await getStripeSubscription(
-        userSubscription.stripe_subscription_id as string,
-      );
+    stripeSubscription = await getStripeSubscription(
+      userSubscription.stripe_subscription_id as string,
+    );
+    if (
+      userSubscription.status === SubscriptionStatus.ACTIVE &&
+      stripeSubscription
+    ) {
       (subscriptionStartAt = new Date(
         stripeSubscription.current_period_start * 1000, // convert timestamp from sec to milliseconds
       )),
         (subscriptionEndAt = new Date(
           stripeSubscription.current_period_end * 1000,
         )); // convert timestamp from sec to milliseconds
+    }
+    if (!subscriptionStartAt && !subscriptionEndAt) {
+      subscriptionStartAt = userSubscription.createdAt;
+      subscriptionEndAt = new Date(
+        new Date(userSubscription.createdAt).getTime() + MONTH_IN_MS,
+      );
     }
     const subscriptionRes = {
       status: userSubscription.status,

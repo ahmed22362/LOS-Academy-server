@@ -48,14 +48,6 @@ export const createReport = catchAsync(
     if (session.status !== SessionStatus.TAKEN) {
       return next(new AppError(400, "can't add report to a non taken session"));
     }
-    if (!session.studentAttended) {
-      return next(
-        new AppError(
-          400,
-          "Can't add report for an absent student! what will you write in it?",
-        ),
-      );
-    }
     if (session.hasReport) {
       return next(
         new AppError(
@@ -71,7 +63,8 @@ export const createReport = catchAsync(
           reportCourses,
           comment,
           grade,
-          sessionId,
+          teacherId,
+          userId: session.SessionInfo.userId!,
         },
         transaction,
       });
@@ -107,18 +100,11 @@ export const updateReport = catchAsync(
     const reportId = req.params.id;
     const report = await getReportService({
       reportId: +reportId,
-      findOptions: { include: Session },
+      findOptions: { where: { teacherId } },
     });
-    const exist = await teacherOwnThisSession({
-      teacherId,
-      sessionId: report.session.id,
-    });
-    if (!exist) {
-      next(
-        new AppError(
-          401,
-          "Teacher does not own this session to write report for it",
-        ),
+    if (!report) {
+      return next(
+        new AppError(403, "there are no report with this id and teacher!"),
       );
     }
     const updatedReport = await updateReportService({
@@ -146,23 +132,10 @@ export const getReport = catchAsync(
 export const deleteReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const reportId = req.params.id;
-    const teacherId = req.body.teacherId;
     const report = await getReportService({
       reportId: +reportId,
-      findOptions: { include: Session },
     });
-    const exist = await teacherOwnThisSession({
-      teacherId,
-      sessionId: report.session.id,
-    });
-    if (!exist) {
-      next(
-        new AppError(
-          401,
-          "Teacher does not own this session to write report for it",
-        ),
-      );
-    }
+
     await deleteReportService({ reportId: +reportId });
     res
       .status(200)
@@ -176,42 +149,28 @@ export const getAllReports = catchAsync(
     const reports = await getAllReportsService({
       findOptions: {
         include: [
-          {
-            model: Session,
-            attributes: ["sessionDate", "sessionInfoId"],
-            include: [
-              {
-                model: SessionInfo,
-                attributes: ["userId", "teacherId"],
-                include: [
-                  { model: User, attributes: getUserAttr },
-                  { model: Teacher, attributes: getTeacherAtt },
-                ],
-              },
-            ],
-          },
+          { model: User, attributes: getUserAttr },
+          { model: Teacher, attributes: getTeacherAtt },
         ],
         limit: nLimit,
         offset: offset,
       },
     });
-    res
-      .status(200)
-      .json({
-        status: "success",
-        length: await estimateRowCount(REPORT_TABLE_NAME),
-        data: reports,
-      });
+    res.status(200).json({
+      status: "success",
+      length: await estimateRowCount(REPORT_TABLE_NAME),
+      data: reports,
+    });
   },
 );
 export const getUserReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit } = getPaginationParameter(req);
+    const { offset, nLimit } = getPaginationParameter(req);
     const userId = req.query.userId || req.body.userId;
     const reports = await getUserOrTeacherReportsService({
       userId,
-      page: nPage,
-      pageSize: nLimit,
+      offset,
+      limit: nLimit,
     });
     res
       .status(200)
@@ -220,12 +179,12 @@ export const getUserReports = catchAsync(
 );
 export const getTeacherReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit } = getPaginationParameter(req);
+    const { offset, nLimit } = getPaginationParameter(req);
     const teacherId = req.query.teacherId || req.body.teacherId;
     const reports = await getUserOrTeacherReportsService({
       teacherId,
-      page: nPage,
-      pageSize: nLimit,
+      offset: offset,
+      limit: nLimit,
     });
     res
       .status(200)

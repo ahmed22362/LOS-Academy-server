@@ -111,7 +111,7 @@ export const requestSession = (type: SessionType) =>
   });
 export const getAllAvailableSessionsReq = (type: SessionType) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit, offset } = getPaginationParameter(req);
+    const { nLimit, offset } = getPaginationParameter(req);
     const sessions = await getAllSessionsRequestService({
       findOptions: {
         where: { type, status: SessionStatus.PENDING },

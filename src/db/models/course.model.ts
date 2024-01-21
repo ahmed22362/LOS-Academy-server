@@ -36,12 +36,4 @@ export default class Course extends Model {
     type: DataType.TEXT,
   })
   details!: string;
-
-  @Column({
-    type: DataType.STRING,
-  })
-  stripeProductId!: string;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

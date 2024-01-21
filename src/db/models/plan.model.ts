@@ -85,7 +85,4 @@ export default class Plan extends Model {
     defaultValue: PlanType.CUSTOM,
   })
   type!: PlanType;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

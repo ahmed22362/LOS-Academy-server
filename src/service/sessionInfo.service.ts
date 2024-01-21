@@ -12,31 +12,23 @@ import {
   getModelByIdService,
   getModelsService,
   getOneModelByService,
-  updateModelService,
 } from "./factory.services";
-import {
-  getAllSessionsService,
-  getAllSessionsServiceByStatus,
-} from "./session.service";
-import { SessionType } from "../db/models/session.model";
 
 export async function createSessionInfoService({
   userId,
   teacherId,
-  sessionReqId,
+
   transaction,
   willContinue,
 }: {
   userId: string;
   teacherId: string;
-  sessionReqId: number;
   willContinue?: boolean;
   transaction?: Transaction;
 }) {
   const infoBody: any = {
     userId,
     teacherId,
-    sessionRequestId: sessionReqId,
     willContinue,
   };
   const sessionInfo = await SessionInfo.create(infoBody, { transaction });

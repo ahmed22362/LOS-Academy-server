@@ -35,7 +35,7 @@ export default class SessionReq extends Model<SessionReq> {
   })
   userId!: string;
 
-  @BelongsTo(() => User)
+  @BelongsTo(() => User, { onDelete: "CASCADE" })
   user!: User;
 
   @Column({
@@ -59,7 +59,4 @@ export default class SessionReq extends Model<SessionReq> {
     defaultValue: SessionType.NOT_ASSIGN,
   })
   type!: SessionType;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

@@ -36,7 +36,7 @@ export default class Material extends Model<Material> {
   @Column({ type: DataType.STRING, allowNull: false })
   teacherId!: string;
 
-  @BelongsTo(() => Teacher, { foreignKey: "teacherId" })
+  @BelongsTo(() => Teacher, { foreignKey: "teacherId", onDelete: "CASCADE" })
   teacher!: Teacher;
 
   @Column({ type: DataType.STRING, allowNull: false })
@@ -54,7 +54,4 @@ export default class Material extends Model<Material> {
   b2Link!: string;
   @Column({ type: DataType.STRING, allowNull: false })
   b2FileId!: string;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

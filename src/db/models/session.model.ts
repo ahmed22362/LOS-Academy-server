@@ -39,7 +39,7 @@ export default class Session extends Model<Session> {
   })
   id!: number;
 
-  @BelongsTo(() => SessionInfo)
+  @BelongsTo(() => SessionInfo, { onDelete: "CASCADE" })
   SessionInfo!: SessionInfo;
 
   @ForeignKey(() => SessionInfo)
@@ -94,7 +94,4 @@ export default class Session extends Model<Session> {
     defaultValue: false,
   })
   hasReport!: boolean;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

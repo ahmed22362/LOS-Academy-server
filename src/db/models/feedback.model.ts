@@ -29,7 +29,7 @@ export default class Feedback extends Model {
   @Column({ type: DataType.STRING, allowNull: false })
   userId!: string;
 
-  @BelongsTo(() => User, { foreignKey: "userId" })
+  @BelongsTo(() => User, { foreignKey: "userId", onDelete: "CASCADE" })
   user!: User;
 
   @Column({
@@ -39,7 +39,4 @@ export default class Feedback extends Model {
 
   @Column({ type: DataType.BOOLEAN, defaultValue: false })
   show!: boolean;
-
-  @DeletedAt
-  declare deletedAt: Date | null;
 }

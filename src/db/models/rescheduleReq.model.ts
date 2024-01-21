@@ -36,7 +36,7 @@ export default class RescheduleRequest extends Model<RescheduleRequest> {
   @Column({ type: DataType.INTEGER, allowNull: false })
   sessionId!: number;
 
-  @BelongsTo(() => Session, { foreignKey: "sessionId" })
+  @BelongsTo(() => Session, { foreignKey: "sessionId", onDelete: "CASCADE" })
   session!: Session;
 
   @Column({ type: DataType.DATE, allowNull: false })

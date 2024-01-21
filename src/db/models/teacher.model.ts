@@ -96,9 +96,6 @@ export default class Teacher extends Model<Teacher> {
   })
   role!: RoleType;
 
-  @DeletedAt
-  declare deletedAt: Date | null;
-
   @BeforeSave
   static async hashPassword(instance: Teacher) {
     if (instance.changed("password")) {

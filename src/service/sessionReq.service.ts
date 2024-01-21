@@ -113,7 +113,6 @@ export async function acceptSessionRequestService({
     const sessionInfo = await createSessionInfoService({
       userId,
       teacherId,
-      sessionReqId,
       transaction: t,
     });
     if (sessionReq.type === SessionType.FREE) {

@@ -9,7 +9,8 @@ import {
   PrimaryKey,
   Table,
 } from "sequelize-typescript";
-import Session from "./session.model";
+import User from "./user.model";
+import Teacher from "./teacher.model";
 
 export enum GradeOptions {
   EXCELLENT = "excellent",
@@ -54,15 +55,21 @@ export default class Report extends Model {
   @Column({ type: DataType.TEXT, allowNull: true })
   comment?: string;
 
-  @ForeignKey(() => Session)
+  @ForeignKey(() => User)
   @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
+    type: DataType.STRING,
   })
-  sessionId!: number;
-  @BelongsTo(() => Session)
-  session!: Session;
+  userId?: string;
 
-  @DeletedAt
-  declare deletedAt: Date | null;
+  @BelongsTo(() => User, { foreignKey: "userId", onDelete: "CASCADE" })
+  user?: User;
+
+  @ForeignKey(() => Teacher)
+  @Column({
+    type: DataType.STRING,
+  })
+  teacherId?: string;
+
+  @BelongsTo(() => Teacher, { foreignKey: "teacherId", onDelete: "CASCADE" })
+  teacher?: Teacher;
 }
