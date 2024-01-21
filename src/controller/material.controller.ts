@@ -11,6 +11,9 @@ import {
 import Teacher from "../db/models/teacher.model";
 import { getTeacherAtt } from "./teacher.controller";
 import AppError from "../utils/AppError";
+import { estimateRowCount } from "../utils/getTableRowCount";
+import { MATERIAL_TABLE_NAME } from "../db/models/material.model";
+import { getPaginationParameter } from "./user.controller";
 
 const materialAttr = [
   "id",
@@ -41,21 +44,16 @@ export const createMaterial = catchAsync(
         return material;
       }),
     );
-    res.status(200).json({ status: "success", data: materials });
+    res.status(200).json({
+      status: "success",
+      length: await estimateRowCount(MATERIAL_TABLE_NAME),
+      data: materials,
+    });
   },
 );
 export const getAllMaterial = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let page = req.query.page;
-    let limit = req.query.limit;
-    let nPage;
-    let nLimit;
-    let offset;
-    if (page && limit) {
-      nPage = Number(page);
-      nLimit = Number(limit);
-      offset = nPage * nLimit;
-    }
+    const { nLimit, offset } = getPaginationParameter(req);
     const materials = await getAllMaterialService({
       findOptions: {
         include: [{ model: Teacher, attributes: getTeacherAtt }],
