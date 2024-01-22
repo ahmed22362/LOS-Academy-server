@@ -35,15 +35,12 @@ export async function getTeacherByIdService({
   id: string | number;
   findOptions?: FindOptions;
 }) {
-  const teacher = await getModelByIdService({
-    ModelClass: Teacher,
-    Id: id,
-    findOptions,
-  });
+  const teacher = await Teacher.findByPk(id, findOptions);
+  console.log(teacher);
   if (!teacher) {
     throw new AppError(404, "Can't find teacher with this id!");
   }
-  return teacher as Teacher;
+  return teacher;
 }
 export async function getTeachersService({
   findOptions,

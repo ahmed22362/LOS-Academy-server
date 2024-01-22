@@ -208,7 +208,7 @@ export const createSessionAdmin = catchAsync(
       }
       newSessionDates.push(new Date(date));
     }
-    if (sessionsPerWeek !== sessionDates.length) {
+    if (sessionsPerWeek !== newSessionDates.length) {
       return next(
         new AppError(
           400,
@@ -219,7 +219,7 @@ export const createSessionAdmin = catchAsync(
     const t = await sequelize.transaction();
     try {
       const teacher = await getTeacherByIdService({ id: teacherId });
-      const user = await getTeacherByIdService({ id: userId });
+      const user = await getUserByIdService({ userId });
       let sessionInfo;
       sessionInfo = await getOneSessionInfoServiceBy({
         where: { userId, teacherId: teacherId },
@@ -255,9 +255,11 @@ export const createSessionAdmin = catchAsync(
       });
       await t.commit();
       res.status(201).json({ status: "success", data: session });
-    } catch (error) {
+    } catch (error: any) {
       await t.rollback();
-      return next(new AppError(400, `Error creating session!`));
+      return next(
+        new AppError(400, `Error creating session! ${error.message}`),
+      );
     }
   },
 );

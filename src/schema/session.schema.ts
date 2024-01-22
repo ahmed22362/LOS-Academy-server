@@ -95,24 +95,15 @@ export const acceptSessionRequestSchema = z.object({
   body: z.object({ teacherId, sessionReqId }),
 });
 export const createSessionByAdminSchema = z.object({
-  body: z
-    .object({
-      sessionInfoId,
-      userId,
-      teacherId,
-      sessionDates,
-      sessionDuration,
-      sessionCount: z.number(),
-      type: sessionType,
-      sessionsPerWeek: z.number(),
-    })
-    .partial()
-    .refine(
-      (data) =>
-        data.sessionInfoId ||
-        (data.userId !== undefined && data.teacherId !== undefined),
-      { message: "please provide session info id or the userId and teacherId" },
-    ),
+  body: z.object({
+    userId,
+    teacherId,
+    sessionDates,
+    sessionDuration,
+    sessionCount: z.number(),
+    type: sessionType,
+    sessionsPerWeek: z.number(),
+  }),
 });
 export const getSessionCoursesSchema = z.object({
   query: z.object({
