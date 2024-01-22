@@ -36,7 +36,6 @@ export async function getTeacherByIdService({
   findOptions?: FindOptions;
 }) {
   const teacher = await Teacher.findByPk(id, findOptions);
-  console.log(teacher);
   if (!teacher) {
     throw new AppError(404, "Can't find teacher with this id!");
   }

@@ -233,7 +233,7 @@ export const createSessionAdmin = catchAsync(
       }
       const sessionBody = {
         sessionInfoId: sessionInfo.id,
-        sessionDates,
+        sessionDates: newSessionDates,
         sessionDuration,
         transaction: t,
         studentEmail: user.email,
