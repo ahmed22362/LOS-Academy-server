@@ -29,25 +29,25 @@ const materialAttr = [
 export const createMaterial = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId, name, age, course, status } = req.body;
-    const materials = await Promise.all(
-      res.locals.fileData.map(async (file: any) => {
-        const body = {
-          teacherId,
-          age: +age,
-          course,
-          status,
-          name: name,
-          b2Link: file.fileUrl,
-          b2FileId: file.fileId,
-        };
-        const material = await createMaterialService({ body });
-        return material;
-      }),
-    );
+    const file = res.locals.fileData;
+    if (!file) {
+      return next(new AppError(400, "No file uploaded."));
+    }
+    const body = {
+      teacherId,
+      age: +age,
+      course,
+      status,
+      name: name,
+      b2Link: file.fileUrl,
+      b2FileId: file.fileId,
+    };
+
+    const material = await createMaterialService({ body });
     res.status(200).json({
       status: "success",
       length: await estimateRowCount(MATERIAL_TABLE_NAME),
-      data: materials,
+      data: material,
     });
   },
 );
