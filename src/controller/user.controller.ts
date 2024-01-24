@@ -142,6 +142,7 @@ export const updateUser = catchAsync(
       availableFreeSession,
       verified,
       customerId,
+      sessionPlaced,
     } = req.body;
 
     const body: any = {}; // Use Partial to make all properties optional
@@ -160,6 +161,7 @@ export const updateUser = catchAsync(
         if (availableFreeSession !== undefined)
           body.availableFreeSession = availableFreeSession;
         if (verified !== undefined) body.verified = verified;
+        if (sessionPlaced) body.sessionPlaced = sessionPlaced;
       }
     }
 

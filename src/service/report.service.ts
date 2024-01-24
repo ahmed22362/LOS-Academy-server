@@ -20,6 +20,7 @@ interface IReportBody {
   grade: GradeOptions;
   teacherId: string;
   userId: string;
+  title: string;
 }
 
 export async function createReportService({

@@ -1,6 +1,11 @@
-import { getUserAttr } from "../controller/user.controller";
+import { getTeacherAtt } from "../controller/teacher.controller";
+import {
+  getPaginationParameter,
+  getUserAttr,
+} from "../controller/user.controller";
 import MonthlyReport from "../db/models/monthlyReport.model";
 import { GradeOptions, ReportsCourses } from "../db/models/report.model";
+import Teacher from "../db/models/teacher.model";
 import User from "../db/models/user.model";
 import AppError from "../utils/AppError";
 import {
@@ -17,6 +22,7 @@ interface createMonthlyReportBody {
   comment?: string;
   grade: GradeOptions;
   userId: string;
+  teacherId: string;
 }
 export async function createMonthlyReportService({
   body,
@@ -49,7 +55,12 @@ export async function getAllMonthlyReportsService({
   try {
     const monthlyReports = await getModelsService({
       ModelClass: MonthlyReport,
-      findOptions: { include: [{ model: User, attributes: getUserAttr }] },
+      findOptions: {
+        include: [
+          { model: User, attributes: getUserAttr },
+          { model: Teacher, attributes: getTeacherAtt },
+        ],
+      },
       offset,
       limit,
     });
@@ -81,28 +92,57 @@ export async function deleteMonthlyReportService({ id }: { id: number }) {
   return await deleteModelService({ ModelClass: MonthlyReport, id: id });
 }
 export async function getMonthlyReportService({ id }: { id: number }) {
-  return (await getModelByIdService({
-    ModelClass: MonthlyReport,
-    Id: id,
-  })) as MonthlyReport;
+  const report = await MonthlyReport.findByPk(id, {
+    include: [
+      { model: User, attributes: getUserAttr },
+      { model: Teacher, attributes: getTeacherAtt },
+    ],
+  });
+  return report;
 }
 export async function getUserMonthlyReportService({
   userId,
-  pageSize,
-  page,
+  limit,
+  offset,
 }: {
   userId: string;
-  pageSize?: number;
-  page?: number;
+  limit?: number;
+  offset?: number;
 }) {
   const reports = await getAllModelsByService({
     Model: MonthlyReport,
     findOptions: {
       where: { userId },
-      include: [{ model: User, attributes: getUserAttr }],
+      include: [
+        { model: User, attributes: getUserAttr },
+        { model: Teacher, attributes: getTeacherAtt },
+      ],
     },
-    page,
-    pageSize,
+    limit,
+    offset,
+  });
+  return reports as MonthlyReport[];
+}
+export async function getTeacherMonthlyReportService({
+  teacherId,
+  limit,
+  offset,
+}: {
+  teacherId: string;
+  limit?: number;
+  offset?: number;
+}) {
+  const reports = await getAllModelsByService({
+    Model: MonthlyReport,
+    findOptions: {
+      where: { teacherId },
+      include: [
+        { model: User, attributes: getUserAttr },
+        { model: Teacher, attributes: getTeacherAtt },
+      ],
+    },
+    limit,
+    offset,
   });
   return reports as MonthlyReport[];
 }

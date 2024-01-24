@@ -253,6 +253,11 @@ export const createSessionAdmin = catchAsync(
         sessionCount: sessionCount ?? sessionsPerWeek * 4, // 4 weeks per month
         sessionsPerWeek,
       });
+      await updateUserRemainSessionService({
+        userId,
+        amountOfSessions: session.length ?? 1,
+        transaction: t,
+      });
       await t.commit();
       res.status(201).json({ status: "success", data: session });
     } catch (error: any) {

@@ -62,19 +62,19 @@ async function getModelsService({
 async function getAllModelsByService({
   Model,
   findOptions,
-  page,
-  pageSize,
+  limit,
+  offset,
 }: {
   Model: ModelClass;
   findOptions?: FindOptions;
-  pageSize?: number;
-  page?: number;
+  limit?: number;
+  offset?: number;
 }): Promise<any | null> {
   try {
     // add pagination
     if (!findOptions) findOptions = {};
-    if (pageSize) findOptions.limit = pageSize;
-    if (page && pageSize) findOptions.offset = page * pageSize;
+    if (limit) findOptions.limit = limit;
+    if (offset) findOptions.offset = offset;
     const model = await Model.findAll(findOptions);
     return model;
   } catch (error: any) {

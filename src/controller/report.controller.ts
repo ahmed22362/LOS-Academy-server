@@ -22,7 +22,6 @@ import User from "../db/models/user.model";
 import { getPaginationParameter, getUserAttr } from "./user.controller";
 import Teacher from "../db/models/teacher.model";
 import { getTeacherAtt } from "./teacher.controller";
-import SessionInfo from "../db/models/sessionInfo.model";
 import logger from "../utils/logger";
 import { updateTeacherBalance } from "../service/teacher.service";
 import { sequelize } from "../db/sequelize";
@@ -32,7 +31,8 @@ import { REPORT_TABLE_NAME } from "../db/models/report.model";
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionId, reportCourses, comment, teacherId, grade } = req.body;
+    const { sessionId, reportCourses, comment, teacherId, grade, title } =
+      req.body;
     const exist = await teacherOwnThisSession({ teacherId, sessionId });
     if (!exist) {
       next(
@@ -65,6 +65,7 @@ export const createReport = catchAsync(
           grade,
           teacherId,
           userId: session.SessionInfo.userId!,
+          title,
         },
         transaction,
       });

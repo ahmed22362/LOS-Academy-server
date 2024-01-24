@@ -5,25 +5,30 @@ import {
   deleteMonthlyReportService,
   getAllMonthlyReportsService,
   getMonthlyReportService,
+  getTeacherMonthlyReportService,
   getUserMonthlyReportService,
   updateMonthlyReportService,
 } from "../service/monthlyReport.service";
 import AppError from "../utils/AppError";
-import { getTeacherStudentsService } from "../service/teacher.service";
+import {
+  getTeacherByIdService,
+  getTeacherStudentsService,
+} from "../service/teacher.service";
 import { getPaginationParameter } from "./user.controller";
 import { estimateRowCount } from "../utils/getTableRowCount";
 import { MONTHLY_REPORT_TABLE_NAME } from "../db/models/monthlyReport.model";
+import { RoleType } from "../db/models/teacher.model";
 
 export const createMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, sessionId, reportCourses, comment, teacherId, grade } =
-      req.body;
+    const { userId, reportCourses, comment, teacherId, grade } = req.body;
     const monthlyReportInstance = await createMonthlyReportService({
       body: {
         userId,
         reportCourses,
         comment,
         grade,
+        teacherId,
       },
     });
     res.status(201).json({
@@ -60,25 +65,21 @@ export const getMonthlyReport = catchAsync(
 export const updateMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
-    const {
-      arabicToPage,
-      arabicGrade,
-      quranToPage,
-      quranGrade,
-      islamicToPage,
-      islamicGrade,
-      comment,
-    } = req.body;
+    const { reportCourses, comment, teacherId, grade } = req.body;
+    const report = await getMonthlyReportService({ id: +id });
+    if (!report) {
+      throw new AppError(404, "there is no report with this id!");
+    }
+    const teacher = await getTeacherByIdService({ id: teacherId });
+    if (report.teacherId !== teacherId && teacher.role !== RoleType.ADMIN) {
+      throw new AppError(403, "you don't own this report to update!");
+    }
     const monthlyReportInstance = await updateMonthlyReportService({
       id: +id,
       updatedData: {
-        arabicGrade,
-        arabicToPage,
-        quranGrade,
-        quranToPage,
-        islamicGrade,
-        islamicToPage,
+        reportCourses,
         comment,
+        grade,
       },
     });
     res.status(200).json({ status: "success", data: monthlyReportInstance });
@@ -88,6 +89,9 @@ export const deleteMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     const monthlyReport = await getMonthlyReportService({ id: +id });
+    if (!monthlyReport) {
+      throw new AppError(404, "there is no report with this id!");
+    }
     await deleteMonthlyReportService({
       id: monthlyReport?.id,
     });
@@ -100,24 +104,26 @@ export const deleteMonthlyReport = catchAsync(
 export const getUserMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.body;
-    const reports = await getUserMonthlyReportService({ userId });
+    const { nLimit, offset } = getPaginationParameter(req);
+    const reports = await getUserMonthlyReportService({
+      userId,
+      limit: nLimit,
+      offset,
+    });
     res
       .status(200)
       .json({ status: "success", length: reports.length, data: reports });
   },
 );
-
 export const getTeacherMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId } = req.body;
-    const reports = [];
-    const students = await getTeacherStudentsService({ teacherId });
-    for (const student of students) {
-      const userReport = await getUserMonthlyReportService({
-        userId: student.id,
-      });
-      reports.push(...userReport);
-    }
+    const { offset, nLimit } = getPaginationParameter(req);
+    const reports = await getTeacherMonthlyReportService({
+      teacherId,
+      limit: nLimit,
+      offset,
+    });
     res.status(200).json({ status: "success", data: reports });
   },
 );

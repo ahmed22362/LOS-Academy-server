@@ -11,6 +11,7 @@ import {
 } from "sequelize-typescript";
 import { GradeOptions, ReportsCourses } from "./report.model";
 import User from "./user.model";
+import Teacher from "./teacher.model";
 
 export const MONTHLY_REPORT_TABLE_NAME = "monthly_report";
 
@@ -52,4 +53,14 @@ export default class MonthlyReport extends Model {
 
   @BelongsTo(() => User, { onDelete: "CASCADE" })
   user!: User;
+
+  @ForeignKey(() => Teacher)
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  teacherId!: string;
+
+  @BelongsTo(() => Teacher, { onDelete: "CASCADE" })
+  teacher!: Teacher;
 }

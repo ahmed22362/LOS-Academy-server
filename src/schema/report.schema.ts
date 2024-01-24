@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const teacherId = z.string();
 
-const CourseSchema = z.object({
+export const CourseSchema = z.object({
   courseName: z.string(),
   courseGrade: z.enum([
     "excellent",

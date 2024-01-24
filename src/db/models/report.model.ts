@@ -55,6 +55,9 @@ export default class Report extends Model {
   @Column({ type: DataType.TEXT, allowNull: true })
   comment?: string;
 
+  @Column({ type: DataType.STRING, allowNull: true })
+  title?: string;
+
   @ForeignKey(() => User)
   @Column({
     type: DataType.STRING,
