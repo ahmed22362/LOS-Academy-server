@@ -1,4 +1,4 @@
-import { Router } from "express"
+import { Router } from "express";
 import {
   createMonthlyReport,
   deleteMonthlyReport,
@@ -6,35 +6,46 @@ import {
   getMonthlyReport,
   getUserMonthlyReport,
   updateMonthlyReport,
-} from "../controller/monthlyReport.controller"
-import validate from "../middleware/validate"
+} from "../controller/monthlyReport.controller";
+import validate from "../middleware/validate";
 import {
   protectUser,
   setUserIdToParams,
   setUserOrTeacherId,
-} from "../controller/user.controller"
-import { restrictTo } from "../controller/auth.controller"
-import { RoleType } from "../db/models/teacher.model"
-import { protectTeacher } from "../controller/teacher.controller"
-import { createMonthlyReportSchema } from "../schema/monthlyReport.shcema"
+} from "../controller/user.controller";
+import { restrictTo } from "../controller/auth.controller";
+import { RoleType } from "../db/models/teacher.model";
+import { protectTeacher } from "../controller/teacher.controller";
+import { createMonthlyReportSchema } from "../schema/monthlyReport.shcema";
 
-const monthlyReportRouter = Router()
+const monthlyReportRouter = Router();
 
 monthlyReportRouter
   .route("/")
   .post(
     protectTeacher,
+    setUserOrTeacherId,
     validate(createMonthlyReportSchema),
-    createMonthlyReport
+    createMonthlyReport,
   )
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllMonthlyReports)
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllMonthlyReports);
 monthlyReportRouter
   .route("/user")
-  .get(protectUser, setUserOrTeacherId, getUserMonthlyReport)
+  .get(protectUser, setUserOrTeacherId, getUserMonthlyReport);
 monthlyReportRouter
   .route("/:id")
-  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateMonthlyReport)
+  .patch(
+    protectTeacher,
+    setUserOrTeacherId,
+    restrictTo(RoleType.ADMIN),
+    updateMonthlyReport,
+  )
   .get(getMonthlyReport)
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteMonthlyReport)
+  .delete(
+    protectTeacher,
+    setUserOrTeacherId,
+    restrictTo(RoleType.ADMIN),
+    deleteMonthlyReport,
+  );
 
-export default monthlyReportRouter
+export default monthlyReportRouter;

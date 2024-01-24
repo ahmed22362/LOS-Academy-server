@@ -7,7 +7,6 @@ import rescheduleJobs, {
 } from "./utils/processSchedulerJobs";
 import { createServer } from "node:http";
 import { setupSocket } from "./connect/socket";
-import User from "./db/models/user.model";
 
 const PORT = process.env.PORT || 3000;
 
@@ -21,10 +20,7 @@ process.on("unhandledRejection", (err: any) => {
   logger.error(err);
   process.exit(1);
 });
-const test = async () => {
-  const user = await User.findByPk("01HM718JRZ3J6MZE2KRK1BZX71");
-  await user?.destroy({});
-};
+
 const server = createServer(app);
 const io = setupSocket(server);
 server.listen(PORT, async () => {
