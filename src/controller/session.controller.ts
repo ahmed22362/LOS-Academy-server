@@ -245,7 +245,7 @@ export const createSessionAdmin = catchAsync(
       if (type === SessionType.FREE) {
         session = await createFreeSessionService({
           ...sessionBody,
-          sessionDate: sessionDates[0],
+          sessionDate: newSessionDates[0],
         });
       }
       session = await createPaidSessionsService({
