@@ -11,6 +11,7 @@ import paidSessionRouter from "./session.paid.router";
 import { protectUser, setUserOrTeacherId } from "../controller/user.controller";
 import {
   createSessionAdmin,
+  deleteSession,
   generateSessionLink,
   getAdminSessionStats,
   getAllRescheduleRequestsForAdmin,
@@ -146,7 +147,8 @@ sessionRouter
   );
 sessionRouter
   .route("/:id")
-  .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo);
+  .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo)
+  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteSession);
 sessionRouter
   .route("/")
   .get(

@@ -5,6 +5,7 @@ import {
   checkDateFormat,
   createFreeSessionService,
   createPaidSessionsService,
+  deleteSessionService,
   generateMeetingLinkAndUpdateSession,
   getAdminSessionsStatisticsService,
   getAllSessionsService,
@@ -1057,5 +1058,14 @@ export const getContinueWithTeacherAbstract = catchAsync(
       length: sessionInfo.length,
       data: formattedData,
     });
+  },
+);
+export const deleteSession = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+    await deleteSessionService({ id: +id });
+    res
+      .status(200)
+      .json({ status: "success", message: "session deleted successfully!" });
   },
 );
