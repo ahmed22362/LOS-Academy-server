@@ -112,3 +112,10 @@ export const getSessionCoursesSchema = z.object({
     }),
   }),
 });
+export const updateSessionAttendanceByAdmin = z.object({
+  body: z.object({
+    sessionId,
+    teacherAttended: z.boolean().optional(),
+    userAttended: z.boolean().optional(),
+  }),
+});

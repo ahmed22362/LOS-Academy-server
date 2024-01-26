@@ -20,6 +20,7 @@ import {
   getOneSessionInfo,
   replaceSessionInfoTeacher,
   updateSessionAttendance,
+  updateSessionAttendanceForAdmin,
   updateSessionStatus,
   userContinueWithTeacher,
   userWontContinueWithTeacher,
@@ -35,6 +36,7 @@ import {
   getSessionCoursesSchema,
   replaceSessionInfoTeacherSchema,
   requireEitherTeacherOrUser,
+  updateSessionAttendanceByAdmin,
   updateSessionStatusSchema,
   userContinueWithTeacherSchema,
   userWontContinueWithTeacherSchema,
@@ -144,6 +146,14 @@ sessionRouter
     restrictTo(RoleType.ADMIN),
     validate(createSessionByAdminSchema),
     createSessionAdmin,
+  );
+sessionRouter
+  .route("/updateSessionAttendance")
+  .post(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    validate(updateSessionAttendanceByAdmin),
+    updateSessionAttendanceForAdmin,
   );
 sessionRouter
   .route("/:id")

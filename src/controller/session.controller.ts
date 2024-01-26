@@ -12,6 +12,7 @@ import {
   getAllSessionsServiceByStatus,
   getOneSessionDetailsService,
   getOneSessionService,
+  getOneSessionWithSessionInfoOnlyService,
   getUserLatestNotPendingSessionService,
   isTeacherHasOverlappingSessions,
   teacherOwnThisSession,
@@ -1067,5 +1068,23 @@ export const deleteSession = catchAsync(
     res
       .status(200)
       .json({ status: "success", message: "session deleted successfully!" });
+  },
+);
+export const updateSessionAttendanceForAdmin = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userAttended, teacherAttended, sessionId } = req.body;
+    const session = await getOneSessionWithSessionInfoOnlyService({
+      sessionId,
+    });
+    if (userAttended) {
+      session.studentAttended = userAttended;
+    }
+    if (teacherAttended) {
+      session.teacherAttended = teacherAttended;
+    }
+    await session.save();
+    res
+      .status(200)
+      .json({ status: "success", message: "attendance updated successfully!" });
   },
 );
