@@ -52,13 +52,11 @@ export const getAllPayoutRequests = catchAsync(
       page: nPage,
       limit: nLimit,
     });
-    res
-      .status(200)
-      .json({
-        status: "success",
-        length: await estimateRowCount(PAYOUT_REQUEST_TABLE_NAME),
-        data: requests,
-      });
+    res.status(200).json({
+      status: "success",
+      length: await estimateRowCount(PAYOUT_REQUEST_TABLE_NAME),
+      data: requests,
+    });
   },
 );
 export const getMyPayoutRequests = catchAsync(
@@ -119,7 +117,7 @@ export const updateAmountPayoutRequest = catchAsync(
     });
   },
 );
-export const updateStatusPayoutRequestService = catchAsync(
+export const updateStatusPayoutRequest = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { status, requestId } = req.body;
 
@@ -152,5 +150,19 @@ export const updateStatusPayoutRequestService = catchAsync(
       await t.rollback();
       next(new AppError(400, `Error updating balance ${error.message}`));
     }
+  },
+);
+export const cancelPayoutRequest = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id, teacherId } = req.body;
+    const payout = await getOnePayoutRequestService({ requestId: id });
+    if (payout.teacherId !== teacherId) {
+      return next(new AppError(403, "can't cancel request that is not yours!"));
+    }
+    await payout.destroy();
+    res.status(200).json({
+      status: "success",
+      message: "payout request deleted successfully!",
+    });
   },
 );
