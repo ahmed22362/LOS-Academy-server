@@ -1,4 +1,4 @@
-import { Router } from "express"
+import { Router } from "express";
 import {
   checkJWT,
   createTeacher,
@@ -17,36 +17,37 @@ import {
   getTeacherRemainSessions,
   getTeacherTakenSessions,
   getTeacherUpcomingSession,
+  getUsersAndTeachersCount,
   loginTeacher,
   protectTeacher,
   updateMeTeacher,
   updateTeacher,
-} from "../controller/teacher.controller"
+} from "../controller/teacher.controller";
 import {
   setUserIdToParams,
   setUserOrTeacherId,
-} from "../controller/user.controller"
-import { getTeacherReports } from "../controller/report.controller"
-import { restrictTo } from "../controller/auth.controller"
-import validate from "../middleware/validate"
+} from "../controller/user.controller";
+import { getTeacherReports } from "../controller/report.controller";
+import { restrictTo } from "../controller/auth.controller";
+import validate from "../middleware/validate";
 import {
   createTeacherSchema,
   isTeacherIdExist,
   loginTeacherSchema,
   updateMeSchema,
-} from "../schema/teacher.schema"
-import { RoleType } from "../db/models/teacher.model"
+} from "../schema/teacher.schema";
+import { RoleType } from "../db/models/teacher.model";
 import {
   cancelSessionRescheduleRequest,
   requestSessionReschedule,
   updateStatusSessionReschedule,
-} from "../controller/session.controller"
-import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model"
-import { getMyPayoutRequests } from "../controller/payout.controller"
-import { getTeacherMonthlyReport } from "../controller/monthlyReport.controller"
-import { cancelRequestSchema } from "../schema/session.schema"
-import { getSocketByUserId } from "../connect/socket"
-const teacherRouter = Router()
+} from "../controller/session.controller";
+import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model";
+import { getMyPayoutRequests } from "../controller/payout.controller";
+import { getTeacherMonthlyReport } from "../controller/monthlyReport.controller";
+import { cancelRequestSchema } from "../schema/session.schema";
+import { getSocketByUserId } from "../connect/socket";
+const teacherRouter = Router();
 
 teacherRouter
   .route("/me")
@@ -55,49 +56,48 @@ teacherRouter
     protectTeacher,
     setUserIdToParams,
     validate(updateMeSchema),
-    updateMeTeacher
-  )
+    updateMeTeacher,
+  );
 
-teacherRouter
-  .route("/")
-  .post(validate(createTeacherSchema), createTeacher)
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllTeachers)
-teacherRouter.route("/login").post(validate(loginTeacherSchema), loginTeacher)
+teacherRouter.route("/login").post(validate(loginTeacherSchema), loginTeacher);
 teacherRouter
   .route("/adminBalance")
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAdminBalance)
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAdminBalance);
+teacherRouter
+  .route("/totalRecordsOf")
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getUsersAndTeachersCount);
 teacherRouter
   .route("/sessions")
   .get(
     protectTeacher,
     setUserOrTeacherId,
     validate(isTeacherIdExist),
-    getTeacherAllSessions
-  )
+    getTeacherAllSessions,
+  );
 teacherRouter
   .route("/remainSessions")
   .get(
     protectTeacher,
     setUserOrTeacherId,
     validate(isTeacherIdExist),
-    getTeacherRemainSessions
-  )
+    getTeacherRemainSessions,
+  );
 teacherRouter
   .route("/takenSessions")
   .get(
     protectTeacher,
     setUserOrTeacherId,
     validate(isTeacherIdExist),
-    getTeacherTakenSessions
-  )
+    getTeacherTakenSessions,
+  );
 teacherRouter
   .route("/upcomingSession")
   .get(
     protectTeacher,
     setUserOrTeacherId,
     validate(isTeacherIdExist),
-    getTeacherUpcomingSession
-  )
+    getTeacherUpcomingSession,
+  );
 
 teacherRouter
   .route("/ongoingSession")
@@ -105,32 +105,32 @@ teacherRouter
     protectTeacher,
     setUserOrTeacherId,
     validate(isTeacherIdExist),
-    getTeacherOngoingSession
-  )
+    getTeacherOngoingSession,
+  );
 teacherRouter
   .route("/myLatestTakenSession")
   .get(
     protectTeacher,
     setUserOrTeacherId,
     validate(isTeacherIdExist),
-    getTeacherLatestTakenSession
-  )
+    getTeacherLatestTakenSession,
+  );
 teacherRouter
   .route("/myReports")
-  .get(protectTeacher, setUserOrTeacherId, getTeacherReports)
+  .get(protectTeacher, setUserOrTeacherId, getTeacherReports);
 teacherRouter
   .route("/myStudents")
-  .get(protectTeacher, setUserOrTeacherId, getTeacherAllStudents)
+  .get(protectTeacher, setUserOrTeacherId, getTeacherAllStudents);
 teacherRouter
   .route("/myPayouts")
-  .get(protectTeacher, setUserOrTeacherId, getMyPayoutRequests)
+  .get(protectTeacher, setUserOrTeacherId, getMyPayoutRequests);
 teacherRouter
   .route("/myStatistics")
-  .get(protectTeacher, setUserOrTeacherId, getMySessionsStats)
+  .get(protectTeacher, setUserOrTeacherId, getMySessionsStats);
 teacherRouter
   .route("/requestReschedule")
   .post(protectTeacher, setUserOrTeacherId, requestSessionReschedule)
-  .get(protectTeacher, setUserOrTeacherId, getSessionRescheduleRequests)
+  .get(protectTeacher, setUserOrTeacherId, getSessionRescheduleRequests);
 
 teacherRouter
   .route("/cancelRescheduleRequest")
@@ -138,37 +138,44 @@ teacherRouter
     protectTeacher,
     setUserOrTeacherId,
     validate(cancelRequestSchema),
-    cancelSessionRescheduleRequest
-  )
+    cancelSessionRescheduleRequest,
+  );
 teacherRouter
   .route("/receivedRescheduleRequests")
-  .get(protectTeacher, setUserOrTeacherId, getReceivedSessionRescheduleRequests)
+  .get(
+    protectTeacher,
+    setUserOrTeacherId,
+    getReceivedSessionRescheduleRequests,
+  );
 teacherRouter
   .route("/allRescheduleRequests")
-  .get(protectTeacher, setUserOrTeacherId, getAllSessionRescheduleRequests)
+  .get(protectTeacher, setUserOrTeacherId, getAllSessionRescheduleRequests);
 teacherRouter
   .route("/acceptReschedule")
   .post(
     protectTeacher,
     setUserOrTeacherId,
-    updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED)
-  )
+    updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED),
+  );
 teacherRouter
   .route("/myMonthlyReport")
-  .get(protectTeacher, setUserOrTeacherId, getTeacherMonthlyReport)
+  .get(protectTeacher, setUserOrTeacherId, getTeacherMonthlyReport);
 teacherRouter
   .route("/declineReschedule")
   .post(
     protectTeacher,
     setUserOrTeacherId,
-    updateStatusSessionReschedule(RescheduleRequestStatus.DECLINED)
-  )
-teacherRouter.get("/checkJWT", checkJWT)
+    updateStatusSessionReschedule(RescheduleRequestStatus.DECLINED),
+  );
+teacherRouter.get("/checkJWT", checkJWT);
 
 teacherRouter
   .route("/:id")
   .get(protectTeacher, getTeacher)
   .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateTeacher)
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteTeacher)
-
-export default teacherRouter
+  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteTeacher);
+teacherRouter
+  .route("/")
+  .post(validate(createTeacherSchema), createTeacher)
+  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllTeachers);
+export default teacherRouter;

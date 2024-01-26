@@ -31,7 +31,10 @@ import {
   getTeacherRescheduleRequestsService,
 } from "../service/rescheduleReq.service";
 import { getPaginationParameter } from "./user.controller";
-import { estimateRowCount } from "../utils/getTableRowCount";
+import {
+  estimateRowCount,
+  estimateRowCountForMultipleTables,
+} from "../utils/getTableRowCount";
 
 export const getTeacherAtt = [
   "id",
@@ -287,6 +290,15 @@ export const getAdminBalance = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const balance = await getStripeBalance();
     res.status(200).json({ status: "success", balance: balance.available });
+  },
+);
+export const getUsersAndTeachersCount = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    let tableNames = <string>req.query.records || "";
+    const result = await estimateRowCountForMultipleTables(
+      tableNames.split(","),
+    );
+    res.status(200).json({ status: "success", data: result });
   },
 );
 export const getSessionRescheduleRequests = catchAsync(
