@@ -67,7 +67,6 @@ export const createPlan = catchAsync(
       discount,
       price,
     };
-    console.log(body);
     const plan = await createPlanService({ data: body });
     if (!plan) {
       return next(
