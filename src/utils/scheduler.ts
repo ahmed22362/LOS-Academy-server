@@ -224,11 +224,15 @@ export function schedulePayoutRequestMailJob({
     const date = new Date(new Date().getTime() + 1000);
 
     const job = schedule.scheduleJob(date, async () => {
-      await new Mail(
-        process.env.ADMIN_EMAIL as string,
-        "admin",
-      ).sendPayoutRequestMail({ teacherName, amount });
-      logger.info("One time payout request mail executed!");
+      try {
+        await new Mail(
+          process.env.ADMIN_EMAIL as string,
+          "admin",
+        ).sendPayoutRequestMail({ teacherName, amount });
+        logger.info("One time payout request mail executed!");
+      } catch (error: any) {
+        logger.error(`Error while payout request mail: ${error.message}`);
+      }
     });
   } catch (error: any) {
     logger.error(`Error while payout request mail: ${error.message}`);
