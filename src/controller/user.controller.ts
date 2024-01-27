@@ -323,11 +323,11 @@ export const getUserLatestSession = catchAsync(
 );
 export const getUserSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit, status } = getPaginationParameter(req);
+    const { offset, nLimit, status } = getPaginationParameter(req);
     const sessions = await getUserAllSessionsService({
       userId: req.body.userId,
-      page: nPage,
-      pageSize: nLimit,
+      offset,
+      limit: nLimit,
       status: status as any,
       orderAssociation: OrderAssociation.DESC,
     });
