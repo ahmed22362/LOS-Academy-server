@@ -35,7 +35,7 @@ app.use(
   cors({
     origin: [
       /http:\/\/localhost:\d*/,
-      "https://los-academy.net",
+      "https://www.los-academy.net",
       "https://los-academy.vercel.app",
     ],
     optionsSuccessStatus: 200,
