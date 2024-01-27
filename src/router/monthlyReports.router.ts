@@ -34,12 +34,7 @@ monthlyReportRouter
   .get(protectUser, setUserOrTeacherId, getUserMonthlyReport);
 monthlyReportRouter
   .route("/:id")
-  .patch(
-    protectTeacher,
-    setUserOrTeacherId,
-    restrictTo(RoleType.ADMIN),
-    updateMonthlyReport,
-  )
+  .patch(protectTeacher, setUserOrTeacherId, updateMonthlyReport)
   .get(getMonthlyReport)
   .delete(
     protectTeacher,
