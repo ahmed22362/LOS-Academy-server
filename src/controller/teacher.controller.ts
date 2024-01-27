@@ -249,16 +249,11 @@ export const getTeacherLatestTakenSession = catchAsync(
 export const getTeacherAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
-
-    let offset;
-    const { nPage, nLimit, status } = getPaginationParameter(req);
-    if (nPage && nLimit) {
-      offset = nPage * nLimit;
-    }
+    const { offset, nLimit, status } = getPaginationParameter(req);
     const sessions = await getTeacherAllSessionsService({
       teacherId,
-      page: nPage,
-      pageSize: nLimit,
+      offset: offset,
+      limit: nLimit,
       status: status as string,
     });
     res

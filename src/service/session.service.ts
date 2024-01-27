@@ -377,21 +377,21 @@ export async function getUserAllTakenSessionsService({
 }
 export async function getUserAllSessionsService({
   userId,
-  page,
-  pageSize,
+  offset,
+  limit,
   status,
   orderAssociation,
 }: {
   userId: string;
-  page?: number;
-  pageSize?: number;
+  limit?: number;
+  offset?: number;
   status?: SessionStatus;
   orderAssociation: OrderAssociation;
 }) {
   const sessions = await allTeacherOrUserSessionsService({
     userId,
-    page,
-    pageSize,
+    limit,
+    offset,
     status,
     orderAssociation,
   });
@@ -417,7 +417,7 @@ export async function getUserUpcomingSessionService({
   const session = await allTeacherOrUserSessionsService({
     userId,
     status: SessionStatus.PENDING,
-    pageSize: 1,
+    limit: 1,
     upcoming: true,
     orderAssociation: OrderAssociation.ASC,
   });
@@ -443,7 +443,7 @@ export async function getUserLatestNotPendingSessionService({
   userId: string;
 }) {
   const session = await allTeacherOrUserSessionsService({
-    pageSize: 1,
+    limit: 1,
     userId,
     whereObj: { status: { [Op.ne]: SessionStatus.PENDING } },
     orderAssociation: OrderAssociation.DESC,
@@ -452,19 +452,19 @@ export async function getUserLatestNotPendingSessionService({
 }
 export async function getTeacherAllSessionsService({
   teacherId,
-  page,
-  pageSize,
+  limit,
+  offset,
   status,
 }: {
   teacherId: string;
-  page?: number;
-  pageSize?: number;
+  limit?: number;
+  offset?: number;
   status?: string;
 }) {
   const session = await allTeacherOrUserSessionsService({
     teacherId,
-    page,
-    pageSize,
+    limit,
+    offset,
     status,
     orderAssociation: OrderAssociation.ASC,
   });
@@ -478,7 +478,7 @@ export async function getTeacherUpcomingSessionService({
   const session = await allTeacherOrUserSessionsService({
     teacherId,
     status: SessionStatus.PENDING,
-    pageSize: 1,
+    limit: 1,
     upcoming: true,
     orderAssociation: OrderAssociation.ASC,
   });
@@ -502,7 +502,7 @@ export async function getTeacherLatestTakenSessionService({
   teacherId: string;
 }) {
   const session = await allTeacherOrUserSessionsService({
-    pageSize: 1,
+    limit: 1,
     teacherId,
     status: SessionStatus.TAKEN,
     orderAssociation: OrderAssociation.DESC,
@@ -727,8 +727,8 @@ export async function allTeacherOrUserSessionsService({
   teacherId,
   userId,
   status,
-  page,
-  pageSize,
+  limit,
+  offset,
   upcoming,
   whereObj,
   orderAssociation,
@@ -736,8 +736,8 @@ export async function allTeacherOrUserSessionsService({
   teacherId?: string;
   userId?: string;
   status?: string;
-  page?: number;
-  pageSize?: number;
+  limit?: number;
+  offset?: number;
   upcoming?: boolean;
   orderAssociation: OrderAssociation;
   whereObj?: object;
@@ -768,11 +768,6 @@ export async function allTeacherOrUserSessionsService({
     ...(upcoming && { sessionDate: { [Op.gte]: new Date() } }),
     ...whereObj,
   };
-  let limit;
-  let offset;
-
-  if (pageSize) limit = pageSize;
-  if (pageSize && page) offset = page * pageSize;
   const sessions = await getAllSessionsService({
     findOptions: {
       include: [

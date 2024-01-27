@@ -33,7 +33,11 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(
   cors({
-    origin: [/http:\/\/localhost:\d*/, "https://los-academy.vercel.app"],
+    origin: [
+      /http:\/\/localhost:\d*/,
+      "https://los-academy.vercel.app",
+      "https://www.los-academy.net/",
+    ],
     optionsSuccessStatus: 200,
   }),
 );
