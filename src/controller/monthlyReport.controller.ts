@@ -88,9 +88,17 @@ export const updateMonthlyReport = catchAsync(
 export const deleteMonthlyReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
+    const { teacherId } = req.body;
     const monthlyReport = await getMonthlyReportService({ id: +id });
     if (!monthlyReport) {
       throw new AppError(404, "there is no report with this id!");
+    }
+    const teacher = await getTeacherByIdService({ id: teacherId });
+    if (
+      monthlyReport.teacherId !== teacherId &&
+      teacher.role !== RoleType.ADMIN
+    ) {
+      throw new AppError(403, "you don't own this report to delete it!");
     }
     await deleteMonthlyReportService({
       id: monthlyReport?.id,
