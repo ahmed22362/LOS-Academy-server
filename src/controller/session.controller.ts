@@ -95,8 +95,8 @@ export const getAllSessions = catchAsync(
     });
     res.status(200).json({
       status: "success",
-      length: estimateRowCount(SESSION_TABLE_NAME),
-      data: sessions,
+      length: sessions.count,
+      data: sessions.rows,
     });
   },
 );
@@ -110,8 +110,8 @@ export const getAllSessionsByStatus = catchAsync(
     });
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(SESSION_TABLE_NAME),
-      data: sessions,
+      length: sessions.count,
+      data: sessions.rows,
     });
   },
 );
