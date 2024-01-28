@@ -258,7 +258,7 @@ export const getTeacherAllSessions = catchAsync(
     });
     res
       .status(200)
-      .json({ status: "success", length: sessions!.length, sessions });
+      .json({ status: "success", length: sessions!.length, data: sessions });
   },
 );
 export const getTeacherAllStudents = catchAsync(
