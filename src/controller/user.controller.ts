@@ -355,11 +355,11 @@ export const getUserStatistics = catchAsync(
 export const getMySessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId;
-    const { nPage, nLimit, status } = getPaginationParameter(req);
+    const { offset, nLimit, status } = getPaginationParameter(req);
     const rescheduleRequests = await getUserRescheduleRequestsService({
       userId,
-      page: nPage,
-      pageSize: nLimit,
+      offset,
+      limit: nLimit,
       status: status as any,
     });
     res.status(200).json({
@@ -372,11 +372,11 @@ export const getMySessionRescheduleRequests = catchAsync(
 export const getReceivedSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId;
-    const { nPage, nLimit, status } = getPaginationParameter(req);
+    const { offset, nLimit, status } = getPaginationParameter(req);
     const rescheduleRequests = await getUserReceivedRescheduleRequestsService({
       userId,
-      page: nPage,
-      pageSize: nLimit,
+      offset: offset,
+      limit: nLimit,
       status: status as any,
     });
     res.status(200).json({
@@ -389,11 +389,11 @@ export const getReceivedSessionRescheduleRequests = catchAsync(
 export const getAllSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId;
-    const { nPage, nLimit, status } = getPaginationParameter(req);
+    const { offset, nLimit, status } = getPaginationParameter(req);
     const rescheduleRequests = await getUserAllRescheduleRequestsService({
       userId,
-      page: nPage,
-      pageSize: nLimit,
+      offset,
+      limit: nLimit,
       status: status as any,
     });
     res.status(200).json({

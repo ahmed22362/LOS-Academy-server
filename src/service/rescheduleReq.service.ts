@@ -1,23 +1,23 @@
-import { FindOptions, Op, Transaction, WhereOptions } from "sequelize"
+import { FindOptions, Op, Transaction, WhereOptions } from "sequelize";
 import RescheduleRequest, {
   RescheduleRequestStatus,
-} from "../db/models/rescheduleReq.model"
-import AppError from "../utils/AppError"
-import { updateModelService } from "./factory.services"
+} from "../db/models/rescheduleReq.model";
+import AppError from "../utils/AppError";
+import { updateModelService } from "./factory.services";
 import {
   OrderAssociation,
   getTeacherAllSessionsService,
   getUserAllSessionsService,
   teacherOwnThisSession,
   userOwnThisSession,
-} from "./session.service"
-import Session from "../db/models/session.model"
-import SessionInfo from "../db/models/sessionInfo.model"
-import User from "../db/models/user.model"
-import { getUserAttr } from "../controller/user.controller"
-import Teacher, { RoleType } from "../db/models/teacher.model"
-import { getTeacherAtt } from "../controller/teacher.controller"
-import logger from "../utils/logger"
+} from "./session.service";
+import Session from "../db/models/session.model";
+import SessionInfo from "../db/models/sessionInfo.model";
+import User from "../db/models/user.model";
+import { getUserAttr } from "../controller/user.controller";
+import Teacher, { RoleType } from "../db/models/teacher.model";
+import { getTeacherAtt } from "../controller/teacher.controller";
+import logger from "../utils/logger";
 
 export async function createRescheduleRequestService({
   sessionId,
@@ -26,39 +26,39 @@ export async function createRescheduleRequestService({
   requestedBy,
   transaction,
 }: {
-  sessionId: number
-  newDatesOptions: Date[]
-  oldDate: Date
-  requestedBy: RoleType
-  transaction?: Transaction
+  sessionId: number;
+  newDatesOptions: Date[];
+  oldDate: Date;
+  requestedBy: RoleType;
+  transaction?: Transaction;
 }) {
-  const dateArr = newDatesOptions.map((str) => new Date(str))
+  const dateArr = newDatesOptions.map((str) => new Date(str));
 
   const reqBody = {
     sessionId,
     oldDate,
     newDatesOptions: dateArr,
     requestedBy,
-  }
+  };
   const rescheduleRequest = await RescheduleRequest.create(reqBody as any, {
     transaction,
-  })
+  });
   if (!rescheduleRequest) {
-    throw new AppError(400, "can't create reschedule request!")
+    throw new AppError(400, "can't create reschedule request!");
   }
-  return rescheduleRequest
+  return rescheduleRequest;
 }
 export async function getOneRescheduleRequestService({ id }: { id: number }) {
-  const request = await RescheduleRequest.findByPk(id)
+  const request = await RescheduleRequest.findByPk(id);
   if (!request) {
-    throw new AppError(404, "there is no request with this id!")
+    throw new AppError(404, "there is no request with this id!");
   }
-  return request
+  return request;
 }
 export async function getOneRescheduleRequestServiceWithUserDetailsService({
   requestId,
 }: {
-  requestId: number
+  requestId: number;
 }) {
   const request = await RescheduleRequest.findByPk(requestId, {
     attributes: [["id", "requestId"], "newDate"],
@@ -80,11 +80,11 @@ export async function getOneRescheduleRequestServiceWithUserDetailsService({
         ],
       },
     ],
-  })
+  });
   if (!request) {
-    throw new AppError(404, "Can't find reschedule request with this id!")
+    throw new AppError(404, "Can't find reschedule request with this id!");
   }
-  return request
+  return request;
 }
 export async function updateRescheduleRequestService({
   requestId,
@@ -92,37 +92,37 @@ export async function updateRescheduleRequestService({
   newDate,
   transaction,
 }: {
-  requestId: number
-  status: RescheduleRequestStatus
-  newDate?: Date
-  transaction?: Transaction
+  requestId: number;
+  status: RescheduleRequestStatus;
+  newDate?: Date;
+  transaction?: Transaction;
 }) {
-  const reqBody: any = { status }
+  const reqBody: any = { status };
   if (newDate) {
-    reqBody.newDate = newDate
+    reqBody.newDate = newDate;
   }
   const updatedRequest = await updateModelService({
     ModelClass: RescheduleRequest,
     id: requestId,
     updatedData: reqBody,
     transaction,
-  })
-  return updatedRequest as RescheduleRequest
+  });
+  return updatedRequest as RescheduleRequest;
 }
 export async function getAllRescheduleRequestsService({
   findOptions,
 }: {
-  findOptions?: FindOptions
+  findOptions?: FindOptions;
 }) {
-  const requests = await RescheduleRequest.findAll(findOptions)
-  return requests
+  const requests = await RescheduleRequest.findAll(findOptions);
+  return requests;
 }
 export async function deleteRescheduleRequestService({
   requestId,
 }: {
-  requestId: number
+  requestId: number;
 }) {
-  await RescheduleRequest.destroy({ where: { id: requestId } })
+  await RescheduleRequest.destroy({ where: { id: requestId } });
 }
 export async function getAllRescheduleRequestsWithUserService() {
   return await RescheduleRequest.findAll({
@@ -145,7 +145,7 @@ export async function getAllRescheduleRequestsWithUserService() {
         ],
       },
     ],
-  })
+  });
 }
 export async function userRequestRescheduleService({
   sessionId,
@@ -153,17 +153,17 @@ export async function userRequestRescheduleService({
   newDatesOptions,
   transaction,
 }: {
-  sessionId: number
-  userId: string
-  newDatesOptions: Date[]
-  transaction?: Transaction
+  sessionId: number;
+  userId: string;
+  newDatesOptions: Date[];
+  transaction?: Transaction;
 }) {
-  const { session, exist } = await userOwnThisSession({ userId, sessionId })
+  const { session, exist } = await userOwnThisSession({ userId, sessionId });
   if (!exist) {
     throw new AppError(
       403,
-      "Can't request session reschedule for session that is not yours!"
-    )
+      "Can't request session reschedule for session that is not yours!",
+    );
   }
   const rescheduleRequest = createRescheduleRequestService({
     sessionId,
@@ -171,8 +171,8 @@ export async function userRequestRescheduleService({
     oldDate: session!.sessionDate,
     requestedBy: RoleType.USER,
     transaction,
-  })
-  return rescheduleRequest
+  });
+  return rescheduleRequest;
 }
 export async function teacherRequestRescheduleService({
   sessionId,
@@ -180,21 +180,21 @@ export async function teacherRequestRescheduleService({
   newDatesOptions,
   transaction,
 }: {
-  sessionId: number
-  teacherId: string
-  newDatesOptions: Date[]
-  transaction?: Transaction
+  sessionId: number;
+  teacherId: string;
+  newDatesOptions: Date[];
+  transaction?: Transaction;
 }) {
-  logger.info({ here: teacherId, sessionId })
+  logger.info({ here: teacherId, sessionId });
   const { session, exist } = await teacherOwnThisSession({
     teacherId,
     sessionId,
-  })
+  });
   if (!exist) {
     throw new AppError(
       403,
-      "Can't request session reschedule for session that is not yours!"
-    )
+      "Can't request session reschedule for session that is not yours!",
+    );
   }
   const rescheduleRequest = createRescheduleRequestService({
     sessionId,
@@ -202,48 +202,44 @@ export async function teacherRequestRescheduleService({
     oldDate: session!.sessionDate,
     requestedBy: RoleType.TEACHER,
     transaction,
-  })
-  return rescheduleRequest
+  });
+  return rescheduleRequest;
 }
 
 export async function getPendingRequestBySessionIdService({
   sessionId,
 }: {
-  sessionId: number
+  sessionId: number;
 }) {
   const request = await RescheduleRequest.findOne({
     where: { sessionId, status: RescheduleRequestStatus.PENDING },
-  })
-  return request
+  });
+  return request;
 }
 export async function getUserAllRescheduleRequestsService({
   userId,
-  page,
-  pageSize,
+  limit,
+  offset,
   status,
   requestedBy,
 }: {
-  userId: string
-  page?: number
-  pageSize?: number
-  status?: RescheduleRequestStatus
-  requestedBy?: RoleType
+  userId: string;
+  offset?: number;
+  limit?: number;
+  status?: RescheduleRequestStatus;
+  requestedBy?: RoleType;
 }) {
-  let limit
-  let offset
-  if (pageSize) limit = pageSize
-  if (page && pageSize) offset = page * pageSize
-  const sessions = await getUserAllSessionsService({
+  const result = await getUserAllSessionsService({
     userId,
     orderAssociation: OrderAssociation.ASC,
-  })
-  if (!sessions) {
-    throw new AppError(400, "can't get this user Sessions")
+  });
+  if (!result) {
+    throw new AppError(400, "can't get this user Sessions");
   }
-  const sessionsIds: number[] = sessions.map((session) => session.id)
-  const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
-  if (status) where.status = status
-  if (requestedBy) where.requestedBy = requestedBy
+  const sessionsIds: number[] = result.rows.map((session) => session.id);
+  const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } };
+  if (status) where.status = status;
+  if (requestedBy) where.requestedBy = requestedBy;
   const rescheduleRequests = await RescheduleRequest.findAll({
     where,
     limit,
@@ -261,72 +257,68 @@ export async function getUserAllRescheduleRequestsService({
         ],
       },
     ],
-  })
-  return rescheduleRequests
+  });
+  return rescheduleRequests;
 }
 export async function getUserReceivedRescheduleRequestsService({
   userId,
-  page,
-  pageSize,
+  limit,
+  offset,
   status,
 }: {
-  userId: string
-  page?: number
-  pageSize?: number
-  status?: RescheduleRequestStatus
+  userId: string;
+  limit?: number;
+  offset?: number;
+  status?: RescheduleRequestStatus;
 }) {
   return getUserAllRescheduleRequestsService({
     userId,
     requestedBy: RoleType.TEACHER,
-    page,
-    pageSize,
+    limit,
+    offset,
     status,
-  })
+  });
 }
 export async function getUserRescheduleRequestsService({
   userId,
-  page,
-  pageSize,
+  limit,
+  offset,
   status,
 }: {
-  userId: string
-  page?: number
-  pageSize?: number
-  status?: RescheduleRequestStatus
+  userId: string;
+  limit?: number;
+  offset?: number;
+  status?: RescheduleRequestStatus;
 }) {
   return getUserAllRescheduleRequestsService({
-    page,
-    pageSize,
+    limit,
+    offset,
     status,
     userId,
     requestedBy: RoleType.USER,
-  })
+  });
 }
 export async function getTeacherAllRescheduleRequestsService({
   teacherId,
-  page,
-  pageSize,
+  limit,
+  offset,
   status,
   requestedBy,
 }: {
-  teacherId: string
-  page?: number
-  pageSize?: number
-  status?: RescheduleRequestStatus
-  requestedBy?: RoleType
+  teacherId: string;
+  limit?: number;
+  offset?: number;
+  status?: RescheduleRequestStatus;
+  requestedBy?: RoleType;
 }) {
-  let limit
-  let offset
-  if (pageSize) limit = pageSize
-  if (page && pageSize) offset = page * pageSize
-  const sessions = await getTeacherAllSessionsService({ teacherId })
-  if (!sessions) {
-    throw new AppError(400, "can't get this teacher Sessions")
+  const result = await getTeacherAllSessionsService({ teacherId });
+  if (!result) {
+    throw new AppError(400, "can't get this teacher Sessions");
   }
-  const sessionsIds: number[] = sessions.map((session) => session.id)
-  const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } }
-  if (status) where.status = status
-  if (requestedBy) where.requestedBy = requestedBy
+  const sessionsIds: number[] = result.rows.map((session) => session.id);
+  const where: WhereOptions = { sessionId: { [Op.in]: sessionsIds } };
+  if (status) where.status = status;
+  if (requestedBy) where.requestedBy = requestedBy;
   const rescheduleRequests = await RescheduleRequest.findAll({
     where,
     limit,
@@ -344,47 +336,47 @@ export async function getTeacherAllRescheduleRequestsService({
         ],
       },
     ],
-  })
-  return rescheduleRequests
+  });
+  return rescheduleRequests;
 }
 export async function getTeacherReceivedRescheduleRequestsService({
   teacherId,
-  page,
-  pageSize,
+  limit,
+  offset,
   status,
 }: {
-  teacherId: string
-  page?: number
-  pageSize?: number
-  status?: RescheduleRequestStatus
+  teacherId: string;
+  limit?: number;
+  offset?: number;
+  status?: RescheduleRequestStatus;
 }) {
   return getTeacherAllRescheduleRequestsService({
     teacherId,
     requestedBy: RoleType.USER,
-    page,
-    pageSize,
+    limit,
+    offset,
     status,
-  })
+  });
 }
 export async function getTeacherRescheduleRequestsService({
   teacherId,
-  page,
-  pageSize,
+  limit,
+  offset,
   status,
 }: {
-  teacherId: string
-  page?: number
-  pageSize?: number
-  status?: RescheduleRequestStatus
+  teacherId: string;
+  limit?: number;
+  offset?: number;
+  status?: RescheduleRequestStatus;
 }) {
   return getTeacherAllRescheduleRequestsService({
     teacherId,
     requestedBy: RoleType.TEACHER,
-    page,
-    pageSize,
+    limit,
+    offset,
     status,
-  })
+  });
 }
 export function datesMatch(d1: Date, d2: Date) {
-  return d1.getTime() === d2.getTime()
+  return d1.getTime() === d2.getTime();
 }

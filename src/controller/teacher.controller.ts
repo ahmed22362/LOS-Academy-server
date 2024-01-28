@@ -227,13 +227,11 @@ export const getTeacherUpcomingSession = catchAsync(
     if (!result) {
       return next(new AppError(400, "can't get this teacher Sessions"));
     }
-    res
-      .status(200)
-      .json({
-        status: "success",
-        length: result.rows.length,
-        data: result.rows,
-      });
+    res.status(200).json({
+      status: "success",
+      length: result.rows.length,
+      data: result.rows,
+    });
   },
 );
 export const getTeacherOngoingSession = catchAsync(
@@ -320,12 +318,12 @@ export const getUsersAndTeachersCount = catchAsync(
 export const getSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
-    const { nPage, nLimit, status } = getPaginationParameter(req);
+    const { offset, nLimit, status } = getPaginationParameter(req);
     const rescheduleRequests = await getTeacherRescheduleRequestsService({
       teacherId,
       status: status as any,
-      page: nPage,
-      pageSize: nLimit,
+      offset,
+      limit: nLimit,
     });
     res.status(200).json({
       status: "success",
@@ -337,12 +335,12 @@ export const getSessionRescheduleRequests = catchAsync(
 export const getReceivedSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
-    const { nPage, nLimit, status } = getPaginationParameter(req);
+    const { offset, nLimit, status } = getPaginationParameter(req);
     const rescheduleRequests =
       await getTeacherReceivedRescheduleRequestsService({
         teacherId,
-        page: nPage,
-        pageSize: nLimit,
+        offset,
+        limit: nLimit,
         status: status as any,
       });
     res.status(200).json({
@@ -355,11 +353,11 @@ export const getReceivedSessionRescheduleRequests = catchAsync(
 export const getAllSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
-    const { nPage, nLimit, status } = getPaginationParameter(req);
+    const { offset, nLimit, status } = getPaginationParameter(req);
     const rescheduleRequests = await getTeacherAllRescheduleRequestsService({
       teacherId,
-      page: nPage,
-      pageSize: nLimit,
+      offset,
+      limit: nLimit,
       status: status as any,
     });
     res.status(200).json({
