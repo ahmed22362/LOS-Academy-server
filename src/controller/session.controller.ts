@@ -991,11 +991,11 @@ export const getUserContinueStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.body;
     const session = await getUserLatestNotPendingSessionService({ userId });
-    if (!session || session.length == 0) {
+    if (!session || session.count == 0) {
       return next(new AppError(400, "User had not session before!"));
     }
     const sessionInfo = await getOneSessionInfoServiceBy({
-      where: { id: session[0].sessionInfoId },
+      where: { id: session.rows[0].sessionInfoId },
       include: [
         { model: User, attributes: getUserAttr },
         { model: Teacher, attributes: getTeacherAtt },
@@ -1014,17 +1014,17 @@ export const getContinueWithTeacherAbstract = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { nLimit, offset } = getPaginationParameter(req);
     const sessionDateMap: Record<number, string> = {};
-    const freeSessions = await getAllSessionsService({
+    const result = await getAllSessionsService({
       findOptions: {
         where: { type: SessionType.FREE },
         limit: nLimit,
         offset: offset ?? 0,
       },
     });
-    const sessionInfoIds: number[] = freeSessions.map((session) => {
+    const sessionInfoIds: number[] = result.rows.map((session) => {
       return session.sessionInfoId;
     });
-    freeSessions.forEach((session) => {
+    result.rows.forEach((session) => {
       sessionDateMap[session.sessionInfoId] =
         session.sessionDate.toLocaleString("en-US", {
           year: "numeric",

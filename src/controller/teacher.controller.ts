@@ -189,68 +189,82 @@ export const getTeacher = catchAsync(
 export const getTeacherRemainSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
-    const sessions = await getTeacherRemainSessionsService({ teacherId });
-    if (!sessions) {
+    const { nLimit, offset } = getPaginationParameter(req);
+    const result = await getTeacherRemainSessionsService({
+      teacherId,
+      limit: nLimit,
+      offset,
+    });
+    if (!result) {
       return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
+      .json({ status: "success", length: result.count, data: result.rows });
   },
 );
 export const getTeacherTakenSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    const { nLimit, offset } = getPaginationParameter(req);
     const teacherId = req.body.teacherId;
-    const sessions = await getTeacherTakenSessionsService({ teacherId });
-    if (!sessions) {
+    const result = await getTeacherTakenSessionsService({
+      teacherId,
+      limit: nLimit,
+      offset,
+    });
+    if (!result) {
       return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
+      .json({ status: "success", length: result.count, data: result.rows });
   },
 );
 export const getTeacherUpcomingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
-    const sessions = await getTeacherUpcomingSessionService({ teacherId });
-    if (!sessions) {
+    const result = await getTeacherUpcomingSessionService({ teacherId });
+    if (!result) {
       return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
+      .json({
+        status: "success",
+        length: result.rows.length,
+        data: result.rows,
+      });
   },
 );
 export const getTeacherOngoingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
-    const sessions = await getTeacherOngoingSessionService({ teacherId });
-    if (!sessions) {
+    const result = await getTeacherOngoingSessionService({ teacherId });
+    if (!result) {
       return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
+      .json({ status: "success", length: result.count, data: result.rows });
   },
 );
 export const getTeacherLatestTakenSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
-    const sessions = await getTeacherLatestTakenSessionService({ teacherId });
-    if (!sessions) {
+    const result = await getTeacherLatestTakenSessionService({ teacherId });
+    if (!result) {
       return next(new AppError(400, "can't get this teacher Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
+      .json({ status: "success", length: result.count, data: result.rows });
   },
 );
 export const getTeacherAllSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
     const { offset, nLimit, status } = getPaginationParameter(req);
-    const sessions = await getTeacherAllSessionsService({
+    const result = await getTeacherAllSessionsService({
       teacherId,
       offset: offset,
       limit: nLimit,
@@ -258,14 +272,21 @@ export const getTeacherAllSessions = catchAsync(
     });
     res
       .status(200)
-      .json({ status: "success", length: sessions!.length, data: sessions });
+      .json({ status: "success", length: result?.count, data: result?.rows });
   },
 );
 export const getTeacherAllStudents = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.body.teacherId;
-    const student = await getTeacherStudentsService({ teacherId });
-    res.status(200).json({ status: "success", data: student });
+    const { nLimit, offset } = getPaginationParameter(req);
+    const result = await getTeacherStudentsService({
+      teacherId,
+      limit: nLimit,
+      offset,
+    });
+    res
+      .status(200)
+      .json({ status: "success", length: result.count, data: result.unique });
   },
 );
 export const checkJWT = catchAsync(

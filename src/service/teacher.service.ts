@@ -96,16 +96,22 @@ export async function getTeacherByService({
 
 export async function getTeacherStudentsService({
   teacherId,
+  limit,
+  offset,
 }: {
   teacherId: string;
+  limit?: number;
+  offset?: number;
 }) {
-  const sessionInfos = await SessionInfo.findAll({
+  const { rows, count } = await SessionInfo.findAndCountAll({
     where: { teacherId },
     include: [{ model: User, attributes: getUserAttr }],
+    limit,
+    offset,
   });
-  const students = sessionInfos.map((info) => info.user);
+  const students = rows.map((info) => info.user);
   const unique: User[] = [
     ...new Set(students.map((item) => JSON.stringify(item))),
   ].map((item) => JSON.parse(item));
-  return unique;
+  return { unique, count };
 }

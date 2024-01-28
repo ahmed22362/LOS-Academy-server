@@ -269,74 +269,80 @@ export const updateUserPlan = catchAsync(
 );
 export const getMyHistorySessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sessions = await getUserAllTakenSessionsService({
+    const { nLimit, offset } = getPaginationParameter(req);
+    const result = await getUserAllTakenSessionsService({
       userId: req.body.userId,
+      limit: nLimit,
+      offset,
     });
 
     res
       .status(200)
-      .json({ status: "success", length: sessions!.length, data: sessions });
+      .json({ status: "success", length: result?.count, data: result?.rows });
   },
 );
 export const getUserRemainSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sessions = await getUserRemainSessionsService({
+    const { nLimit, offset } = getPaginationParameter(req);
+    const result = await getUserRemainSessionsService({
       userId: req.body.userId,
+      limit: nLimit,
+      offset,
     });
-    if (!sessions) {
+    if (!result) {
       return next(new AppError(400, "can't get this user Sessions"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
+      .json({ status: "success", length: result.count, data: result.rows });
   },
 );
 export const getUserUpcomingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId;
-    const session = await getUserUpcomingSessionService({ userId });
-    if (!session) {
+    const result = await getUserUpcomingSessionService({ userId });
+    if (!result) {
       return next(new AppError(400, "can't get this user Sessions"));
     }
-    res.status(200).json({ status: "success", data: session });
+    res.status(200).json({ status: "success", data: result.rows });
   },
 );
 export const getUserOngoingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId;
-    const session = await getUserOngoingSessionService({ userId });
-    if (!session) {
+    const result = await getUserOngoingSessionService({ userId });
+    if (!result) {
       return next(new AppError(400, "can't get this user Sessions"));
     }
-    res.status(200).json({ status: "success", data: session });
+    res.status(200).json({ status: "success", data: result.rows });
   },
 );
 export const getUserLatestSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId;
-    const session = await getUserLatestNotPendingSessionService({ userId });
-    if (!session) {
+    const result = await getUserLatestNotPendingSessionService({ userId });
+    if (!result) {
       return next(new AppError(400, "Can't get this user sessions"));
     }
-    res.status(200).json({ status: "success", data: session });
+    res.status(200).json({ status: "success", data: result.rows });
   },
 );
 export const getUserSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { offset, nLimit, status } = getPaginationParameter(req);
-    const sessions = await getUserAllSessionsService({
+    const result = await getUserAllSessionsService({
       userId: req.body.userId,
       offset,
       limit: nLimit,
       status: status as any,
       orderAssociation: OrderAssociation.DESC,
     });
-    if (!sessions) {
+    if (!result) {
       return next(new AppError(400, "Can't get this user sessions!"));
     }
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
+      .json({ status: "success", length: result.count, data: result.rows });
   },
 );
 export const getUserStatistics = catchAsync(

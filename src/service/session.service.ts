@@ -279,7 +279,7 @@ export async function getAllSessionsService({
 }: {
   findOptions?: FindOptions;
 }) {
-  const sessions = await Session.findAll(findOptions);
+  const sessions = await Session.findAndCountAll(findOptions);
   return sessions;
 }
 export async function getAllSessionsServiceByStatus({
@@ -296,7 +296,7 @@ export async function getAllSessionsServiceByStatus({
 
   if (pageSize) limit = pageSize;
   if (status) where.status = status;
-  const sessions = await Session.findAll({
+  const sessions = await Session.findAndCountAll({
     include: [
       {
         model: SessionInfo,
@@ -365,13 +365,19 @@ export async function getOneSessionWithSessionInfoOnlyService({
 }
 export async function getUserAllTakenSessionsService({
   userId,
+  limit,
+  offset,
 }: {
   userId: string;
+  limit?: number;
+  offset?: number;
 }) {
   const sessions = await allTeacherOrUserSessionsService({
     userId,
     status: SessionStatus.TAKEN,
     orderAssociation: OrderAssociation.DESC,
+    limit,
+    offset,
   });
   return sessions;
 }
@@ -399,13 +405,19 @@ export async function getUserAllSessionsService({
 }
 export async function getUserRemainSessionsService({
   userId,
+  limit,
+  offset,
 }: {
   userId: string;
+  limit?: number;
+  offset?: number;
 }) {
   const sessions = await allTeacherOrUserSessionsService({
     userId,
     status: SessionStatus.PENDING,
     orderAssociation: OrderAssociation.ASC,
+    limit,
+    offset,
   });
   return sessions;
 }
@@ -510,26 +522,38 @@ export async function getTeacherLatestTakenSessionService({
   return session;
 }
 export async function getTeacherRemainSessionsService({
+  limit,
+  offset,
   teacherId,
 }: {
   teacherId: string;
+  limit?: number;
+  offset?: number;
 }) {
   const sessions = await allTeacherOrUserSessionsService({
     teacherId,
     status: SessionStatus.PENDING,
     orderAssociation: OrderAssociation.ASC,
+    limit,
+    offset,
   });
   return sessions;
 }
 export async function getTeacherTakenSessionsService({
   teacherId,
+  limit,
+  offset,
 }: {
   teacherId: string;
+  limit?: number;
+  offset?: number;
 }) {
   const sessions = await allTeacherOrUserSessionsService({
     teacherId,
     status: SessionStatus.TAKEN,
     orderAssociation: OrderAssociation.DESC,
+    limit,
+    offset,
   });
   return sessions;
 }
@@ -890,7 +914,7 @@ export async function isThereOngoingSessionForTheSameTeacher({
     teacherId,
     status: SessionStatus.ONGOING,
   });
-  if (sessions && sessions.length > 0) {
+  if (sessions?.rows && sessions.count > 0) {
     throw new AppError(
       400,
       "Can't update session to be ongoing while there is another ongoing one!",
@@ -904,7 +928,7 @@ export async function getUserSessionStats({ userId }: { userId: string }) {
   });
   const sessionInfoIds = sessionInfo.map((info) => info.id);
 
-  const sessionCounts = (await Session.findAll({
+  const { rows, count } = (await Session.findAndCountAll({
     attributes: ["status", [fn("COUNT", col("status")), "count"]],
     where: {
       sessionInfoId: {
@@ -919,22 +943,10 @@ export async function getUserSessionStats({ userId }: { userId: string }) {
     subQuery: false,
     raw: true,
   })) as any;
-  const totalCount = await Session.count({
-    where: {
-      sessionInfoId: {
-        [Op.in]: sessionInfoIds,
-      },
-      [Op.or]: [
-        { status: SessionStatus.TAKEN },
-        { status: SessionStatus.USER_ABSENT },
-      ],
-    },
-  });
-
-  const result = sessionCounts.map((sc: any) => ({
+  const result = rows.map((sc: any) => ({
     status: sc.status,
     count: sc.count,
-    percent: Number(((sc.count / totalCount) * 100).toFixed(2)),
+    percent: Number(((sc.count / count) * 100).toFixed(2)),
   }));
   return result;
 }
