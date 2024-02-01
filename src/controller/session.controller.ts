@@ -6,7 +6,6 @@ import {
   createFreeSessionService,
   createPaidSessionsService,
   deleteSessionService,
-  generateMeetingLinkAndUpdateSession,
   getAdminSessionsStatisticsService,
   getAllSessionsService,
   getAllSessionsServiceByStatus,
@@ -17,6 +16,7 @@ import {
   isTeacherHasOverlappingSessions,
   teacherOwnThisSession,
   updateSessionService,
+  updateSessionServiceWithUserAndTeacherBalance,
   updateSessionStatusService,
   updateSessionStudentAttendanceService,
   updateSessionTeacherAttendanceService,
@@ -39,7 +39,6 @@ import RescheduleRequest, {
   RescheduleRequestStatus,
 } from "../db/models/rescheduleReq.model";
 import Session, {
-  SESSION_TABLE_NAME,
   SessionStatus,
   SessionType,
 } from "../db/models/session.model";
@@ -73,6 +72,7 @@ import {
   createSessionInfoService,
   getAllSessionsInfoService,
   getOneSessionInfoServiceBy,
+  getOrCreateSessionInfoService,
   getSessionInfoService,
   updateOneSessionInfoService,
 } from "../service/sessionInfo.service";
@@ -81,7 +81,6 @@ import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs";
 import { Transaction } from "sequelize";
 import { SubscriptionStatus } from "../db/models/subscription.model";
 import { emitRescheduleRequestForUser } from "../connect/socket";
-import { estimateRowCount } from "../utils/getTableRowCount";
 export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000;
 export const HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 const DEFAULT_COURSES = ["arabic"];
@@ -218,21 +217,21 @@ export const createSessionAdmin = catchAsync(
         ),
       );
     }
+    if (type === SessionType.FREE && newSessionDates.length > 1) {
+      throw new AppError(
+        400,
+        "please provide only one date for the free session!",
+      );
+    }
     const t = await sequelize.transaction();
     try {
       const teacher = await getTeacherByIdService({ id: teacherId });
       const user = await getUserByIdService({ userId });
-      let sessionInfo;
-      sessionInfo = await getOneSessionInfoServiceBy({
-        where: { userId, teacherId: teacherId },
+      let sessionInfo = await getOrCreateSessionInfoService({
+        teacherId,
+        userId,
+        transaction: t,
       });
-      if (!sessionInfo) {
-        sessionInfo = await createSessionInfoService({
-          userId,
-          teacherId,
-          transaction: t,
-        });
-      }
       const sessionBody = {
         sessionInfoId: sessionInfo.id,
         sessionDates: newSessionDates,
@@ -306,122 +305,7 @@ export const updateSessionAttendance = async (
     );
   }
 };
-export const generateSessionLink = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionId, teacherId } = req.body;
-    const { session, exist } = await teacherOwnThisSession({
-      teacherId,
-      sessionId,
-    });
-    if (!exist) {
-      return next(
-        new AppError(
-          401,
-          "You cant generate meeting link to a session is not yours",
-        ),
-      );
-    }
-    const updatedSession = await generateMeetingLinkAndUpdateSession({
-      sessionId,
-      status: SessionStatus.ONGOING,
-    });
-    res.status(200).json({
-      status: "success",
-      message: "session meeting link regenerated!",
-      data: updatedSession,
-    });
-  },
-);
-export const updateSessionStatus = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionId, status } = req.body;
-    let updatedSession;
-    const t = await sequelize.transaction();
-    try {
-      const session = await getOneSessionDetailsService({ sessionId });
-      switch (status) {
-        case SessionStatus.ONGOING:
-          updatedSession = await generateMeetingLinkAndUpdateSession({
-            sessionId,
-            status: SessionStatus.ONGOING,
-            transaction: t,
-          });
-          break;
-        case SessionStatus.TAKEN:
-          updatedSession = await updateSessionStatusService({
-            id: sessionId,
-            updatedData: { status },
-            transaction: t,
-          });
-          await updateUserRemainSessionService({
-            userId: session.SessionInfo.userId!,
-            amountOfSessions: -1,
-            transaction: t,
-          });
-          await updateTeacherBalance({
-            teacherId: session.SessionInfo.teacherId!,
-            committed: true,
-            transaction: t,
-          });
-          break;
-        case SessionStatus.PENDING:
-          updatedSession = await updateSessionStatusService({
-            id: sessionId,
-            updatedData: { status },
-            transaction: t,
-          });
-          break;
-        case SessionStatus.TEACHER_ABSENT:
-          updatedSession = await updateSessionStatusService({
-            id: sessionId,
-            updatedData: { status },
-            transaction: t,
-          });
-          await updateTeacherBalance({
-            teacherId: session.SessionInfo.teacherId!,
-            numOfSessions: -1,
-            transaction: t,
-          });
-          break;
-        case SessionStatus.USER_ABSENT:
-          updatedSession = await updateSessionStatusService({
-            id: sessionId,
-            updatedData: { status },
-            transaction: t,
-          });
-          await updateTeacherBalance({
-            teacherId: session.SessionInfo.teacherId!,
-            committed: true,
-            numOfSessions: 1,
-            transaction: t,
-          });
-          await updateUserRemainSessionService({
-            userId: session.SessionInfo.userId!,
-            amountOfSessions: -1,
-            transaction: t,
-          });
-          break;
-        default:
-          console.error("Can't update session status with unknown status!");
-          return next(
-            new AppError(
-              400,
-              "Can't update session status with unknown status!",
-            ),
-          );
-      }
-      await t.commit();
-      res.status(200).json({
-        status: "success",
-        message: "session status updated successfully",
-        data: updatedSession,
-      });
-    } catch (error: any) {
-      await t.rollback();
-      next(new AppError(400, `Error updating session: ${error.message}`));
-    }
-  },
-);
+
 export const requestSessionReschedule = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId, userId, sessionId, newDatesOptions } = req.body;
@@ -1070,21 +954,100 @@ export const deleteSession = catchAsync(
       .json({ status: "success", message: "session deleted successfully!" });
   },
 );
-export const updateSessionAttendanceForAdmin = catchAsync(
+export const updateContinueWithTeacherAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userAttended, teacherAttended, sessionId } = req.body;
-    const session = await getOneSessionWithSessionInfoOnlyService({
-      sessionId,
+    const { sessionInfoId, status } = req.body;
+    const sessionInfo = await updateOneSessionInfoService({
+      id: sessionInfoId,
+      updatedData: { willContinue: status },
     });
-    if (userAttended) {
-      session.studentAttended = userAttended;
+    res.status(200).json({
+      status: "success",
+      message: "Status updated successfully",
+      data: sessionInfo,
+    });
+  },
+);
+export const updateSessionForAdmin = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const sessionId = req.params.id;
+    const {
+      teacherAttended,
+      studentAttended,
+      sessionDate,
+      status,
+      reschedule_request_count,
+      hasReport,
+    } = req.body;
+    let session = await getOneSessionWithSessionInfoOnlyService({
+      sessionId: +sessionId,
+    });
+    const transaction = await sequelize.transaction();
+    try {
+      if (studentAttended) {
+        await updateSessionStudentAttendanceService({
+          sessionId: session.id,
+          userId: session.SessionInfo.userId!,
+          attend: true,
+          transaction,
+        });
+      }
+      if (teacherAttended) {
+        await updateSessionTeacherAttendanceService({
+          sessionId: session.id,
+          teacherId: session.SessionInfo.teacherId!,
+          attend: true,
+          transaction,
+        });
+      }
+      if (sessionDate) {
+        checkDateFormat(sessionDate);
+        await isTeacherHasOverlappingSessions({
+          teacherId: session.SessionInfo.teacherId!,
+          wantedSessionDates: [new Date(sessionDate)],
+          wantedSessionDuration: session.sessionDuration,
+        });
+        await updateSessionService({
+          sessionId: session.id,
+          updatedData: {
+            sessionDate: new Date(sessionDate),
+          },
+          transaction,
+        });
+        await rescheduleSessionJobs({
+          sessionId: session.id,
+          newDate: new Date(sessionDate),
+          sessionDuration: session.sessionDuration,
+          transaction,
+        });
+      }
+      if (status) {
+        await updateSessionServiceWithUserAndTeacherBalance({
+          sessionId: session.id,
+          status,
+          userId: session.SessionInfo.userId!,
+          teacherId: session.SessionInfo.teacherId!,
+          transaction,
+        });
+      }
+      let updatedSession = await updateSessionService({
+        sessionId: session.id,
+        updatedData: { reschedule_request_count, hasReport },
+      });
+      await transaction.commit();
+      res.status(200).json({
+        status: "success",
+        message: "session updated successfully",
+        data: updatedSession,
+      });
+    } catch (error: any) {
+      await transaction.rollback();
+      return next(
+        new AppError(
+          400,
+          `Can't update session Some thing went wrong like : ${error.message}`,
+        ),
+      );
     }
-    if (teacherAttended) {
-      session.teacherAttended = teacherAttended;
-    }
-    await session.save();
-    res
-      .status(200)
-      .json({ status: "success", message: "attendance updated successfully!" });
   },
 );

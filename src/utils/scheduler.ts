@@ -168,7 +168,6 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
   requestedBy,
 }: {
   rescheduleRequestId: number;
-
   status: string;
   requestedBy: RoleType;
 }) {

@@ -50,6 +50,7 @@ export interface ISessionUpdateTeacher extends ISessionUpdateUser {
   status: SessionStatus;
   meetingLink: string;
   hasReport?: boolean;
+  reschedule_request_count: number;
 }
 
 export interface ISessionDetails {
@@ -993,8 +994,8 @@ export async function isTeacherHasOverlappingSessions({
   wantedSessionDates: Date[];
   wantedSessionDuration: number;
 }) {
-  const teacherSessions = await getTeacherRemainSessionsService({ teacherId });
-
+  const sessions = await getTeacherRemainSessionsService({ teacherId });
+  const teacherSessions = sessions?.rows;
   if (!Array.isArray(teacherSessions)) {
     throw new AppError(400, "Can't get teacher sessions");
   }
@@ -1031,4 +1032,88 @@ export async function isTeacherHasOverlappingSessions({
     }
   }
   return false;
+}
+export async function updateSessionServiceWithUserAndTeacherBalance({
+  sessionId,
+  status,
+  transaction,
+  userId,
+  teacherId,
+}: {
+  sessionId: number;
+  status: SessionStatus;
+  transaction?: Transaction;
+  userId: string;
+  teacherId: string;
+}) {
+  let updatedSession: Session;
+  switch (status) {
+    case SessionStatus.ONGOING:
+      updatedSession = await generateMeetingLinkAndUpdateSession({
+        sessionId,
+        status: SessionStatus.ONGOING,
+        transaction,
+      });
+      break;
+    case SessionStatus.TAKEN:
+      updatedSession = await updateSessionStatusService({
+        id: sessionId,
+        updatedData: { status },
+        transaction,
+      });
+      await updateUserRemainSessionService({
+        userId: userId,
+        amountOfSessions: -1,
+        transaction,
+      });
+      await updateTeacherBalance({
+        teacherId: teacherId!,
+        committed: true,
+        transaction,
+      });
+      break;
+    case SessionStatus.PENDING:
+      updatedSession = await updateSessionStatusService({
+        id: sessionId,
+        updatedData: { status },
+        transaction,
+      });
+      break;
+    case SessionStatus.TEACHER_ABSENT:
+      updatedSession = await updateSessionStatusService({
+        id: sessionId,
+        updatedData: { status },
+        transaction,
+      });
+      await updateTeacherBalance({
+        teacherId: teacherId,
+        numOfSessions: -1,
+        transaction,
+      });
+      break;
+    case SessionStatus.USER_ABSENT:
+      updatedSession = await updateSessionStatusService({
+        id: sessionId,
+        updatedData: { status },
+        transaction,
+      });
+      await updateTeacherBalance({
+        teacherId,
+        committed: true,
+        numOfSessions: 1,
+        transaction,
+      });
+      await updateUserRemainSessionService({
+        userId,
+        amountOfSessions: -1,
+        transaction,
+      });
+      break;
+    default:
+      console.error("Can't update session status with unknown status!");
+      throw new AppError(
+        400,
+        "Can't update session status with unknown status!",
+      );
+  }
 }

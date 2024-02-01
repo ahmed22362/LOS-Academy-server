@@ -119,3 +119,9 @@ export const updateSessionAttendanceByAdmin = z.object({
     userAttended: z.boolean().optional(),
   }),
 });
+export const updateSessionContinuityByAdmin = z.object({
+  body: z.object({
+    sessionInfoId,
+    status: z.boolean().nullable(),
+  }),
+});

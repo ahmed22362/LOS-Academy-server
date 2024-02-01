@@ -37,6 +37,24 @@ export async function createSessionInfoService({
   }
   return sessionInfo;
 }
+export async function getOrCreateSessionInfoService({
+  teacherId,
+  userId,
+  transaction,
+}: {
+  teacherId: string;
+  userId: string;
+  transaction?: Transaction;
+}) {
+  const [instant, created] = await SessionInfo.findOrCreate({
+    where: { teacherId, userId },
+    transaction,
+  });
+  if (!instant) {
+    throw new Error("can't create new session info");
+  }
+  return instant;
+}
 export async function checkUniqueUserAndTeacher({
   teacherId,
   userId,

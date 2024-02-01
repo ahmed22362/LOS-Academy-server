@@ -12,16 +12,15 @@ import { protectUser, setUserOrTeacherId } from "../controller/user.controller";
 import {
   createSessionAdmin,
   deleteSession,
-  generateSessionLink,
   getAdminSessionStats,
   getAllRescheduleRequestsForAdmin,
   getAllSessionsByStatus,
   getContinueWithTeacherAbstract,
   getOneSessionInfo,
   replaceSessionInfoTeacher,
+  updateContinueWithTeacherAdmin,
   updateSessionAttendance,
-  updateSessionAttendanceForAdmin,
-  updateSessionStatus,
+  updateSessionForAdmin,
   userContinueWithTeacher,
   userWontContinueWithTeacher,
 } from "../controller/session.controller";
@@ -37,6 +36,7 @@ import {
   replaceSessionInfoTeacherSchema,
   requireEitherTeacherOrUser,
   updateSessionAttendanceByAdmin,
+  updateSessionContinuityByAdmin,
   updateSessionStatusSchema,
   userContinueWithTeacherSchema,
   userWontContinueWithTeacherSchema,
@@ -82,23 +82,6 @@ sessionRouter
     setUserOrTeacherId,
     validate(requireEitherTeacherOrUser),
     updateSessionAttendance,
-  );
-sessionRouter
-  .route("/generateLink")
-  .post(
-    protectTeacher,
-    setUserOrTeacherId,
-    validate(generateLinkSchema),
-    generateSessionLink,
-  );
-sessionRouter
-  .route("/status")
-  .post(
-    protectTeacher,
-    setUserOrTeacherId,
-    restrictTo(RoleType.ADMIN),
-    validate(updateSessionStatusSchema),
-    updateSessionStatus,
   );
 sessionRouter
   .route("/continueWithTeacher")
@@ -148,16 +131,17 @@ sessionRouter
     createSessionAdmin,
   );
 sessionRouter
-  .route("/updateSessionAttendance")
+  .route("/updateSessionContinuity")
   .post(
     protectTeacher,
     restrictTo(RoleType.ADMIN),
-    validate(updateSessionAttendanceByAdmin),
-    updateSessionAttendanceForAdmin,
+    validate(updateSessionContinuityByAdmin),
+    updateContinueWithTeacherAdmin,
   );
 sessionRouter
   .route("/:id")
   .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo)
+  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateSessionForAdmin)
   .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteSession);
 sessionRouter
   .route("/")
