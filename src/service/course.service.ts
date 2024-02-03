@@ -38,13 +38,12 @@ export async function getAllCoursesService({
 }: {
   offset?: number;
   limit?: number;
-}) {
+}): Promise<{
+  rows: Course[];
+  count: number;
+}> {
   try {
-    const courses = await getModelsService({
-      ModelClass: Course,
-      offset,
-      limit,
-    });
+    const courses = await Course.findAndCountAll({ limit, offset });
     if (!courses) {
       throw new AppError(400, `Error while retrieving course`);
     }

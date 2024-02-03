@@ -120,6 +120,6 @@ export async function getAllReportsService({
 }: {
   findOptions?: FindOptions;
 }) {
-  const reports = await sessionReport.findAll(findOptions);
+  const reports = await sessionReport.findAndCountAll(findOptions);
   return reports;
 }

@@ -26,8 +26,6 @@ import logger from "../utils/logger";
 import { updateTeacherBalance } from "../service/teacher.service";
 import { sequelize } from "../db/sequelize";
 import { emitReportAddedForUser } from "../connect/socket";
-import { estimateRowCount } from "../utils/getTableRowCount";
-import { REPORT_TABLE_NAME } from "../db/models/report.model";
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -72,7 +70,7 @@ export const createReport = catchAsync(
       if (session.type === SessionType.PAID) {
         await updateTeacherBalance({
           teacherId: teacherId!,
-          numOfSessions: 1,
+          mins: session.sessionDuration,
           transaction,
         });
       }
@@ -159,8 +157,8 @@ export const getAllReports = catchAsync(
     });
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(REPORT_TABLE_NAME),
-      data: reports,
+      length: reports.count,
+      data: reports.rows,
     });
   },
 );

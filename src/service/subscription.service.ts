@@ -177,10 +177,7 @@ export async function getAllSubscriptionsService({
 }: {
   findOptions?: FindOptions;
 }) {
-  const subscriptions = await getAllModelsByService({
-    Model: Subscription,
-    findOptions,
-  });
+  const subscriptions = await Subscription.findAndCountAll(findOptions);
   return subscriptions;
 }
 export async function handelCheckoutSessionCompleted(

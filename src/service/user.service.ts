@@ -36,9 +36,12 @@ async function getUsersService({
   findOptions,
 }: {
   findOptions?: FindOptions;
-}): Promise<User[] | null> {
+}): Promise<{
+  rows: User[];
+  count: number;
+} | null> {
   try {
-    const users = await User.findAll(findOptions);
+    const users = await User.findAndCountAll(findOptions);
     return users;
   } catch (error: any) {
     console.error("Error getting all users:", error.message);
@@ -128,15 +131,14 @@ async function updateUserRemainSessionService({
   transaction?: Transaction;
 }) {
   const user = await getUserByIdService({ userId });
-  // to indicate if the user take placed his session or not so he can't placed again
-  // make it false again because he payed so he has the apportunety to place session again
-  user.sessionPlaced = false;
+  user.increment(["remainSessions"], {
+    by: amountOfSessions,
+    transaction,
+  });
   await user.save();
-  return await user.increment(
-    { remainSessions: amountOfSessions },
-    { transaction },
-  );
+  return;
 }
+
 async function deleteUserService({
   userId,
   force,

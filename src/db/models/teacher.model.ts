@@ -16,8 +16,9 @@ export interface ITeacherInput {
   password: string;
   phone: string;
   customerId?: string;
-  sessionCost: number;
+  hour_cost: number;
   balance?: number;
+  committed_mis?: number;
 }
 export enum RoleType {
   TEACHER = "teacher",
@@ -79,12 +80,12 @@ export default class Teacher extends Model<Teacher> {
   password!: string;
 
   @Column({ type: DataType.FLOAT, allowNull: false })
-  sessionCost!: number;
+  hour_cost!: number;
 
   @Column({ type: DataType.INTEGER, defaultValue: 0 })
-  committedSessions!: number;
+  committed_mins!: number;
 
-  @Column({ type: DataType.INTEGER, defaultValue: 0 })
+  @Column({ type: DataType.DOUBLE, defaultValue: 0 })
   balance!: number;
 
   @Column(DataType.DATE)

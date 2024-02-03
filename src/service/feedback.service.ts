@@ -10,6 +10,7 @@ import {
   getModelsService,
   updateModelService,
 } from "./factory.services";
+import Feedback from "../db/models/feedback.model";
 
 interface createFeedBackBody {
   userId: string;
@@ -44,25 +45,25 @@ export async function getAllFeedBacksService({
   offset?: number;
   limit?: number;
   show?: boolean;
-}) {
+}): Promise<{
+  rows: FeedBack[];
+  count: number;
+}> {
   try {
     let where: WhereOptions = {};
     if (show) {
       where.show = show;
     }
-    const feedbacks = await getModelsService({
-      ModelClass: FeedBack,
+    const feedbacks = await Feedback.findAndCountAll({
       offset,
       limit,
-      findOptions: {
-        include: [{ model: User, attributes: getUserAttr }],
-        where,
-      },
+      include: [{ model: User, attributes: getUserAttr }],
+      where,
     });
     if (!feedbacks) {
       throw new AppError(400, `Error while retrieving feedback`);
     }
-    return <FeedBack[]>feedbacks;
+    return feedbacks;
   } catch (error: any) {
     throw new AppError(
       400,
@@ -77,7 +78,7 @@ export async function getAllShownFeedBacksService({
   offset?: number;
   limit?: number;
 }) {
-  return await getAllFeedBacksService({ offset, limit });
+  return await getAllFeedBacksService({ offset, limit, show: true });
 }
 export async function updateFeedBackService({
   id,

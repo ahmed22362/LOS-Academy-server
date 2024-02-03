@@ -51,18 +51,18 @@ export async function getAllMonthlyReportsService({
 }: {
   limit?: number;
   offset?: number;
-}) {
+}): Promise<{
+  rows: MonthlyReport[];
+  count: number;
+}> {
   try {
-    const monthlyReports = await getModelsService({
-      ModelClass: MonthlyReport,
-      findOptions: {
-        include: [
-          { model: User, attributes: getUserAttr },
-          { model: Teacher, attributes: getTeacherAtt },
-        ],
-      },
-      offset,
+    const monthlyReports = await MonthlyReport.findAndCountAll({
       limit,
+      offset,
+      include: [
+        { model: User, attributes: getUserAttr },
+        { model: Teacher, attributes: getTeacherAtt },
+      ],
     });
     if (!monthlyReports) {
       throw new AppError(400, `Error while retrieving monthlyReport`);

@@ -46,7 +46,7 @@ export async function getTeachersService({
 }: {
   findOptions?: FindOptions;
 }) {
-  return await getModelsService({ ModelClass: Teacher, findOptions });
+  return await Teacher.findAndCountAll(findOptions);
 }
 export async function updateTeacherService({
   updatedData,
@@ -64,22 +64,22 @@ export async function updateTeacherService({
 export async function updateTeacherBalance({
   teacherId,
   amount,
-  numOfSessions,
+  mins,
   committed,
   transaction,
 }: {
   teacherId: string;
   amount?: number;
   committed?: boolean;
-  numOfSessions?: number;
+  mins?: number;
   transaction?: Transaction;
 }) {
   const teacher = await getTeacherByIdService({ id: teacherId });
   if (!amount) {
-    amount = (numOfSessions ?? 0) * teacher.sessionCost;
+    amount = (mins ?? 0) * (teacher.hour_cost / 60);
   }
   const updated = await teacher.increment(
-    { balance: amount ?? 0, committedSessions: committed ? 1 : 0 },
+    { balance: amount ?? 0, committed_mins: committed ? mins : 0 },
     {
       transaction,
     },

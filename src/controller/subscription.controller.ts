@@ -21,7 +21,6 @@ import {
 import { sequelize } from "../db/sequelize";
 import AppError from "../utils/AppError";
 import logger from "../utils/logger";
-import { estimateRowCount } from "../utils/getTableRowCount";
 
 export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -154,8 +153,8 @@ export const getAllUsersSubscriptions = catchAsync(
     });
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(SUBSCRIPTION_TABLE_NAME),
-      data: subscriptions,
+      length: subscriptions.count,
+      data: subscriptions.rows,
     });
   },
 );

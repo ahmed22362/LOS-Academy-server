@@ -15,8 +15,6 @@ import {
   getTeacherStudentsService,
 } from "../service/teacher.service";
 import { getPaginationParameter } from "./user.controller";
-import { estimateRowCount } from "../utils/getTableRowCount";
-import { MONTHLY_REPORT_TABLE_NAME } from "../db/models/monthlyReport.model";
 import { RoleType } from "../db/models/teacher.model";
 
 export const createMonthlyReport = catchAsync(
@@ -47,8 +45,8 @@ export const getAllMonthlyReports = catchAsync(
     });
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(MONTHLY_REPORT_TABLE_NAME),
-      data: monthlyReports,
+      length: monthlyReports.count,
+      data: monthlyReports.rows,
     });
   },
 );

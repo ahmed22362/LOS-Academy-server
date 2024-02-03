@@ -51,6 +51,8 @@ export interface ISessionUpdateTeacher extends ISessionUpdateUser {
   meetingLink: string;
   hasReport?: boolean;
   reschedule_request_count: number;
+  teacherAttended?: boolean;
+  studentAttended?: boolean;
 }
 
 export interface ISessionDetails {
@@ -693,7 +695,7 @@ export async function handleSessionFinishedService({
       if (session.type === SessionType.PAID) {
         await updateTeacherBalance({
           teacherId: session.SessionInfo.teacherId!,
-          numOfSessions: 1,
+          mins: 0,
           committed: true,
           transaction,
         });
@@ -714,7 +716,7 @@ export async function handleSessionFinishedService({
       await updateTeacherBalance({
         teacherId: session.SessionInfo.teacherId!,
         committed: false,
-        numOfSessions: -1,
+        mins: -updatedSession.sessionDuration,
         transaction,
       });
     }
@@ -729,6 +731,8 @@ export async function handleSessionFinishedService({
       await updateTeacherBalance({
         teacherId: session.SessionInfo.teacherId!,
         committed: true,
+        mins: session.sessionDuration,
+        amount: 0,
         transaction,
       });
       if (session.type === SessionType.PAID) {
@@ -1069,6 +1073,8 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
       await updateTeacherBalance({
         teacherId: teacherId!,
         committed: true,
+        mins: updatedSession.sessionDuration,
+        amount: 0, // amount will increased when he add report
         transaction,
       });
       break;
@@ -1079,7 +1085,7 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         transaction,
       });
       break;
-    case SessionStatus.TEACHER_ABSENT:
+    case SessionStatus.TEACHER_ABSENT: // if teacher absent will decrease from his balance that he would gain if he attended
       updatedSession = await updateSessionStatusService({
         id: sessionId,
         updatedData: { status },
@@ -1087,7 +1093,8 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
       });
       await updateTeacherBalance({
         teacherId: teacherId,
-        numOfSessions: -1,
+        committed: false,
+        mins: -updatedSession.sessionDuration,
         transaction,
       });
       break;
@@ -1099,8 +1106,8 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
       });
       await updateTeacherBalance({
         teacherId,
-        committed: true,
-        numOfSessions: 1,
+        committed: false,
+        mins: updatedSession.sessionDuration,
         transaction,
       });
       await updateUserRemainSessionService({

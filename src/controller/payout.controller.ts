@@ -12,14 +12,10 @@ import {
   getTeacherPayoutRequestsService,
   updatePayoutRequestService,
 } from "../service/payout.service";
-import {
-  PAYOUT_REQUEST_TABLE_NAME,
-  PayoutRequestStatus,
-} from "../db/models/payoutReq.model";
+import { PayoutRequestStatus } from "../db/models/payoutReq.model";
 import { sequelize } from "../db/sequelize";
 import { schedulePayoutRequestMailJob } from "../utils/scheduler";
 import { getPaginationParameter } from "./user.controller";
-import { estimateRowCount } from "../utils/getTableRowCount";
 
 export const createPayoutRequest = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -47,15 +43,15 @@ export const createPayoutRequest = catchAsync(
 );
 export const getAllPayoutRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nPage, nLimit } = getPaginationParameter(req);
+    const { offset, nLimit } = getPaginationParameter(req);
     const requests = await getAllPayoutRequestService({
-      page: nPage,
+      offset,
       limit: nLimit,
     });
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(PAYOUT_REQUEST_TABLE_NAME),
-      data: requests,
+      length: requests.count,
+      data: requests.rows,
     });
   },
 );

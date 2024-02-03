@@ -11,8 +11,6 @@ import {
 import Teacher from "../db/models/teacher.model";
 import { getTeacherAtt } from "./teacher.controller";
 import AppError from "../utils/AppError";
-import { estimateRowCount } from "../utils/getTableRowCount";
-import { MATERIAL_TABLE_NAME } from "../db/models/material.model";
 import { getPaginationParameter } from "./user.controller";
 
 const materialAttr = [
@@ -46,7 +44,6 @@ export const createMaterial = catchAsync(
     const material = await createMaterialService({ body });
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(MATERIAL_TABLE_NAME),
       data: material,
     });
   },
@@ -63,7 +60,11 @@ export const getAllMaterial = catchAsync(
         order: ["id"],
       },
     });
-    res.status(200).json({ status: "success", data: materials });
+    res.status(200).json({
+      status: "success",
+      data: materials.rows,
+      length: materials.count,
+    });
   },
 );
 export const getOneMaterial = catchAsync(

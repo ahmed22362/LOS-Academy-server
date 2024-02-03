@@ -71,12 +71,8 @@ export async function getPlansService({
   offset?: number;
   limit?: number;
 }) {
-  const plan = await getModelsService({
-    ModelClass: Plan,
-    findOptions,
-    offset,
-    limit,
-  });
+  const plan = await Plan.findAndCountAll({ offset, limit, ...findOptions });
+
   if (!plan) {
     throw new AppError(404, "Can't find plan with this id!");
   }

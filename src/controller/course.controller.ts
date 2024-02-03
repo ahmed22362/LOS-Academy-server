@@ -8,13 +8,7 @@ import {
   getCourseService,
   updateCourseService,
 } from "../service/course.service";
-import {
-  deleteStripeProduct,
-  updateStripeProduct,
-} from "../service/stripe.service";
 import AppError from "../utils/AppError";
-import { estimateRowCount } from "../utils/getTableRowCount";
-import { COURSE_TABLE_NAME } from "../db/models/course.model";
 import { getPaginationParameter } from "./user.controller";
 
 export const createCourse = catchAsync(
@@ -37,8 +31,8 @@ export const getAllCourses = catchAsync(
     const courses = await getAllCoursesService({ offset, limit: nLimit });
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(COURSE_TABLE_NAME),
-      data: courses,
+      length: courses.count,
+      data: courses.rows,
     });
   },
 );

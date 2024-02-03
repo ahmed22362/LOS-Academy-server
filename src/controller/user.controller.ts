@@ -41,7 +41,6 @@ import {
 import { SubscriptionStatus } from "../db/models/subscription.model";
 import { getTeacherByIdService } from "../service/teacher.service";
 import { RoleType } from "../db/models/teacher.model";
-import { estimateRowCount } from "../utils/getTableRowCount";
 
 export const MONTH_IN_MS = 2629800000;
 export const setUserOrTeacherId = (
@@ -108,8 +107,8 @@ export const getAllUsers = catchAsync(
     }
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(USER_TABLE_NAME),
-      data: users,
+      length: users?.count,
+      data: users.rows,
     });
   },
 );

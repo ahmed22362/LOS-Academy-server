@@ -13,6 +13,7 @@ import {
   getOneSessionService,
   getOneSessionWithSessionInfoOnlyService,
   getUserLatestNotPendingSessionService,
+  handleSessionFinishedService,
   isTeacherHasOverlappingSessions,
   teacherOwnThisSession,
   updateSessionService,
@@ -784,7 +785,7 @@ export const userContinueWithTeacher = catchAsync(
     try {
       await updateTeacherBalance({
         teacherId: sessionInfo.teacherId!,
-        numOfSessions: 1,
+        mins: session.sessionDuration,
         transaction,
       });
       const newSessionDates: Date[] = [];
@@ -984,22 +985,6 @@ export const updateSessionForAdmin = catchAsync(
     });
     const transaction = await sequelize.transaction();
     try {
-      if (studentAttended) {
-        await updateSessionStudentAttendanceService({
-          sessionId: session.id,
-          userId: session.SessionInfo.userId!,
-          attend: true,
-          transaction,
-        });
-      }
-      if (teacherAttended) {
-        await updateSessionTeacherAttendanceService({
-          sessionId: session.id,
-          teacherId: session.SessionInfo.teacherId!,
-          attend: true,
-          transaction,
-        });
-      }
       if (sessionDate) {
         checkDateFormat(sessionDate);
         await isTeacherHasOverlappingSessions({
@@ -1032,7 +1017,12 @@ export const updateSessionForAdmin = catchAsync(
       }
       let updatedSession = await updateSessionService({
         sessionId: session.id,
-        updatedData: { reschedule_request_count, hasReport },
+        updatedData: {
+          reschedule_request_count,
+          hasReport,
+          teacherAttended,
+          studentAttended,
+        },
       });
       await transaction.commit();
       res.status(200).json({

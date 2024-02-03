@@ -19,7 +19,11 @@ export interface socketWithUser extends Socket {
 export const setupSocket = (server: http.Server) => {
   const io = new Server(server, {
     cors: {
-      origin: [/http:\/\/localhost:\d*/, "https://los-academy.vercel.app"],
+      origin: [
+        /http:\/\/localhost:\d*/,
+        "https://www.los-academy.net",
+        "https://los-academy.vercel.app",
+      ],
     },
   });
   io.use(async (socket: socketWithUser, next) => {

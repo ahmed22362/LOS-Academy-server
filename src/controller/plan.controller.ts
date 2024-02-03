@@ -10,7 +10,7 @@ import {
   updatePlanService,
 } from "../service/plan.service";
 import AppError from "../utils/AppError";
-import { PLAN_TABLE_NAME, PlanType } from "../db/models/plan.model";
+import { PlanType } from "../db/models/plan.model";
 import {
   createStripePrice,
   deleteStripePlan,
@@ -19,7 +19,6 @@ import {
   updateStripeProduct,
 } from "../service/stripe.service";
 import { getPaginationParameter } from "./user.controller";
-import { estimateRowCount } from "../utils/getTableRowCount";
 
 export interface planCreateInput {
   sessionDuration: number;
@@ -91,8 +90,8 @@ export const getPlans = catchAsync(
     }
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(PLAN_TABLE_NAME),
-      data: plans,
+      length: plans.count,
+      data: plans.rows,
     });
   },
 );

@@ -29,8 +29,6 @@ import {
   emitSessionRequestForTeachers,
   getSocketByUserId,
 } from "../connect/socket";
-import { estimateRowCount } from "../utils/getTableRowCount";
-import { SESSION_REQUEST_TABLE_NAME } from "../db/models/sessionReq.model";
 
 export const MS_IN_HOUR = 3600000; // Number of milliseconds in one hour
 
@@ -122,12 +120,12 @@ export const getAllAvailableSessionsReq = (type: SessionType) =>
     });
     res
       .status(200)
-      .json({ status: "success", length: sessions.length, data: sessions });
+      .json({ status: "success", length: sessions.count, data: sessions.rows });
   });
 export const getAllSessionsReq = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { nLimit, nPage, status, offset } = getPaginationParameter(req);
-    const sessions = await getAllSessionsRequestService({
+    const requests = await getAllSessionsRequestService({
       findOptions: {
         include: { model: User, attributes: getUserAttr },
         limit: nLimit,
@@ -137,8 +135,8 @@ export const getAllSessionsReq = catchAsync(
     });
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(SESSION_REQUEST_TABLE_NAME),
-      data: sessions,
+      length: requests.count,
+      data: requests.rows,
     });
   },
 );

@@ -77,10 +77,8 @@ export async function getAllSessionsRequestService({
 }: {
   findOptions?: FindOptions;
 }) {
-  const requests = await getAllModelsByService({
-    Model: SessionReq,
-    findOptions,
-  });
+  const requests = await SessionReq.findAndCountAll(findOptions);
+
   return requests;
 }
 export async function getUserSessionRequestService({

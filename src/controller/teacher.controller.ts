@@ -9,10 +9,7 @@ import {
   updateTeacherService,
 } from "../service/teacher.service";
 import AppError from "../utils/AppError";
-import Teacher, {
-  ITeacherInput,
-  TEACHER_TABLE_NAME,
-} from "../db/models/teacher.model";
+import Teacher, { ITeacherInput } from "../db/models/teacher.model";
 import { decodedToken, login, protect } from "./auth.controller";
 import {
   getTeacherAllSessionsService,
@@ -31,10 +28,7 @@ import {
   getTeacherRescheduleRequestsService,
 } from "../service/rescheduleReq.service";
 import { getPaginationParameter } from "./user.controller";
-import {
-  estimateRowCount,
-  estimateRowCountForMultipleTables,
-} from "../utils/getTableRowCount";
+import { estimateRowCountForMultipleTables } from "../utils/getTableRowCount";
 
 export const getTeacherAtt = [
   "id",
@@ -42,14 +36,14 @@ export const getTeacherAtt = [
   "phone",
   "email",
   "role",
-  "sessionCost",
-  "committedSessions",
+  "hour_cost",
+  "committed_mins",
   "balance",
 ];
 
 export const createTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, email, password, phone, nationalId, role, sessionCost } =
+    const { name, email, password, phone, nationalId, role, hour_cost } =
       req.body;
     const body = {
       name,
@@ -58,7 +52,7 @@ export const createTeacher = catchAsync(
       phone,
       nationalId,
       role,
-      sessionCost,
+      hour_cost,
     } as ITeacherInput;
     const newTeacher = await createTeacherService(body);
     if (!newTeacher) {
@@ -82,7 +76,7 @@ export const getAllTeachers = catchAsync(
     }
     res.status(200).json({
       status: "success",
-      length: await estimateRowCount(TEACHER_TABLE_NAME),
+      length: teachers.count,
       data: teachers,
     });
   },
@@ -105,13 +99,14 @@ export const updateTeacher = catchAsync(
     const id = req.params.id;
     const {
       name,
-      sessionCost,
+      hour_cost,
       email,
       phone,
       nationalId,
       role,
       password,
       balance,
+      committed_mins,
     } = req.body;
     const body = {
       name,
@@ -119,9 +114,10 @@ export const updateTeacher = catchAsync(
       phone,
       nationalId,
       role,
-      sessionCost,
+      hour_cost,
       password,
       balance,
+      committed_mins,
     } as ITeacherInput;
     const teacher = await updateTeacherService({
       teacherId: id,

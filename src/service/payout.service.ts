@@ -1,57 +1,51 @@
-import { FindOptions, Transaction, WhereOptions } from "sequelize"
-import { getTeacherAtt } from "../controller/teacher.controller"
+import { FindOptions, Transaction, WhereOptions } from "sequelize";
+import { getTeacherAtt } from "../controller/teacher.controller";
 import PayOutRequest, {
   PayoutRequestStatus,
-} from "../db/models/payoutReq.model"
-import Teacher from "../db/models/teacher.model"
-import AppError from "../utils/AppError"
-import { createModelService, updateModelService } from "./factory.services"
+} from "../db/models/payoutReq.model";
+import Teacher from "../db/models/teacher.model";
+import AppError from "../utils/AppError";
+import { createModelService, updateModelService } from "./factory.services";
 
 export async function createPayoutRequestService({
   teacherId,
   amount,
 }: {
-  teacherId: string
-  amount: number
+  teacherId: string;
+  amount: number;
 }) {
   const payoutReq = await createModelService({
     ModelClass: PayOutRequest,
     data: { teacherId, amount },
-  })
-  return payoutReq as PayOutRequest
+  });
+  return payoutReq as PayOutRequest;
 }
 export async function getOnePayoutRequestService({
   requestId,
 }: {
-  requestId: number
+  requestId: number;
 }) {
   const payoutReq = await PayOutRequest.findByPk(requestId, {
     include: [{ model: Teacher, attributes: getTeacherAtt }],
-  })
+  });
   if (!payoutReq) {
-    throw new AppError(404, "Can't find request with this id!")
+    throw new AppError(404, "Can't find request with this id!");
   }
-  return payoutReq
+  return payoutReq;
 }
 export async function getAllPayoutRequestService({
-  findOptions,
-  page,
+  offset,
   limit,
 }: {
-  findOptions?: FindOptions
-  page?: number
-  limit?: number
+  offset?: number;
+  limit?: number;
 }) {
-  let pageSize
-  if (page && limit) {
-    pageSize = limit * page
-  }
-  const requests = await PayOutRequest.findAll({
+  const requests = await PayOutRequest.findAndCountAll({
     include: [{ model: Teacher, attributes: getTeacherAtt }],
     limit: limit,
-    offset: pageSize,
-  })
-  return requests
+    offset,
+  });
+  return requests;
 }
 export async function updatePayoutRequestService({
   requestId,
@@ -59,39 +53,39 @@ export async function updatePayoutRequestService({
   amount,
   transaction,
 }: {
-  requestId: number
-  status?: PayoutRequestStatus
-  amount?: number
-  transaction?: Transaction
+  requestId: number;
+  status?: PayoutRequestStatus;
+  amount?: number;
+  transaction?: Transaction;
 }) {
-  const updatedData: any = {}
-  if (status) updatedData.status = status
-  if (amount) updatedData.amount = amount
+  const updatedData: any = {};
+  if (status) updatedData.status = status;
+  if (amount) updatedData.amount = amount;
   const updatedRequest = await updateModelService({
     ModelClass: PayOutRequest,
     id: requestId,
     updatedData,
     transaction,
-  })
-  return updatedRequest as PayOutRequest
+  });
+  return updatedRequest as PayOutRequest;
 }
 export async function deletePayoutRequestService({
   requestId,
 }: {
-  requestId: number
+  requestId: number;
 }) {
-  const payout = await getOnePayoutRequestService({ requestId })
-  await payout.destroy()
+  const payout = await getOnePayoutRequestService({ requestId });
+  await payout.destroy();
 }
 export async function getTeacherPayoutRequestsService({
   teacherId,
   status,
 }: {
-  teacherId: string
-  status?: string
+  teacherId: string;
+  status?: string;
 }) {
-  const where: WhereOptions = { teacherId }
-  if (status) where.status = status
-  const payouts = await PayOutRequest.findAll({ where })
-  return payouts
+  const where: WhereOptions = { teacherId };
+  if (status) where.status = status;
+  const payouts = await PayOutRequest.findAll({ where });
+  return payouts;
 }

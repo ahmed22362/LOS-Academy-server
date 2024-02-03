@@ -1,6 +1,6 @@
 import { sequelize } from "../db/sequelize";
 
-export async function estimateRowCount(tableName: string) {
+async function estimateRowCount(tableName: string) {
   try {
     let result: any = await sequelize.query(
       `SELECT reltuples AS estimate FROM pg_class WHERE relname = '${tableName}';`,
