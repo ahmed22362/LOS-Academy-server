@@ -77,7 +77,7 @@ export const getAllTeachers = catchAsync(
     res.status(200).json({
       status: "success",
       length: teachers.count,
-      data: teachers,
+      data: teachers.rows,
     });
   },
 );
