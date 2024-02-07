@@ -1,6 +1,12 @@
-import { Column, DataType, Model, Table } from "sequelize-typescript";
-
-let status: "QUEUED" | "COMPLETE" | "FAILED";
+import {
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  Model,
+  Table,
+} from "sequelize-typescript";
+import Session from "./session.model";
 
 export enum scheduledJobStatus {
   QUEUED = "queued",
@@ -32,4 +38,14 @@ export default class ScheduleJob extends Model {
 
   @Column({ type: DataType.JSON })
   data!: JSON;
+
+  @BelongsTo(() => Session, { foreignKey: "sessionId", onDelete: "CASCADE" })
+  session!: Session;
+
+  @ForeignKey(() => Session)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  sessionId!: number;
 }

@@ -3,10 +3,9 @@ import { sequelize } from "../db/sequelize";
 import Session, { SessionStatus } from "../db/models/session.model";
 import { SessionType } from "../db/models/session.model";
 import AppError from "../utils/AppError";
-import { deleteModelService, updateModelService } from "./factory.services";
+import { updateModelService } from "./factory.services";
 import { DATE_PATTERN, FREE_SESSION_DURATION } from "./sessionReq.service";
 import {
-  getOneSessionInfoServiceBy,
   getTeacherSessionInfoService,
   getUserSessionInfoService,
 } from "./sessionInfo.service";
@@ -17,6 +16,7 @@ import User from "../db/models/user.model";
 import { getUserAttr } from "../controller/user.controller";
 import { getTeacherAtt } from "../controller/teacher.controller";
 import {
+  DeleteSessionJobs,
   scheduleSessionReminderMailJob,
   scheduleSessionStartReminderMailJob,
   scheduleUpdateSessionToFinished,
@@ -174,6 +174,7 @@ export async function createPaidSessionsService({
     await scheduleSessionStartReminderMailJob({
       sessionId: session.id,
       sessionDate: session.sessionDate,
+      transaction,
     });
     // send mail before 30 of the session to remind both student and teacher
     await scheduleSessionReminderMailJob({
@@ -183,17 +184,20 @@ export async function createPaidSessionsService({
       studentName,
       teacherEmail,
       teacherName,
+      transaction,
     });
     // update the status of the session to be ongoing at it's time
     await scheduleUpdateSessionToOngoing({
       sessionId: session.id,
       sessionDate: session.sessionDate,
+      transaction,
     });
     // update the status of the session to be finished based on the status of the absents
     await scheduleUpdateSessionToFinished({
       sessionId: session.id,
       sessionDate: session.sessionDate,
       sessionDuration: session.sessionDuration,
+      transaction,
     });
     sessions.push(session as Session);
   }
@@ -275,7 +279,7 @@ export async function updateSessionsService({
   return updatedDate;
 }
 export async function deleteSessionService({ id }: { id: number }) {
-  await deleteModelService({ ModelClass: Session, id });
+  await Session.destroy({ where: { id }, individualHooks: true });
 }
 export async function getAllSessionsService({
   findOptions,
@@ -685,7 +689,27 @@ export async function handleSessionFinishedService({
   const transaction = await sequelize.transaction();
   let updatedSession;
   try {
-    if (!session.studentAttended) {
+    if (!session.studentAttended && !session.teacherAttended) {
+      logger.info("Both Absent!");
+      updatedSession = await updateSessionService({
+        sessionId,
+        updatedData: { status: SessionStatus.BOTH_ABSENT },
+        transaction,
+      });
+      if (session.type === SessionType.PAID) {
+        await updateTeacherBalance({
+          teacherId: session.SessionInfo.teacherId!,
+          mins: 0,
+          committed: true,
+          transaction,
+        });
+        await updateUserRemainSessionService({
+          userId: session.SessionInfo.userId!,
+          amountOfSessions: -1,
+          transaction,
+        });
+      }
+    } else if (!session.studentAttended) {
       logger.info("student absent");
       updatedSession = await updateSessionService({
         sessionId,
@@ -705,8 +729,7 @@ export async function handleSessionFinishedService({
           transaction,
         });
       }
-    }
-    if (!session.teacherAttended) {
+    } else if (!session.teacherAttended) {
       logger.info("teacher absent");
       updatedSession = await updateSessionService({
         sessionId,
@@ -719,8 +742,7 @@ export async function handleSessionFinishedService({
         mins: -updatedSession.sessionDuration,
         transaction,
       });
-    }
-    if (session.studentAttended && session.teacherAttended) {
+    } else if (session.studentAttended && session.teacherAttended) {
       logger.info("both attended");
 
       updatedSession = await updateSessionService({
@@ -974,12 +996,11 @@ export function canRescheduleSession(sessionDate: Date) {
 }
 export function canAttendSession(sessionDate: Date) {
   const currentDate = new Date();
-  const attendanceMargin = 15;
+  const attendanceMargin = 16;
   const ErrorMarginMins = 2;
-
   if (
-    sessionDate.getTime() >=
-      currentDate.getTime() - ErrorMarginMins * MS_IN_MINUTE &&
+    sessionDate.getTime() <=
+      currentDate.getTime() + ErrorMarginMins * MS_IN_MINUTE &&
     currentDate.getTime() <=
       sessionDate.getTime() + attendanceMargin * MS_IN_MINUTE
   ) {

@@ -5,7 +5,11 @@ import {
 } from "../service/scheduleJob.service";
 import jobCallbacks from "./schedulerJobsCallbacks";
 import logger from "./logger";
-import { scheduledJobStatus } from "../db/models/scheduleJob.model";
+enum scheduledJobStatus {
+  QUEUED = "queued",
+  FAILED = "failed",
+  COMPLETE = "complete",
+}
 import { Op } from "sequelize";
 
 export default async function rescheduleJobs() {

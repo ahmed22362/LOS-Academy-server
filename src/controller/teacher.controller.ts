@@ -39,6 +39,7 @@ export const getTeacherAtt = [
   "hour_cost",
   "committed_mins",
   "balance",
+  "nationalId",
 ];
 
 export const createTeacher = catchAsync(

@@ -68,10 +68,7 @@ const sessionReminderEmail: JobCallback = async function ({
     logger.info("One time session reminder mail executed!");
     await deleteJobService({ id: jobId });
   } catch (error: any) {
-    await updateJobService({
-      id: jobId,
-      updatedData: { status: scheduledJobStatus.FAILED },
-    });
+    await deleteJobService({ id: jobId });
     logger.error(`Can't Send session reminder mail: ${error}`);
   }
 };
@@ -134,10 +131,7 @@ const sessionStartedEmail: JobCallback = async function ({
     logger.info("One time session started reminder mail executed!");
     await deleteJobService({ id: jobId });
   } catch (error: any) {
-    await updateJobService({
-      id: jobId,
-      updatedData: { status: scheduledJobStatus.FAILED },
-    });
+    await deleteJobService({ id: jobId });
     logger.error(`Can't send session started reminder mail: ${error}`);
   }
 };

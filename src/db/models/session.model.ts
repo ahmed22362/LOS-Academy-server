@@ -3,7 +3,6 @@ import {
   BelongsTo,
   Column,
   DataType,
-  DeletedAt,
   ForeignKey,
   Model,
   PrimaryKey,
@@ -17,6 +16,7 @@ export enum SessionStatus {
   TAKEN = "taken",
   USER_ABSENT = "user_absent",
   TEACHER_ABSENT = "teacher_absent",
+  BOTH_ABSENT = "both_absent",
 }
 export enum SessionType {
   FREE = "free",
@@ -30,7 +30,7 @@ export const SESSION_TABLE_NAME = "session";
   timestamps: true,
   freezeTableName: true,
 })
-export default class Session extends Model<Session> {
+export class Session extends Model<Session> {
   @PrimaryKey
   @AutoIncrement
   @Column({
@@ -95,3 +95,4 @@ export default class Session extends Model<Session> {
   })
   hasReport!: boolean;
 }
+export default Session;

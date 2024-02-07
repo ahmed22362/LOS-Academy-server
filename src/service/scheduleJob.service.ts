@@ -16,6 +16,7 @@ import { Op } from "sequelize";
 
 export interface createJobBody {
   name: string;
+  sessionId: number;
   scheduledTime: Date;
   callbackName: string;
   status?: scheduledJobStatus;

@@ -14,7 +14,7 @@ const payload = {
           message: "National id must be exactly 14 characters long.",
         }),
       phone: z.string({ required_error: "phone is required" }),
-      sessionCost: z.number({
+      hour_cost: z.number({
         required_error:
           "the teacher session cost is required to create a teacher!",
       }),

@@ -1,6 +1,5 @@
 import { Sequelize } from "sequelize-typescript";
 import dotenv from "dotenv";
-import logger from "../utils/logger";
 
 dotenv.config();
 const pg_render_uri = process.env.RENDER_POSTGRESQL_BD_URL as string;

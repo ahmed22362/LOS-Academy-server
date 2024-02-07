@@ -4,7 +4,10 @@ import logger from "./logger";
 import { getOneSessionDetailsService } from "../service/session.service";
 import { getOneRescheduleRequestService } from "../service/rescheduleReq.service";
 import { RoleType } from "../db/models/teacher.model";
-import { createJobService } from "../service/scheduleJob.service";
+import {
+  createJobService,
+  getJobServiceByName,
+} from "../service/scheduleJob.service";
 import jobCallbacks, { callbacksNames } from "./schedulerJobsCallbacks";
 import AppError from "./AppError";
 import {
@@ -279,18 +282,19 @@ export async function scheduleSessionRescheduleRequestStatus({
   const jobName = getRescheduleRequestJobName(rescheduleRequestId);
   const callbackName = callbacksNames.UPDATE_SESSION_RESCHEDULE_STATUS;
   try {
-    const dbJob = await createJobService({
-      body: {
-        name: jobName,
-        scheduledTime: jobDate,
-        callbackName,
-        data: {
-          sessionDate,
-          rescheduleRequestId,
-        },
-      },
-      transaction,
-    });
+    // const dbJob = await createJobService({
+    //   body: {
+    //     sessionId,
+    //     name: jobName,
+    //     scheduledTime: jobDate,
+    //     callbackName,
+    //     data: {
+    //       sessionDate,
+    //       rescheduleRequestId,
+    //     },
+    //   },
+    //   transaction,
+    // });
     const rescheduleUpdateCallback = jobCallbacks.get(callbackName);
     if (!rescheduleUpdateCallback) {
       throw new AppError(
@@ -299,7 +303,7 @@ export async function scheduleSessionRescheduleRequestStatus({
       );
     }
     schedule.scheduleJob(jobName, jobDate, async () => {
-      await rescheduleUpdateCallback({ rescheduleRequestId, jobId: dbJob.id });
+      await rescheduleUpdateCallback({ rescheduleRequestId });
     });
   } catch (error: any) {
     logger.error(`Error while session reminder mail: ${error.message}`);
@@ -440,6 +444,7 @@ export async function scheduleSessionReminderMailJob({
     const callbackName = callbacksNames.SESSION_REMINDER_MAIL;
     const dbJob = await createJobService({
       body: {
+        sessionId,
         name: jobName,
         scheduledTime: date,
         callbackName,
@@ -498,6 +503,7 @@ export async function scheduleSessionStartReminderMailJob({
     const callbackName = callbacksNames.SESSION_STARTED_MAIL;
     const dbJob = await createJobService({
       body: {
+        sessionId,
         name: jobName,
         scheduledTime: new Date(date),
         callbackName,
@@ -538,6 +544,7 @@ export async function scheduleUpdateSessionToOngoing({
     );
     const dbJob = await createJobService({
       body: {
+        sessionId,
         name: jobName,
         scheduledTime: scheduleTimeWithErrorMargin,
         callbackName,
@@ -584,6 +591,7 @@ export async function scheduleUpdateSessionToFinished({
     );
     const dbJob = await createJobService({
       body: {
+        sessionId,
         name: jobName,
         scheduledTime: scheduledTime,
         callbackName,
@@ -610,3 +618,38 @@ export async function scheduleUpdateSessionToFinished({
     logger.error(`Error while update session to finished: ${error.message}`);
   }
 }
+export const DeleteSessionJobs = async (sessionId: number) => {
+  //each session has 4 jobs
+  // 1) retrieve all
+  // 2) get their names
+  // 3) delete them from scheduler
+  // 4) delete them from database
+  const sessionStatedJobName = getSessionStartedJobName(sessionId);
+  const sessionReminderJobName = getSessionReminderJobName(sessionId);
+  const sessionOngoingJobName = getSessionOngoingJobName(sessionId);
+  const sessionFinishedJobName = getSessionFinishedJobName(sessionId);
+  console.log(
+    schedule.cancelJob(sessionStatedJobName),
+    schedule.cancelJob(sessionReminderJobName),
+    schedule.cancelJob(sessionOngoingJobName),
+    schedule.cancelJob(sessionFinishedJobName),
+  );
+  const dbSessionStatedJobName = (
+    await getJobServiceByName({ jobName: sessionStatedJobName })
+  ).destroy();
+  const dbSessionReminderJobName = (
+    await getJobServiceByName({ jobName: sessionReminderJobName })
+  ).destroy();
+  const dbSessionOngoingJobName = (
+    await getJobServiceByName({ jobName: sessionOngoingJobName })
+  ).destroy();
+  const dbSessionFinishedJobName = (
+    await getJobServiceByName({ jobName: sessionFinishedJobName })
+  ).destroy();
+  console.log(
+    dbSessionStatedJobName,
+    dbSessionReminderJobName,
+    dbSessionOngoingJobName,
+    dbSessionFinishedJobName,
+  );
+};
