@@ -214,26 +214,28 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
     );
   }
 }
-export function schedulePayoutRequestMailJob({
+export function schedulePayoutMailJob({
   teacherName,
+  teacherEmail,
   amount,
 }: {
-  teacherName: string;
   amount: number;
+  teacherName: string;
+  teacherEmail: string;
 }) {
   try {
-    logger.info("in payout request mail schedule!");
+    logger.info("in payout mail schedule!");
     const date = new Date(new Date().getTime() + 1000);
 
     const job = schedule.scheduleJob(date, async () => {
       try {
-        await new Mail(
-          process.env.ADMIN_EMAIL as string,
-          "admin",
-        ).sendPayoutRequestMail({ teacherName, amount });
-        logger.info("One time payout request mail executed!");
+        await new Mail(teacherEmail, teacherName).sendPayoutMail({
+          teacherName,
+          amount,
+        });
+        logger.info("One time payout mail executed!");
       } catch (error: any) {
-        logger.error(`Error while payout request mail: ${error.message}`);
+        logger.error(`Error while payout mail: ${error.message}`);
       }
     });
   } catch (error: any) {

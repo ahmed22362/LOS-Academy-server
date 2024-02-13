@@ -51,14 +51,17 @@ export async function getTeachersService({
 export async function updateTeacherService({
   updatedData,
   teacherId,
+  transaction,
 }: {
   updatedData: Partial<Teacher>;
   teacherId: string;
+  transaction?: Transaction;
 }) {
   return await updateModelService({
     ModelClass: Teacher,
     id: teacherId,
     updatedData: updatedData,
+    transaction,
   });
 }
 export async function updateTeacherBalance({

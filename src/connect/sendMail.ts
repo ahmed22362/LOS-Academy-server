@@ -6,7 +6,7 @@ import {
   SessionStartReminderForAdminPayload,
   SessionStartReminderForUserPayload,
   forgetPasswordPayload,
-  payoutRequestPayload,
+  payoutPayload,
   payoutRequestStatusPayload,
   sessionPlacedPayload,
   sessionReminderPayload,
@@ -328,28 +328,24 @@ class Mail {
       console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
     }
   }
-  async sendPayoutRequestMail({
+  async sendPayoutMail({
     teacherName,
     amount,
   }: {
     teacherName: string;
     amount: number;
   }) {
-    const { title, paragraph, header, footer } = payoutRequestPayload({
-      name: this.name,
+    const { title, paragraph, header, footer } = payoutPayload({
       teacherName,
       amount,
     });
-    const payoutRequestTemplate = generateGenericEmail({
+    const payoutTemplate = generateGenericEmail({
       title,
       paragraph,
       header,
       footer,
     });
-    const info = await this.send(
-      payoutRequestTemplate,
-      "Teacher Payout Request!",
-    );
+    const info = await this.send(payoutTemplate, "Teacher Payout!");
     if (process.env.NODE_ENV === "development") {
       console.log("Message sent: %s", info.messageId);
       console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));

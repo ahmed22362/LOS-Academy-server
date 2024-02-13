@@ -2,49 +2,64 @@ import { Request, Response, NextFunction } from "express";
 import catchAsync from "../utils/catchAsync";
 import {
   getTeacherByIdService,
-  updateTeacherBalance,
+  updateTeacherService,
 } from "../service/teacher.service";
 import AppError from "../utils/AppError";
 import {
-  createPayoutRequestService,
-  getAllPayoutRequestService,
-  getOnePayoutRequestService,
-  getTeacherPayoutRequestsService,
-  updatePayoutRequestService,
+  createPayoutService,
+  getAllPayoutService,
+  getOnePayoutService,
+  getTeacherPayoutsService,
+  updatePayoutService,
 } from "../service/payout.service";
-import { PayoutRequestStatus } from "../db/models/payoutReq.model";
 import { sequelize } from "../db/sequelize";
-import { schedulePayoutRequestMailJob } from "../utils/scheduler";
+import { schedulePayoutMailJob } from "../utils/scheduler";
 import { getPaginationParameter } from "./user.controller";
 
-export const createPayoutRequest = catchAsync(
+export const createPayout = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { amount, teacherId } = req.body;
     const teacher = await getTeacherByIdService({ id: teacherId });
     if (amount > teacher.balance) {
       return next(
-        new AppError(400, "Can't request payout more than your balance!"),
+        new AppError(400, "Can't make payout more than teacher balance!"),
       );
     }
-    const payOutRequest = await createPayoutRequestService({
-      teacherId,
-      amount,
-    });
-    schedulePayoutRequestMailJob({
-      teacherName: teacher.name,
-      amount,
-    });
-    res.status(200).json({
-      status: "success",
-      message: "The Request placed successfully and waiting for admin response",
-      data: payOutRequest,
-    });
+    const transaction = await sequelize.transaction();
+    try {
+      const payOutRequest = await createPayoutService({
+        teacherId,
+        amount,
+        transaction,
+      });
+
+      await updateTeacherService({
+        updatedData: { balance: teacher.balance - amount, committed_mins: 0 },
+        teacherId,
+        transaction,
+      });
+      schedulePayoutMailJob({
+        teacherName: teacher.name,
+        amount,
+        teacherEmail: teacher.email,
+      });
+      await transaction.commit();
+      res.status(200).json({
+        status: "success",
+        message:
+          "The Request placed successfully and waiting for admin response",
+        data: payOutRequest,
+      });
+    } catch (error: any) {
+      await transaction.rollback();
+      throw new AppError(400, `Error Creating Payout: ${error.message}`);
+    }
   },
 );
-export const getAllPayoutRequests = catchAsync(
+export const getAllPayouts = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { offset, nLimit } = getPaginationParameter(req);
-    const requests = await getAllPayoutRequestService({
+    const requests = await getAllPayoutService({
       offset,
       limit: nLimit,
     });
@@ -55,110 +70,67 @@ export const getAllPayoutRequests = catchAsync(
     });
   },
 );
-export const getMyPayoutRequests = catchAsync(
+export const getMyPayouts = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     let teacherId = req.body.teacherId;
     if (!teacherId) teacherId = req.query.teacherId;
-    const status = req.query.status;
-    const payouts = await getTeacherPayoutRequestsService({
+    const payouts = await getTeacherPayoutsService({
       teacherId,
-      status: status as string,
     });
-    res.status(200).json({ status: "success", data: payouts });
+    res
+      .status(200)
+      .json({ status: "success", data: payouts.rows, length: payouts.count });
   },
 );
-export const getTeacherPayoutRequests = catchAsync(
+export const getTeacherPayouts = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const teacherId = req.query.teacherId;
-    const payouts = await getTeacherPayoutRequestsService({
+    const payouts = await getTeacherPayoutsService({
       teacherId: teacherId as string,
     });
-    res.status(200).json({ status: "success", data: payouts });
+    res
+      .status(200)
+      .json({ status: "success", data: payouts.rows, length: payouts.count });
   },
 );
-export const getOnePayoutRequest = catchAsync(
+export const getOnePayout = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
-    const request = await getOnePayoutRequestService({ requestId: +id });
-    res.status(200).json({ status: "success", data: request });
+    const payout = await getOnePayoutService({ requestId: +id });
+    res.status(200).json({ status: "success", data: payout });
   },
 );
-export const updateAmountPayoutRequest = catchAsync(
+export const updateAmountPayout = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { amount } = req.body;
+    const { amount, status } = req.body;
     const id = req.params.id;
-    const payoutReq = await getOnePayoutRequestService({ requestId: +id });
-    if (payoutReq.status !== PayoutRequestStatus.PENDING) {
-      return next(
-        new AppError(
-          401,
-          "Can't update amount of payout request while it's not pending",
-        ),
-      );
-    }
-    const teacher = await getTeacherByIdService({ id: payoutReq.teacherId });
+    const payout = await getOnePayoutService({ requestId: +id });
+    const teacher = await getTeacherByIdService({ id: payout.teacherId });
     if (amount > teacher.balance) {
       return next(
-        new AppError(400, "Can't request payout more than your balance!"),
+        new AppError(400, "Can't update payout more than teacher balance!"),
       );
     }
-    const updatedRequest = await updatePayoutRequestService({
-      requestId: payoutReq.id,
+    const updatedPayout = await updatePayoutService({
+      requestId: payout.id,
       amount,
+      status,
     });
     res.status(200).json({
       status: "success",
-      message: "request updated successfully!",
-      updatedRequest,
+      message: "payout updated successfully!",
+      updatedPayout,
     });
   },
 );
-export const updateStatusPayoutRequest = catchAsync(
+export const deletePayout = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { status, requestId } = req.body;
-
-    const t = await sequelize.transaction();
-    try {
-      const payoutRequest = await getOnePayoutRequestService({ requestId });
-      if (payoutRequest.status === PayoutRequestStatus.DONE) {
-        return next(new AppError(400, "Can't update a status of done request"));
-      }
-      const updatedRequest = await updatePayoutRequestService({
-        requestId: +requestId,
-        status,
-        transaction: t,
-      });
-      if (status === PayoutRequestStatus.DONE) {
-        await updateTeacherBalance({
-          teacherId: payoutRequest.teacherId,
-          amount: -payoutRequest.amount,
-          transaction: t,
-        });
-      }
-      await t.commit();
-
-      res.status(200).json({
-        status: "success",
-        message: "request updated successfully!",
-        updatedRequest,
-      });
-    } catch (error: any) {
-      await t.rollback();
-      next(new AppError(400, `Error updating balance ${error.message}`));
-    }
-  },
-);
-export const cancelPayoutRequest = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { id, teacherId } = req.body;
-    const payout = await getOnePayoutRequestService({ requestId: id });
-    if (payout.teacherId !== teacherId) {
-      return next(new AppError(403, "can't cancel request that is not yours!"));
-    }
+    const { id } = req.body;
+    const payout = await getOnePayoutService({ requestId: id });
     await payout.destroy();
     res.status(200).json({
       status: "success",
-      message: "payout request deleted successfully!",
+      message: "payout deleted successfully!",
     });
   },
 );

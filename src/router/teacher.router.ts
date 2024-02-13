@@ -43,10 +43,9 @@ import {
   updateStatusSessionReschedule,
 } from "../controller/session.controller";
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model";
-import { getMyPayoutRequests } from "../controller/payout.controller";
+import { getMyPayouts } from "../controller/payout.controller";
 import { getTeacherMonthlyReport } from "../controller/monthlyReport.controller";
 import { cancelRequestSchema } from "../schema/session.schema";
-import { getSocketByUserId } from "../connect/socket";
 const teacherRouter = Router();
 
 teacherRouter
@@ -123,7 +122,7 @@ teacherRouter
   .get(protectTeacher, setUserOrTeacherId, getTeacherAllStudents);
 teacherRouter
   .route("/myPayouts")
-  .get(protectTeacher, setUserOrTeacherId, getMyPayoutRequests);
+  .get(protectTeacher, setUserOrTeacherId, getMyPayouts);
 teacherRouter
   .route("/myStatistics")
   .get(protectTeacher, setUserOrTeacherId, getMySessionsStats);

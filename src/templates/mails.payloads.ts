@@ -230,22 +230,21 @@ export const sessionReminderPayload = ({
   const footer = `<p>We hope you have a productive and enjoyable session. If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`;
   return { title, header, paragraph, footer };
 };
-export const payoutRequestPayload = ({
-  name,
+export const payoutPayload = ({
   teacherName,
   amount,
 }: {
-  name: string;
   teacherName: string;
   amount: number;
 }) => {
-  const title = "Teacher Payout Request";
-  const header = " You have a pending payout request!";
-  const paragraph = `Hello ${name},
-  <p>${teacherName} has submitted a payout request through our system.
+  const title = "Teacher Payout";
+  const header = " You have a payout!";
+  const paragraph = `Hello ${teacherName},
+  <p>Admin has send you a payout through our system.
 
-  <p>Here are the details of the request:</p>
-  <p><strong>Requested Amount:</strong> ${amount}</p>`;
+  <p>Here are the details of the payout:</p>
+  <p><strong>Payout Amount:</strong> ${amount}</p>
+  <p>All your committed mins for this month will start from 0</p>`;
   const footer = `<p>If you have any questions or need further assistance, feel free to reach out to our support team at <a href="mailto:info@codegate.info">info@codegate.info</a>.</p>`;
   return { title, header, paragraph, footer };
 };
