@@ -37,7 +37,7 @@ export default class PayOut extends Model<PayOut> {
   @BelongsTo(() => Teacher, { foreignKey: "teacherId", onDelete: "CASCADE" })
   teacher!: Teacher;
 
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.FLOAT, allowNull: false })
   amount!: number;
 
   @Column({
