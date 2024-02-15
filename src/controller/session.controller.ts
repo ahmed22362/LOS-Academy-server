@@ -979,6 +979,7 @@ export const updateSessionForAdmin = catchAsync(
       status,
       reschedule_request_count,
       hasReport,
+      meetingLink,
     } = req.body;
     let session = await getOneSessionWithSessionInfoOnlyService({
       sessionId: +sessionId,
@@ -1022,6 +1023,7 @@ export const updateSessionForAdmin = catchAsync(
           hasReport,
           teacherAttended,
           studentAttended,
+          meetingLink,
         },
       });
       await transaction.commit();
