@@ -421,6 +421,20 @@ export function getPaginationParameter(req: Request) {
   let nPage;
   let nLimit;
   let offset;
+  let orderBy;
+  if (
+    req.query.orderBy &&
+    !Object.values(OrderAssociation).includes(
+      req.query.orderBy as OrderAssociation,
+    )
+  ) {
+    throw new AppError(
+      400,
+      'Please enter order by one of those ["DESC", "ASC"] ',
+    );
+  } else {
+    orderBy = req.query.orderBy as OrderAssociation;
+  }
   if (page) {
     nPage = Number(page);
   }
@@ -430,5 +444,5 @@ export function getPaginationParameter(req: Request) {
   if (page && limit) {
     offset = (nPage! - 1) * nLimit!;
   }
-  return { nLimit, nPage, offset, status };
+  return { nLimit, nPage, offset, status, orderBy };
 }

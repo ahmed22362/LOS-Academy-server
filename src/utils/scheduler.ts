@@ -353,12 +353,8 @@ export async function rescheduleSessionJobs({
     } else {
       logger.info("there is no reminder job! and created one! ");
       await scheduleSessionReminderMailJob({
-        sessionDate: newDate,
         sessionId,
-        studentName: session.sessionInfo!.user!.name,
-        studentEmail: session.sessionInfo!.user!.email,
-        teacherName: session.sessionInfo!.teacher!.name,
-        teacherEmail: session.sessionInfo!.teacher!.email,
+        sessionDate: newDate,
         transaction,
       });
     }
@@ -415,20 +411,12 @@ export async function rescheduleSessionJobs({
   }
 }
 export async function scheduleSessionReminderMailJob({
-  sessionDate,
   sessionId,
-  studentName,
-  studentEmail,
-  teacherName,
-  teacherEmail,
+  sessionDate,
   transaction,
 }: {
-  sessionDate: Date;
   sessionId: number;
-  studentName: string;
-  studentEmail: string;
-  teacherName: string;
-  teacherEmail: string;
+  sessionDate: Date;
   transaction?: Transaction;
 }) {
   try {
@@ -451,11 +439,7 @@ export async function scheduleSessionReminderMailJob({
         scheduledTime: date,
         callbackName,
         data: {
-          sessionDate,
-          studentName,
-          studentEmail,
-          teacherName,
-          teacherEmail,
+          sessionId,
         },
       },
       transaction,
@@ -469,11 +453,7 @@ export async function scheduleSessionReminderMailJob({
     }
     schedule.scheduleJob(jobName, date, async () => {
       await sessionReminderCallback({
-        sessionDate,
-        studentName,
-        studentEmail,
-        teacherName,
-        teacherEmail,
+        sessionId,
         jobId: dbJob.id,
       });
     });

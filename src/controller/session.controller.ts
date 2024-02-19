@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
 import {
+  OrderAssociation,
   canRescheduleSession,
   checkDateFormat,
   createFreeSessionService,
@@ -82,32 +83,15 @@ import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs";
 import { Transaction } from "sequelize";
 import { SubscriptionStatus } from "../db/models/subscription.model";
 import { emitRescheduleRequestForUser } from "../connect/socket";
-import logger from "../utils/logger";
 export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000;
 export const HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
-const DEFAULT_COURSES = ["arabic"];
-export const getAllSessions = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { nLimit, status, offset } = getPaginationParameter(req);
-    const sessions = await getAllSessionsServiceByStatus({
-      status: status as SessionStatus,
-      offset,
-      pageSize: nLimit,
-    });
-    res.status(200).json({
-      status: "success",
-      length: sessions.count,
-      data: sessions.rows,
-    });
-  },
-);
+
 export const getAllSessionsByStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nLimit, status, offset } = getPaginationParameter(req);
+    const { nLimit, status, offset, orderBy } = getPaginationParameter(req);
     const userSearch = req.query.user;
     const teacherSearch = req.query.teacher;
     let searchQuery: { [key: string]: any } | undefined;
-
     if (userSearch || teacherSearch) {
       searchQuery = {
         user: userSearch as any,
@@ -119,6 +103,7 @@ export const getAllSessionsByStatus = catchAsync(
       offset,
       pageSize: nLimit,
       searchQuery,
+      orderBy,
     });
     res.status(200).json({
       status: "success",
@@ -697,14 +682,10 @@ export const updateStatusSessionReschedule = (
           sessionDate: new Date(newDate),
           transaction,
         });
-        // send mail before 30 of the session to remind both student and teacher
+        // send mail before 40 of the session to remind both student and teacher
         await scheduleSessionReminderMailJob({
           sessionDate: new Date(newDate),
           sessionId: session.id,
-          studentEmail: session.sessionInfo?.user?.email!,
-          studentName: session.sessionInfo?.user?.name!,
-          teacherEmail: session.sessionInfo?.teacher?.email!,
-          teacherName: session.sessionInfo?.teacher?.name!,
           transaction,
         });
         // update the status of the session to be ongoing at it's time
@@ -820,9 +801,6 @@ export const userContinueWithTeacher = catchAsync(
         wantedSessionDates: newSessionDates,
         wantedSessionDuration: subscription.plan.sessionDuration,
       });
-      const teacher = await getTeacherByIdService({
-        id: sessionInfo.teacherId!,
-      });
       const paidSessions = await createPaidSessionsService({
         sessionInfoId: sessionInfo.id,
         sessionDates: newSessionDates,
@@ -830,10 +808,6 @@ export const userContinueWithTeacher = catchAsync(
         sessionDuration: subscription.plan.sessionDuration,
         sessionsPerWeek: subscription.plan.sessionsPerWeek,
         transaction,
-        studentEmail: user.email,
-        studentName: user.name,
-        teacherEmail: teacher.email,
-        teacherName: teacher.name,
       });
       await updateUserService({
         userId,

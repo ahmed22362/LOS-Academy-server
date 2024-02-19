@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import dotenv from "dotenv";
 import generateVerifyEmail from "../templates/verifyEmailTemplate";
 import generateGenericEmail from "../templates/genericEmailTemplate";
@@ -17,6 +18,8 @@ import {
 } from "../templates/mails.payloads";
 import { RoleType } from "../db/models/teacher.model";
 dotenv.config();
+
+const resend = new Resend(process.env.RESEND_API);
 
 export interface MailInterface {
   from?: string;
@@ -50,7 +53,14 @@ class Mail {
       },
     });
   }
-
+  sendResend() {
+    resend.emails.send({
+      from: "Support@los-academy.net",
+      to: this.to,
+      subject: "Hello World",
+      html: "<p>Congrats on sending your <strong>first email</strong>!</p>",
+    });
+  }
   async send(template: ITemplate, subject: string) {
     const mailOptions = {
       from: "Support <info@codegate.info>", // sender address

@@ -33,7 +33,6 @@ export interface IInfoBody {
   teacherId: string;
   sessionRequestId: number;
 }
-
 export interface ISessionBody {
   sessionDate: Date;
   sessionDuration: number;
@@ -41,7 +40,6 @@ export interface ISessionBody {
   sessionInfoId: number;
   sessionStartTime: string;
 }
-
 export interface ISessionUpdateUser {
   sessionDate: Date;
   sessionStartTime: number;
@@ -54,7 +52,6 @@ export interface ISessionUpdateTeacher extends ISessionUpdateUser {
   teacherAttended?: boolean;
   studentAttended?: boolean;
 }
-
 export interface ISessionDetails {
   id: number;
   sessionDuration: number;
@@ -73,27 +70,14 @@ export enum OrderAssociation {
   DESC = "DESC",
   ASC = "ASC",
 }
-interface SessionCount {
-  status: string;
-  count: number;
-  total_count: number;
-}
 export async function createFreeSessionService({
   sessionInfoId,
   sessionDate,
   transaction,
-  studentName,
-  studentEmail,
-  teacherName,
-  teacherEmail,
 }: {
   sessionInfoId: number;
   sessionDate: Date;
   transaction?: Transaction;
-  studentName: string;
-  studentEmail: string;
-  teacherName: string;
-  teacherEmail: string;
 }) {
   const start_time = sessionDate.toISOString().split("T")[1];
   const sessionBody: any = {
@@ -114,12 +98,8 @@ export async function createFreeSessionService({
   });
   // send mail before 30 of the session to remind both student and teacher
   await scheduleSessionReminderMailJob({
-    sessionDate: session.sessionDate,
     sessionId: session.id,
-    studentEmail,
-    studentName,
-    teacherEmail,
-    teacherName,
+    sessionDate: session.sessionDate,
   });
   // update the status of the session to be ongoing at it's time
   await scheduleUpdateSessionToOngoing({
@@ -141,10 +121,6 @@ export async function createPaidSessionsService({
   sessionCount,
   sessionsPerWeek,
   transaction,
-  studentName,
-  studentEmail,
-  teacherName,
-  teacherEmail,
 }: {
   sessionInfoId: number;
   sessionDates: Date[];
@@ -152,10 +128,6 @@ export async function createPaidSessionsService({
   sessionCount: number;
   sessionsPerWeek: number;
   transaction?: Transaction;
-  studentName: string;
-  studentEmail: string;
-  teacherName: string;
-  teacherEmail: string;
 }): Promise<Session[]> {
   let sessions: Session[] = [];
   const sessionsBody = generateSessions({
@@ -178,12 +150,8 @@ export async function createPaidSessionsService({
     });
     // send mail before 30 of the session to remind both student and teacher
     await scheduleSessionReminderMailJob({
-      sessionDate: session.sessionDate,
       sessionId: session.id,
-      studentEmail,
-      studentName,
-      teacherEmail,
-      teacherName,
+      sessionDate: session.sessionDate,
       transaction,
     });
     // update the status of the session to be ongoing at it's time
@@ -296,6 +264,7 @@ export async function getAllSessionsServiceByStatus({
   searchQuery,
   startDate,
   endDate,
+  orderBy,
 }: {
   status?: SessionStatus;
   offset?: number;
@@ -303,6 +272,7 @@ export async function getAllSessionsServiceByStatus({
   searchQuery?: { user?: string; teacher?: string };
   startDate?: Date;
   endDate?: Date;
+  orderBy?: OrderAssociation;
 }) {
   let limit;
   let where: WhereOptions = {};
@@ -350,7 +320,7 @@ export async function getAllSessionsServiceByStatus({
     where,
     limit,
     offset: offset ?? 0,
-    order: [["sessionDate", "DESC"]],
+    order: [["sessionDate", orderBy ?? "DESC"]],
   });
   if (!sessions) {
     throw new AppError(400, "Can't get sessions!");

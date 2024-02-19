@@ -37,33 +37,25 @@ export const callbacksNames = {
 const jobCallbacks = new Map<string, JobCallback>();
 
 const sessionReminderEmail: JobCallback = async function ({
-  sessionDate,
-  studentName,
-  studentEmail,
-  teacherName,
-  teacherEmail,
   jobId,
+  sessionId,
 }: {
-  sessionDate: Date;
   sessionId: number;
-  studentName: string;
-  studentEmail: string;
-  teacherName: string;
-  teacherEmail: string;
   jobId: number;
 }) {
   try {
-    await new Mail(studentEmail, studentName).sendSessionReminderMail({
-      sessionDate:
-        sessionDate instanceof Date
-          ? sessionDate.toUTCString()
-          : new Date(sessionDate).toUTCString(),
+    const session = await getOneSessionDetailsService({ sessionId });
+    await new Mail(
+      session.sessionInfo?.user?.email!,
+      session.sessionInfo?.user?.name!,
+    ).sendSessionReminderMail({
+      sessionDate: new Date(session.sessionDate).toUTCString(),
     });
-    await new Mail(teacherEmail, teacherName).sendSessionReminderMail({
-      sessionDate:
-        sessionDate instanceof Date
-          ? sessionDate.toUTCString()
-          : new Date(sessionDate).toUTCString(),
+    await new Mail(
+      session.sessionInfo?.teacher?.email!,
+      session.sessionInfo?.teacher?.name!,
+    ).sendSessionReminderMail({
+      sessionDate: new Date(session.sessionDate).toUTCString(),
     });
     logger.info("One time session reminder mail executed!");
     await deleteJobService({ id: jobId });

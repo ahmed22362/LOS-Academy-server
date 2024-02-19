@@ -219,7 +219,7 @@ export const sessionReminderPayload = ({
   sessionDate: string;
 }) => {
   const title = "Session Reminder";
-  const header = "Your session is in 30 minutes!";
+  const header = "Your session is in 40 minutes!";
   const paragraph = `Hello ${name},
   <pThis is a quick reminder that your at LOS Academy is scheduled to begin in 30 minutes at ${sessionDate}.</p>
   <p>Please make sure you are ready to join the session on time.</p>

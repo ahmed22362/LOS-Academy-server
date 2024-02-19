@@ -107,7 +107,7 @@ export async function getTeacherStudentsService({
   offset?: number;
 }) {
   const { rows, count } = await SessionInfo.findAndCountAll({
-    where: { teacherId },
+    where: { teacherId, willContinue: true },
     include: [{ model: User, attributes: getUserAttr }],
     limit,
     offset,
