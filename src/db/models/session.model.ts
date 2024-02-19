@@ -40,7 +40,7 @@ export class Session extends Model<Session> {
   id!: number;
 
   @BelongsTo(() => SessionInfo, { onDelete: "CASCADE" })
-  SessionInfo!: SessionInfo;
+  sessionInfo!: SessionInfo | null;
 
   @ForeignKey(() => SessionInfo)
   @Column({

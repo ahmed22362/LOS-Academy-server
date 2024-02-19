@@ -142,14 +142,14 @@ export function scheduleSessionRescheduleRequestMailJob({
       async () => {
         const session = await getOneSessionDetailsService({ sessionId });
         if (requestedBy === RoleType.USER) {
-          email = session.SessionInfo.teacher!.email;
-          receiverName = session.SessionInfo.teacher!.name;
-          name = session.SessionInfo.user!.name;
+          email = session.sessionInfo!.teacher!.email;
+          receiverName = session.sessionInfo!.teacher!.name;
+          name = session.sessionInfo!.user!.name;
         }
         if (requestedBy === RoleType.TEACHER) {
-          email = session.SessionInfo.user!.email;
-          receiverName = session.SessionInfo.user!.name;
-          name = session.SessionInfo.teacher!.name;
+          email = session.sessionInfo!.user!.email;
+          receiverName = session.sessionInfo!.user!.name;
+          name = session.sessionInfo!.teacher!.name;
         }
         await new Mail(email, name).sendSessionRescheduleRequestMail({
           receiverName,
@@ -189,14 +189,14 @@ export function scheduleSessionRescheduleRequestUpdateMailJob({
           sessionId: rescheduleRequest.sessionId,
         });
         if (requestedBy === RoleType.TEACHER) {
-          email = session.SessionInfo.user!.email;
-          name = session.SessionInfo.user!.name;
-          senderName = session.SessionInfo.teacher!.name;
+          email = session.sessionInfo!.user!.email;
+          name = session.sessionInfo!.user!.name;
+          senderName = session.sessionInfo!.teacher!.name;
         }
         if (requestedBy === RoleType.USER) {
-          email = session.SessionInfo.teacher!.email;
-          name = session.SessionInfo.teacher!.name;
-          senderName = session.SessionInfo.user!.name;
+          email = session.sessionInfo!.teacher!.email;
+          name = session.sessionInfo!.teacher!.name;
+          senderName = session.sessionInfo!.user!.name;
         }
         await new Mail(email, name).sendSessionRescheduleRequestUpdateMail({
           status,
@@ -355,10 +355,10 @@ export async function rescheduleSessionJobs({
       await scheduleSessionReminderMailJob({
         sessionDate: newDate,
         sessionId,
-        studentName: session.SessionInfo.user!.name,
-        studentEmail: session.SessionInfo.user!.email,
-        teacherName: session.SessionInfo.teacher!.name,
-        teacherEmail: session.SessionInfo.teacher!.email,
+        studentName: session.sessionInfo!.user!.name,
+        studentEmail: session.sessionInfo!.user!.email,
+        teacherName: session.sessionInfo!.teacher!.name,
+        teacherEmail: session.sessionInfo!.teacher!.email,
         transaction,
       });
     }

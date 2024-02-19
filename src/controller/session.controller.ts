@@ -82,6 +82,7 @@ import { getRescheduleRequestJobName } from "../utils/processSchedulerJobs";
 import { Transaction } from "sequelize";
 import { SubscriptionStatus } from "../db/models/subscription.model";
 import { emitRescheduleRequestForUser } from "../connect/socket";
+import logger from "../utils/logger";
 export const THREE_MINUTES_IN_MILLISECONDS = 3 * 60 * 1000;
 export const HOUR_IN_MILLISECONDS = 60 * 60 * 1000;
 const DEFAULT_COURSES = ["arabic"];
@@ -103,10 +104,21 @@ export const getAllSessions = catchAsync(
 export const getAllSessionsByStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { nLimit, status, offset } = getPaginationParameter(req);
+    const userSearch = req.query.user;
+    const teacherSearch = req.query.teacher;
+    let searchQuery: { [key: string]: any } | undefined;
+
+    if (userSearch || teacherSearch) {
+      searchQuery = {
+        user: userSearch as any,
+        teacher: teacherSearch as any,
+      };
+    }
     const sessions = await getAllSessionsServiceByStatus({
       status: status as any,
       offset,
       pageSize: nLimit,
+      searchQuery,
     });
     res.status(200).json({
       status: "success",
@@ -689,10 +701,10 @@ export const updateStatusSessionReschedule = (
         await scheduleSessionReminderMailJob({
           sessionDate: new Date(newDate),
           sessionId: session.id,
-          studentEmail: session.SessionInfo.user?.email!,
-          studentName: session.SessionInfo.user?.name!,
-          teacherEmail: session.SessionInfo.teacher?.email!,
-          teacherName: session.SessionInfo.teacher?.name!,
+          studentEmail: session.sessionInfo?.user?.email!,
+          studentName: session.sessionInfo?.user?.name!,
+          teacherEmail: session.sessionInfo?.teacher?.email!,
+          teacherName: session.sessionInfo?.teacher?.name!,
           transaction,
         });
         // update the status of the session to be ongoing at it's time
@@ -989,7 +1001,7 @@ export const updateSessionForAdmin = catchAsync(
       if (sessionDate) {
         checkDateFormat(sessionDate);
         await isTeacherHasOverlappingSessions({
-          teacherId: session.SessionInfo.teacherId!,
+          teacherId: session.sessionInfo?.teacherId!,
           wantedSessionDates: [new Date(sessionDate)],
           wantedSessionDuration: session.sessionDuration,
         });
@@ -1011,8 +1023,8 @@ export const updateSessionForAdmin = catchAsync(
         await updateSessionServiceWithUserAndTeacherBalance({
           sessionId: session.id,
           status,
-          userId: session.SessionInfo.userId!,
-          teacherId: session.SessionInfo.teacherId!,
+          userId: session.sessionInfo?.userId!,
+          teacherId: session.sessionInfo?.teacherId!,
           transaction,
         });
       }

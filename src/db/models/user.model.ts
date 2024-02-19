@@ -5,7 +5,6 @@ import {
   DataType,
   BeforeSave,
   HasMany,
-  DeletedAt,
 } from "sequelize-typescript";
 import { ulid } from "ulid";
 import bcrypt from "bcrypt";

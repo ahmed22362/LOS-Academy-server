@@ -205,10 +205,10 @@ export const acceptSessionReq = catchAsync(
       sessionId: Array.isArray(sessions) ? sessions[0].id : sessions.id,
     });
     scheduleSessionPlacedMailJob({
-      userEmail: session.SessionInfo.user?.email as string,
-      userName: session.SessionInfo.user?.name as string,
-      teacherEmail: session.SessionInfo.teacher?.email as string,
-      teacherName: session.SessionInfo.teacher?.name as string,
+      userEmail: session.sessionInfo?.user?.email as string,
+      userName: session.sessionInfo?.user?.name as string,
+      teacherEmail: session.sessionInfo?.teacher?.email as string,
+      teacherName: session.sessionInfo?.teacher?.name as string,
       sessionDate: session.sessionDate,
     });
     res.status(201).json({

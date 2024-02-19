@@ -84,8 +84,8 @@ const sessionStartedEmail: JobCallback = async function ({
     const sessionDate = session.sessionDate;
     if (!session.studentAttended) {
       await new Mail(
-        session.SessionInfo.user!.email,
-        session.SessionInfo.user!.name,
+        session.sessionInfo?.user!.email!,
+        session.sessionInfo?.user!.name!,
       ).sendSessionStartReminderForUser({
         sessionDate:
           sessionDate instanceof Date
@@ -96,8 +96,8 @@ const sessionStartedEmail: JobCallback = async function ({
         process.env.ADMIN_EMAIL as string,
         "Admin",
       ).sendSessionStartReminderForAdmin({
-        userName: session.SessionInfo.user!.name,
-        teacherName: session.SessionInfo.teacher!.name,
+        userName: session.sessionInfo?.user!.name!,
+        teacherName: session.sessionInfo?.teacher!.name!,
         whoMiss: RoleType.USER,
         sessionDate:
           sessionDate instanceof Date
@@ -107,8 +107,8 @@ const sessionStartedEmail: JobCallback = async function ({
     }
     if (!session.teacherAttended) {
       await new Mail(
-        session.SessionInfo.teacher!.email,
-        session.SessionInfo.teacher!.name,
+        session.sessionInfo?.teacher!.email!,
+        session.sessionInfo?.teacher!.name!,
       ).sendSessionStartReminderForUser({
         sessionDate:
           sessionDate instanceof Date
@@ -119,8 +119,8 @@ const sessionStartedEmail: JobCallback = async function ({
         process.env.ADMIN_EMAIL as string,
         "Admin",
       ).sendSessionStartReminderForAdmin({
-        userName: session.SessionInfo.user!.name,
-        teacherName: session.SessionInfo.teacher!.name,
+        userName: session.sessionInfo?.user!.name!,
+        teacherName: session.sessionInfo?.teacher!.name!,
         whoMiss: RoleType.TEACHER,
         sessionDate:
           sessionDate instanceof Date
@@ -152,8 +152,8 @@ const sessionUpdateToOngoing: JobCallback = async function ({
     const session = await getOneSessionWithSessionInfoOnlyService({
       sessionId: updatedSession.id,
     });
-    emitSessionOngoingForUser(session.SessionInfo.userId!, session);
-    emitSessionOngoingForUser(session.SessionInfo.teacherId!, session);
+    emitSessionOngoingForUser(session.sessionInfo?.userId!, session);
+    emitSessionOngoingForUser(session.sessionInfo?.teacherId!, session);
     await deleteJobService({ id: jobId });
   } catch (error: any) {
     await updateJobService({
@@ -177,11 +177,11 @@ const sessionUpdateToFinished: JobCallback = async function ({
       sessionId,
     });
     emitSessionFinishedForUser(
-      data!.session.SessionInfo.userId!,
+      data!.session.sessionInfo?.userId!,
       data!.updatedSession,
     );
     emitSessionFinishedForUser(
-      data!.session.SessionInfo.teacherId!,
+      data!.session.sessionInfo?.teacherId!,
       data!.updatedSession,
     );
     await deleteJobService({ id: jobId });

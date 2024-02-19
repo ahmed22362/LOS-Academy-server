@@ -146,7 +146,6 @@ async function getModelByEmailService({
   try {
     if (!findOptions) findOptions = {};
     findOptions.where = { email };
-
     const model = await ModelClass.findOne(findOptions);
     return model;
   } catch (error: any) {

@@ -62,7 +62,7 @@ export const createReport = catchAsync(
           comment,
           grade,
           teacherId,
-          userId: session.SessionInfo.userId!,
+          userId: session.sessionInfo?.userId!,
           title,
         },
         transaction,
@@ -80,7 +80,7 @@ export const createReport = catchAsync(
         transaction,
       });
       await transaction.commit();
-      emitReportAddedForUser(session.SessionInfo.userId!, report);
+      emitReportAddedForUser(session.sessionInfo?.userId!, report);
       res.status(201).json({
         status: "success",
         message: "report created successfully",

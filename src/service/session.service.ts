@@ -293,20 +293,14 @@ export async function getAllSessionsServiceByStatus({
   status,
   offset,
   pageSize,
-  userName,
-  userEmail,
-  teacherName,
-  teacherEmail,
+  searchQuery,
   startDate,
   endDate,
 }: {
   status?: SessionStatus;
   offset?: number;
   pageSize?: number;
-  userName?: string;
-  userEmail?: string;
-  teacherName?: string;
-  teacherEmail?: string;
+  searchQuery?: { user?: string; teacher?: string };
   startDate?: Date;
   endDate?: Date;
 }) {
@@ -315,43 +309,41 @@ export async function getAllSessionsServiceByStatus({
 
   if (pageSize) limit = pageSize;
   if (status) where.status = status;
-  if (userName) {
-    where.sessionInfo = {
-      [Op.or]: [
-        { user: { [Op.or]: [{ name: userName }, { email: userName }] } },
-        { userId: userName }, // Handle ID-like user names
-      ],
-    };
-  }
-  if (userEmail) {
-    where.sessionInfo = {
-      user: { email: userEmail },
-    };
-  }
-  if (teacherName) {
-    where.sessionInfo = {
-      [Op.or]: [
-        {
-          teacher: { [Op.or]: [{ name: teacherName }, { email: teacherName }] },
-        },
-        { teacherId: teacherName }, // Handle ID-like teacher names
-      ],
-    };
-  }
-  if (teacherEmail) {
-    where.sessionInfo = { teacher: { email: teacherEmail } };
-  }
+
+  let userWhere: WhereOptions = {};
+  let teacherWhere: WhereOptions = {};
   if (startDate && endDate) {
     where.sessionDate = { [Op.between]: [startDate, endDate] };
+  }
+  if (searchQuery) {
+    if (searchQuery.user)
+      userWhere = {
+        [Op.or]: {
+          name: { [Op.iLike]: `${searchQuery.user}%` },
+          email: { [Op.iLike]: `${searchQuery.user}%` },
+        },
+      };
+    if (searchQuery.teacher)
+      teacherWhere = {
+        [Op.or]: {
+          name: { [Op.iLike]: `${searchQuery.teacher}%` },
+          email: { [Op.iLike]: `${searchQuery.teacher}%` },
+        },
+      };
   }
   const sessions = await Session.findAndCountAll({
     include: [
       {
         model: SessionInfo,
         attributes: ["userId", "teacherId"],
+        required: true,
         include: [
-          { model: User, attributes: getUserAttr },
-          { model: Teacher, attributes: getTeacherAtt },
+          {
+            model: User,
+            attributes: getUserAttr,
+            where: userWhere,
+          },
+          { model: Teacher, attributes: getTeacherAtt, where: teacherWhere },
         ],
       },
     ],
@@ -740,13 +732,13 @@ export async function handleSessionFinishedService({
       });
       if (session.type === SessionType.PAID) {
         await updateTeacherBalance({
-          teacherId: session.SessionInfo.teacherId!,
+          teacherId: session.sessionInfo?.teacherId!,
           mins: 0,
           committed: true,
           transaction,
         });
         await updateUserRemainSessionService({
-          userId: session.SessionInfo.userId!,
+          userId: session.sessionInfo?.userId!,
           amountOfSessions: -1,
           transaction,
         });
@@ -760,13 +752,13 @@ export async function handleSessionFinishedService({
       });
       if (session.type === SessionType.PAID) {
         await updateTeacherBalance({
-          teacherId: session.SessionInfo.teacherId!,
+          teacherId: session.sessionInfo?.teacherId!,
           mins: 0,
           committed: true,
           transaction,
         });
         await updateUserRemainSessionService({
-          userId: session.SessionInfo.userId!,
+          userId: session.sessionInfo?.userId!,
           amountOfSessions: -1,
           transaction,
         });
@@ -779,7 +771,7 @@ export async function handleSessionFinishedService({
         transaction,
       });
       await updateTeacherBalance({
-        teacherId: session.SessionInfo.teacherId!,
+        teacherId: session.sessionInfo?.teacherId!,
         committed: false,
         mins: -updatedSession.sessionDuration,
         transaction,
@@ -793,7 +785,7 @@ export async function handleSessionFinishedService({
         transaction,
       });
       await updateTeacherBalance({
-        teacherId: session.SessionInfo.teacherId!,
+        teacherId: session.sessionInfo?.teacherId!,
         committed: true,
         mins: session.sessionDuration,
         amount: 0,
@@ -801,7 +793,7 @@ export async function handleSessionFinishedService({
       });
       if (session.type === SessionType.PAID) {
         await updateUserRemainSessionService({
-          userId: session.SessionInfo.userId!,
+          userId: session.sessionInfo?.userId!,
           amountOfSessions: -1,
           transaction,
         });
@@ -861,7 +853,6 @@ export async function allTeacherOrUserSessionsService({
     ...(upcoming && { sessionDate: { [Op.gte]: new Date() } }),
     ...whereObj,
   };
-  console.log(where);
   const sessions = await getAllSessionsService({
     findOptions: {
       include: [
