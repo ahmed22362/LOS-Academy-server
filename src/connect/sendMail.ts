@@ -19,7 +19,7 @@ import {
 import { RoleType } from "../db/models/teacher.model";
 dotenv.config();
 
-const resend = new Resend(process.env.RESEND_API);
+const resend = new Resend(process.env.RESEND_API as string);
 
 export interface MailInterface {
   from?: string;
