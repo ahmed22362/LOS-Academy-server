@@ -124,10 +124,6 @@ export async function acceptSessionRequestService({
         sessionInfoId: sessionInfo.id,
         sessionDate: firstDate,
         transaction: t,
-        studentEmail: user.email,
-        studentName: user.name,
-        teacherEmail: teacher.email,
-        teacherName: teacher.name,
       });
       await updateSessionRequestService({
         id: sessionReqId,
@@ -155,10 +151,6 @@ export async function acceptSessionRequestService({
         sessionDuration: subscribePlan.plan.sessionDuration,
         sessionsPerWeek: subscribePlan.plan.sessionsPerWeek,
         transaction: t,
-        studentEmail: user.email,
-        studentName: user.name,
-        teacherEmail: teacher.email,
-        teacherName: teacher.name,
       });
       await updateSessionRequestService({
         id: sessionReqId,
