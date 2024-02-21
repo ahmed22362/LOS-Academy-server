@@ -345,7 +345,7 @@ export async function getOneSessionDetailsService({
     ],
   });
   if (!session) {
-    throw new AppError(404, "can't find session with this id!");
+    throw new AppError(404, `can't find session with this:${sessionId} id!`);
   }
   return session;
 }
