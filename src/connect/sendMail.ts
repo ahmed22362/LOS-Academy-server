@@ -53,30 +53,21 @@ class Mail {
       },
     });
   }
-  sendResend() {
-    resend.emails.send({
-      from: "Support@los-academy.net",
+  async send(template: ITemplate, subject: string) {
+    return await resend.emails.send({
+      from: "Support <info@codegate.info>",
       to: this.to,
-      subject: "Hello World",
-      html: "<p>Congrats on sending your <strong>first email</strong>!</p>",
+      subject: subject,
+      html: template.html,
+      text: template.text,
     });
   }
-  async send(template: ITemplate, subject: string) {
-    const mailOptions = {
-      from: "Support <info@codegate.info>", // sender address
-      to: this.to, // list of receivers
-      subject: subject, // Subject line
-      text: template.text || "", // plain text body
-      html: template.html, // html body
-    };
-    return await this.newTransporter().sendMail(mailOptions);
-  }
+
   async sendVerifyMail({ link }: { link: string }) {
     const verifyMailTemplate = generateVerifyEmail({ name: this.name, link });
     const info = await this.send(verifyMailTemplate, "Email Confirmation!");
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendForgetPassword({ link }: { link: string }) {
@@ -94,8 +85,7 @@ class Mail {
     });
     let info = await this.send(forgetTemplate, "Password Reset Request!");
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendSubscriptionCreateMail({
@@ -126,8 +116,7 @@ class Mail {
       "Subscription Successful!!",
     );
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendSubscriptionCanceledMail() {
@@ -144,8 +133,7 @@ class Mail {
       "Subscription Cancellation Confirmation",
     );
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendSessionPlacesMail({ sessionDate }: { sessionDate: string }) {
@@ -167,8 +155,7 @@ class Mail {
       "Session Placed Confirmation",
     );
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendSessionReminderMail({ sessionDate }: { sessionDate: string }) {
@@ -187,8 +174,7 @@ class Mail {
       "Your session is in 40 minutes!",
     );
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendSessionRescheduleRequestMail({
@@ -222,8 +208,7 @@ class Mail {
       "Session Reschedule Request!",
     );
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendSessionRescheduleRequestUpdateMail({
@@ -269,8 +254,7 @@ class Mail {
       "Session Reschedule Status Update!",
     );
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendSessionStartReminderForUser({
@@ -294,8 +278,7 @@ class Mail {
       "Your session has started!",
     );
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendSessionStartReminderForAdmin({
@@ -334,8 +317,7 @@ class Mail {
       "Student missed session start!",
     );
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendPayoutMail({
@@ -357,8 +339,7 @@ class Mail {
     });
     const info = await this.send(payoutTemplate, "Teacher Payout!");
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
   async sendPayoutRequestStatusUpdatedMail({ status }: { status: string }) {
@@ -377,8 +358,7 @@ class Mail {
       "Payout Request Status Updated!",
     );
     if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.messageId);
-      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      console.log("Message sent: %s", info.data);
     }
   }
 }

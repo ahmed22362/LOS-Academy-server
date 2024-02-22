@@ -12,6 +12,7 @@ import { protectUser, setUserOrTeacherId } from "../controller/user.controller";
 import {
   createSessionAdmin,
   deleteSession,
+  deleteSessionInfoForAdmin,
   getAdminSessionStats,
   getAllRescheduleRequestsForAdmin,
   getAllSessionsByStatus,
@@ -137,6 +138,13 @@ sessionRouter
     restrictTo(RoleType.ADMIN),
     validate(updateSessionContinuityByAdmin),
     updateContinueWithTeacherAdmin,
+  );
+sessionRouter
+  .route("/deleteSessionContinuity/:id")
+  .delete(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN),
+    deleteSessionInfoForAdmin,
   );
 sessionRouter
   .route("/:id")

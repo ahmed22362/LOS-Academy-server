@@ -174,13 +174,6 @@ async function updateModelService({
       individualHooks: true,
       transaction,
     });
-    if (affectedRows.length === 0) {
-      // No row found to update
-      throw new AppError(400, `"Error updating row:" no model updated`);
-    }
-    if (affectedCount > 1) {
-      throw new AppError(400, "update row update more than one model !");
-    }
     return affectedRows[0];
   } catch (error: any) {
     console.error("Error updating row:", error.message);

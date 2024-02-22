@@ -72,6 +72,7 @@ import {
 } from "../utils/scheduler";
 import {
   createSessionInfoService,
+  deleteSessionInfoService,
   getAllSessionsInfoService,
   getOneSessionInfoServiceBy,
   getOrCreateSessionInfoService,
@@ -884,41 +885,27 @@ export const getAdminSessionStats = catchAsync(
 export const getContinueWithTeacherAbstract = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { nLimit, offset } = getPaginationParameter(req);
-    const sessionDateMap: Record<number, string> = {};
-    const result = await getAllSessionsService({
-      findOptions: {
-        where: { type: SessionType.FREE },
-        limit: nLimit,
-        offset: offset ?? 0,
-      },
-    });
-    const sessionInfoIds: number[] = result.rows.map((session) => {
-      return session.sessionInfoId;
-    });
-    result.rows.forEach((session) => {
-      sessionDateMap[session.sessionInfoId] =
-        session.sessionDate.toLocaleString("en-US", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        });
-    });
     const sessionInfo = await getAllSessionsInfoService({
       findOptions: {
-        where: { id: sessionInfoIds },
         include: [
           { model: User, attributes: getUserAttr },
           { model: Teacher, attributes: getTeacherAtt },
         ],
+        limit: nLimit,
+        offset,
       },
     });
     const formattedData = sessionInfo.map((info) => ({
       sessionInfoId: info.id,
-      sessionDate: sessionDateMap[info.id],
+      sessionDate: info.createdAt.toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }),
       continueStatus: info.willContinue,
       userName: info.user?.name,
       userEmail: info.user?.email,
@@ -1027,5 +1014,16 @@ export const updateSessionForAdmin = catchAsync(
         ),
       );
     }
+  },
+);
+export const deleteSessionInfoForAdmin = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const sessionInfoId = req.params.id;
+    await deleteSessionInfoService({ sessionInfoId: +sessionInfoId });
+    res.status(200).json({
+      status: "success",
+      message:
+        "Every session User and Teacher had or will have together has been deleted!",
+    });
   },
 );

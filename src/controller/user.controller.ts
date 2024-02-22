@@ -41,6 +41,7 @@ import {
 import { SubscriptionStatus } from "../db/models/subscription.model";
 import { getTeacherByIdService } from "../service/teacher.service";
 import { RoleType } from "../db/models/teacher.model";
+import { SessionStatus } from "../db/models/session.model";
 
 export const MONTH_IN_MS = 2629800000;
 export const setUserOrTeacherId = (
@@ -416,6 +417,15 @@ export const checkJWT = catchAsync(
 );
 export function getPaginationParameter(req: Request) {
   const status = req.query.status;
+  if (
+    status &&
+    !Object.values(SessionStatus).includes(status as SessionStatus)
+  ) {
+    throw new AppError(
+      400,
+      `Please provide status one of those: ${Object.values(SessionStatus)}`,
+    );
+  }
   let page = req.query.page;
   let limit = req.query.limit;
   let nPage;

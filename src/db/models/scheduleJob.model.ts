@@ -13,7 +13,7 @@ export enum scheduledJobStatus {
   FAILED = "failed",
   COMPLETE = "complete",
 }
-export const SCHEDULE_JOB_TABLE_NAME = "scheduleJob";
+export const SCHEDULE_JOB_TABLE_NAME = "schedule_job";
 
 @Table({
   tableName: SCHEDULE_JOB_TABLE_NAME,

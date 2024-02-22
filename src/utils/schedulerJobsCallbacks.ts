@@ -61,7 +61,9 @@ const sessionReminderEmail: JobCallback = async function ({
     await deleteJobService({ id: jobId });
   } catch (error: any) {
     await deleteJobService({ id: jobId });
-    logger.error(`Can't Send session reminder mail: ${error}`);
+    logger.error(
+      `Can't Send session reminder mail: ${error} , session: ${sessionId}`,
+    );
   }
 };
 const sessionStartedEmail: JobCallback = async function ({
@@ -124,7 +126,9 @@ const sessionStartedEmail: JobCallback = async function ({
     await deleteJobService({ id: jobId });
   } catch (error: any) {
     await deleteJobService({ id: jobId });
-    logger.error(`Can't send session started reminder mail: ${error}`);
+    logger.error(
+      `Can't send session started reminder mail: ${error} , sessionId: ${sessionId}`,
+    );
   }
 };
 const sessionUpdateToOngoing: JobCallback = async function ({
@@ -139,7 +143,7 @@ const sessionUpdateToOngoing: JobCallback = async function ({
       sessionId,
       status: SessionStatus.ONGOING,
     });
-    logger.info("One time session updated to ongoing executed!");
+    logger.info(`One time session ${sessionId} updated to ongoing executed!`);
     // one for user and one for teacher!
     const session = await getOneSessionWithSessionInfoOnlyService({
       sessionId: updatedSession.id,
@@ -148,12 +152,9 @@ const sessionUpdateToOngoing: JobCallback = async function ({
     emitSessionOngoingForUser(session.sessionInfo?.teacherId!, session);
     await deleteJobService({ id: jobId });
   } catch (error: any) {
-    await updateJobService({
-      id: jobId,
-      updatedData: { status: scheduledJobStatus.FAILED },
-    });
+    await deleteJobService({ id: jobId });
     logger.error(
-      `Can't update Session to be ongoing or generating the link try manually: ${error}`,
+      `Can't update Session to be ongoing or generating the link try manually: ${error}, sessionId: ${sessionId}`,
     );
   }
 };
@@ -179,11 +180,10 @@ const sessionUpdateToFinished: JobCallback = async function ({
     await deleteJobService({ id: jobId });
     logger.info(`One time session Finished with status executed!`);
   } catch (error: any) {
-    await updateJobService({
-      id: jobId,
-      updatedData: { status: scheduledJobStatus.FAILED },
-    });
-    logger.error(`Can't update the fished session's status: ${error}`);
+    await deleteJobService({ id: jobId });
+    logger.error(
+      `Can't update the fished session's ${sessionId} status: ${error}`,
+    );
   }
 };
 // handel no response requests
