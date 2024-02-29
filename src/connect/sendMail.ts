@@ -54,8 +54,12 @@ class Mail {
     });
   }
   async send(template: ITemplate, subject: string) {
+    let from = "Support <info@codegate.info>";
+    if (process.env.NODE_ENV?.trim() === "production") {
+      from = "Support <info@los-academy.net>";
+    }
     return await resend.emails.send({
-      from: "Support <info@codegate.info>",
+      from,
       to: this.to,
       subject: subject,
       html: template.html,

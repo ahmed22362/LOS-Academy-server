@@ -37,8 +37,8 @@ export const callbacksNames = {
 const jobCallbacks = new Map<string, JobCallback>();
 
 const sessionReminderEmail: JobCallback = async function ({
-  jobId,
   sessionId,
+  jobId,
 }: {
   sessionId: number;
   jobId: number;
