@@ -23,7 +23,11 @@ import {
   scheduleUpdateSessionToOngoing,
 } from "../utils/scheduler";
 import { THREE_MINUTES_IN_MILLISECONDS } from "../controller/session.controller";
-import { updateTeacherBalance } from "./teacher.service";
+import {
+  getTeacherByIdService,
+  updateTeacherBalance,
+  updateTeacherCommittedMins,
+} from "./teacher.service";
 import { updateUserRemainSessionService } from "./user.service";
 import logger from "../utils/logger";
 import SessionReq from "../db/models/sessionReq.model";
@@ -690,6 +694,10 @@ export async function handleSessionFinishedService({
   sessionId: number;
 }) {
   const session = await getOneSessionDetailsService({ sessionId });
+
+  const teacherHourCost = session.sessionInfo?.teacher?.hour_cost || 0;
+  const minsCost = teacherHourCost / 60;
+  const teacherBalanceAmount = minsCost * session.sessionDuration;
   const transaction = await sequelize.transaction();
   let updatedSession;
   try {
@@ -703,8 +711,7 @@ export async function handleSessionFinishedService({
       if (session.type === SessionType.PAID) {
         await updateTeacherBalance({
           teacherId: session.sessionInfo?.teacherId!,
-          mins: 0,
-          committed: true,
+          amount: -teacherBalanceAmount,
           transaction,
         });
         await updateUserRemainSessionService({
@@ -723,8 +730,7 @@ export async function handleSessionFinishedService({
       if (session.type === SessionType.PAID) {
         await updateTeacherBalance({
           teacherId: session.sessionInfo?.teacherId!,
-          mins: 0,
-          committed: true,
+          amount: teacherBalanceAmount,
           transaction,
         });
         await updateUserRemainSessionService({
@@ -742,23 +748,19 @@ export async function handleSessionFinishedService({
       });
       await updateTeacherBalance({
         teacherId: session.sessionInfo?.teacherId!,
-        committed: false,
-        mins: -updatedSession.sessionDuration,
+        amount: -teacherBalanceAmount,
         transaction,
       });
     } else if (session.studentAttended && session.teacherAttended) {
       logger.info("both attended");
-
       updatedSession = await updateSessionService({
         sessionId,
         updatedData: { status: SessionStatus.TAKEN },
         transaction,
       });
-      await updateTeacherBalance({
+      await updateTeacherCommittedMins({
         teacherId: session.sessionInfo?.teacherId!,
-        committed: true,
         mins: session.sessionDuration,
-        amount: 0,
         transaction,
       });
       if (session.type === SessionType.PAID) {
@@ -1090,16 +1092,16 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         updatedData: { status },
         transaction,
       });
-      await updateUserRemainSessionService({
-        userId: userId,
-        amountOfSessions: -1,
-        transaction,
-      });
-      await updateTeacherBalance({
-        teacherId: teacherId!,
-        committed: true,
+      if (updatedSession.type === SessionType.PAID) {
+        await updateUserRemainSessionService({
+          userId: userId,
+          amountOfSessions: -1,
+          transaction,
+        });
+      }
+      await updateTeacherCommittedMins({
+        teacherId,
         mins: updatedSession.sessionDuration,
-        amount: 0, // amount will increased when he add report
         transaction,
       });
       break;
@@ -1116,10 +1118,17 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         updatedData: { status },
         transaction,
       });
+      const sessionWithTeacher = await getOneSessionDetailsService({
+        sessionId,
+      });
+      const teacherHourCost =
+        sessionWithTeacher.sessionInfo?.teacher?.hour_cost || 0;
+      const minsCost = teacherHourCost / 60;
+      const teacherBalanceAmount =
+        minsCost * sessionWithTeacher.sessionDuration;
       await updateTeacherBalance({
         teacherId: teacherId,
-        committed: false,
-        mins: -updatedSession.sessionDuration,
+        amount: -teacherBalanceAmount,
         transaction,
       });
       break;
@@ -1129,15 +1138,21 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         updatedData: { status },
         transaction,
       });
-      await updateTeacherBalance({
-        teacherId,
-        committed: false,
-        mins: updatedSession.sessionDuration,
-        transaction,
-      });
       await updateUserRemainSessionService({
         userId,
         amountOfSessions: -1,
+        transaction,
+      });
+      const session = await getOneSessionDetailsService({
+        sessionId,
+      });
+      const teacherPerMinCost = session.sessionInfo?.teacher?.hour_cost || 0;
+      const cost = teacherPerMinCost / 60;
+      const amount = cost * session.sessionDuration;
+
+      await updateTeacherBalance({
+        teacherId: teacherId,
+        amount: amount,
         transaction,
       });
       break;

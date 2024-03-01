@@ -747,6 +747,7 @@ export const userContinueWithTeacher = catchAsync(
     }
     const sessionInfo = await getSessionInfoService({
       id: session.sessionInfoId,
+      findOptions: { include: [{ model: Teacher, attributes: getTeacherAtt }] },
     });
     if (typeof sessionInfo.willContinue === "boolean") {
       return next(new AppError(400, "already responded to!"));
@@ -777,9 +778,12 @@ export const userContinueWithTeacher = catchAsync(
     });
     const transaction = await sequelize.transaction();
     try {
+      const teacherHourCost = sessionInfo.teacher?.hour_cost || 0;
+      const minsCost = teacherHourCost / 60;
+      const teacherBalanceAmount = minsCost * session.sessionDuration;
       await updateTeacherBalance({
         teacherId: sessionInfo.teacherId!,
-        mins: session.sessionDuration,
+        amount: teacherBalanceAmount,
         transaction,
       });
       const newSessionDates: Date[] = [];

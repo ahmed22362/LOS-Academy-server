@@ -64,26 +64,37 @@ export async function updateTeacherService({
     transaction,
   });
 }
-export async function updateTeacherBalance({
+export async function updateTeacherCommittedMins({
   teacherId,
-  amount,
   mins,
-  committed,
   transaction,
 }: {
   teacherId: string;
-  amount?: number;
-  committed?: boolean;
-  mins?: number;
+  mins: number;
   transaction?: Transaction;
 }) {
-  const teacher = await getTeacherByIdService({ id: teacherId });
-  if (!amount) {
-    amount = (mins ?? 0) * (teacher.hour_cost / 60);
-  }
-  const updated = await teacher.increment(
-    { balance: amount ?? 0, committed_mins: committed ? mins : 0 },
+  const updated = await Teacher.update(
+    { committed_mins: mins },
     {
+      where: { id: teacherId },
+      transaction,
+    },
+  );
+  return updated;
+}
+export async function updateTeacherBalance({
+  teacherId,
+  amount,
+  transaction,
+}: {
+  teacherId: string;
+  amount: number;
+  transaction?: Transaction;
+}) {
+  const updated = await Teacher.increment(
+    { balance: amount },
+    {
+      where: { id: teacherId },
       transaction,
     },
   );
