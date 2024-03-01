@@ -18,7 +18,9 @@ import { getSocketByUserId } from "./connect/socket";
 import { verifyToken } from "./utils/jwt";
 import catchAsync from "./utils/catchAsync";
 // import swaggerJsdoc from "../swagger-output.json"
-import swaggerUi from "swagger-ui-express";
+// import swaggerUi from "swagger-ui-express";
+import schedule from "node-schedule";
+import logger from "./utils/logger";
 
 const PRE_API_V1: string = "/api/v1";
 
@@ -48,6 +50,11 @@ export default function routes(app: Express) {
     }
     const link = `${req.protocol}s://${req.get("host")}/`;
     res.render(join(__dirname, "/views/index.ejs"), { token, link });
+  });
+  app.get("/jobs", (req, res, next) => {
+    const jobs = schedule.scheduledJobs;
+    console.log(jobs);
+    res.status(200).json({ status: "success", jobs });
   });
   app.get(
     "/emit",

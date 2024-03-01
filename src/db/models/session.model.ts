@@ -1,4 +1,5 @@
 import {
+  AfterDestroy,
   AutoIncrement,
   BelongsTo,
   Column,
@@ -9,6 +10,7 @@ import {
   Table,
 } from "sequelize-typescript";
 import SessionInfo from "./sessionInfo.model";
+import schedule from "node-schedule";
 
 export enum SessionStatus {
   PENDING = "pending",
@@ -94,5 +96,19 @@ export class Session extends Model<Session> {
     defaultValue: false,
   })
   hasReport!: boolean;
+
+  @AfterDestroy
+  static async hashPassword(instance: Session) {
+    const jobReminderName = `session #${instance.id} Reminder`;
+    const jobStartedName = `session #${instance.id} Started`;
+    const jobOngoingName = `session #${instance.id} ONGOING Updating`;
+    const jobFinishedName = `session #${instance.id} finished Updating`;
+    const jobs = schedule.scheduledJobs;
+    const reminderJob = jobs[jobReminderName].cancel();
+    const sessionStartedJob = jobs[jobStartedName].cancel();
+    const sessionOngoingJob = jobs[jobOngoingName].cancel();
+    const sessionFinishedJob = jobs[jobFinishedName].cancel();
+  }
 }
+
 export default Session;

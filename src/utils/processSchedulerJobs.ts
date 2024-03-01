@@ -44,7 +44,7 @@ export function cleanupJobsWeekly() {
   rule.dayOfWeek = 0; // runs on Sunday
   rule.hour = 0; // runs at midnight
   rule.minute = 0;
-  scheduleJob(rule, async function () {
+  scheduleJob("clean-outdated-session-job", rule, async function () {
     await deleteFailedJobService();
     console.log("Deleted all failed and outdated jobs");
   });
