@@ -4,22 +4,16 @@ import {
   emitSessionOngoingForUser,
 } from "../connect/socket";
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model";
-import { scheduledJobStatus } from "../db/models/scheduleJob.model";
-import { SessionStatus } from "../db/models/session.model";
 import { RoleType } from "../db/models/teacher.model";
 import {
   getOneRescheduleRequestService,
   updateRescheduleRequestService,
 } from "../service/rescheduleReq.service";
+import { deleteJobService } from "../service/scheduleJob.service";
 import {
-  deleteJobService,
-  updateJobService,
-} from "../service/scheduleJob.service";
-import {
-  generateMeetingLinkAndUpdateSession,
   getOneSessionDetailsService,
-  getOneSessionWithSessionInfoOnlyService,
   handleSessionFinishedService,
+  setSessionMeetingLinkAndOngoing,
 } from "../service/session.service";
 import logger from "./logger";
 
@@ -139,17 +133,16 @@ const sessionUpdateToOngoing: JobCallback = async function ({
   jobId: number;
 }) {
   try {
-    const updatedSession = await generateMeetingLinkAndUpdateSession({
-      sessionId,
-      status: SessionStatus.ONGOING,
-    });
+    const updatedSession = await setSessionMeetingLinkAndOngoing({ sessionId });
     logger.info(`One time session ${sessionId} updated to ongoing executed!`);
-    // one for user and one for teacher!
-    const session = await getOneSessionWithSessionInfoOnlyService({
-      sessionId: updatedSession.id,
-    });
-    emitSessionOngoingForUser(session.sessionInfo?.userId!, session);
-    emitSessionOngoingForUser(session.sessionInfo?.teacherId!, session);
+    emitSessionOngoingForUser(
+      updatedSession.sessionInfo?.userId!,
+      updatedSession,
+    );
+    emitSessionOngoingForUser(
+      updatedSession.sessionInfo?.teacherId!,
+      updatedSession,
+    );
     await deleteJobService({ id: jobId });
   } catch (error: any) {
     await deleteJobService({ id: jobId });

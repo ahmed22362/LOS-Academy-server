@@ -19,6 +19,7 @@ export interface ITeacherInput {
   hour_cost: number;
   balance?: number;
   committed_mis?: number;
+  permanent_meeting_url?: string;
 }
 export enum RoleType {
   TEACHER = "teacher",
@@ -90,6 +91,9 @@ export default class Teacher extends Model<Teacher> {
 
   @Column(DataType.DATE)
   passwordChangedAt?: Date;
+
+  @Column({ type: DataType.STRING, allowNull: false })
+  permanent_meeting_url!: string;
 
   @Column({
     type: DataType.ENUM({ values: Object.values(RoleType) }),

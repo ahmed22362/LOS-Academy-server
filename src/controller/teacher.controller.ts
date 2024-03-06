@@ -40,12 +40,21 @@ export const getTeacherAtt = [
   "committed_mins",
   "balance",
   "nationalId",
+  "permanent_meeting_url",
 ];
 
 export const createTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, email, password, phone, nationalId, role, hour_cost } =
-      req.body;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      nationalId,
+      role,
+      hour_cost,
+      permanent_meeting_url,
+    } = req.body;
     const body = {
       name,
       email,
@@ -54,6 +63,7 @@ export const createTeacher = catchAsync(
       nationalId,
       role,
       hour_cost,
+      permanent_meeting_url,
     } as ITeacherInput;
     const newTeacher = await createTeacherService(body);
     if (!newTeacher) {
@@ -108,6 +118,7 @@ export const updateTeacher = catchAsync(
       password,
       balance,
       committed_mins,
+      permanent_meeting_url,
     } = req.body;
     const body = {
       name,
@@ -119,6 +130,7 @@ export const updateTeacher = catchAsync(
       password,
       balance,
       committed_mins,
+      permanent_meeting_url,
     } as ITeacherInput;
     const teacher = await updateTeacherService({
       teacherId: id,

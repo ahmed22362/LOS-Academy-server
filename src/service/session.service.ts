@@ -628,32 +628,6 @@ export async function updateSessionStudentAttendanceService({
   session.studentAttended = attend;
   await session.save({ transaction });
 }
-export async function generateMeetingLinkAndUpdateSession({
-  sessionId,
-  status,
-  transaction,
-}: {
-  sessionId: number;
-  status?: SessionStatus;
-  transaction?: Transaction;
-}) {
-  const session = await getOneSessionService({ sessionId });
-  const meetingLink = await new ZoomService().createMeeting({
-    topic: "Session",
-    duration: session.sessionDuration,
-    startDateTime: session.sessionDate,
-  });
-  const updatedData: any = { meetingLink };
-  if (status) {
-    updatedData.status = status;
-  }
-  const updatedSession = await updateSessionService({
-    sessionId,
-    updatedData,
-    transaction,
-  });
-  return updatedSession;
-}
 export async function getSessionInfosSessions(sessionInfoIds: number[]) {
   const sessions = await Session.findAll({
     where: {
@@ -686,6 +660,22 @@ export async function getAdminSessionsStatisticsService() {
     group: "status",
   });
   return sessionStats;
+}
+export async function setSessionMeetingLinkAndOngoing({
+  sessionId,
+  transaction,
+}: {
+  sessionId: number;
+  transaction?: Transaction;
+}) {
+  const sessionWithTeacher = await getOneSessionDetailsService({
+    sessionId,
+  });
+  sessionWithTeacher.meetingLink =
+    sessionWithTeacher.sessionInfo?.teacher?.permanent_meeting_url;
+  sessionWithTeacher.status = SessionStatus.ONGOING;
+  sessionWithTeacher.save({ transaction });
+  return sessionWithTeacher;
 }
 
 export async function handleSessionFinishedService({
@@ -1080,9 +1070,8 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
   let updatedSession: Session;
   switch (status) {
     case SessionStatus.ONGOING:
-      updatedSession = await generateMeetingLinkAndUpdateSession({
+      updatedSession = await setSessionMeetingLinkAndOngoing({
         sessionId,
-        status: SessionStatus.ONGOING,
         transaction,
       });
       break;
