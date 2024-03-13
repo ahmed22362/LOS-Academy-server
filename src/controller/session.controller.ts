@@ -1002,9 +1002,10 @@ export const updateSessionForAdmin = catchAsync(
           studentAttended,
           meetingLink,
         },
+        transaction,
       });
       await transaction.commit();
-      res.status(200).json({
+      return res.status(200).json({
         status: "success",
         message: "session updated successfully",
         data: updatedSession,

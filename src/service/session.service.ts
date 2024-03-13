@@ -185,10 +185,13 @@ export async function updateSessionService({
   updatedData: Partial<ISessionUpdateTeacher>;
   transaction?: Transaction;
 }) {
+  const cleanedData = Object.fromEntries(
+    Object.entries(updatedData).filter(([key, value]) => value !== undefined),
+  );
   const session = await updateModelService({
     ModelClass: Session,
     id: sessionId,
-    updatedData,
+    updatedData: cleanedData,
     transaction,
   });
   if (!session) {
