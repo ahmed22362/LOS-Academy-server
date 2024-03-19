@@ -690,7 +690,10 @@ export async function handleSessionFinishedService({
 
   const teacherHourCost = session.sessionInfo?.teacher?.hour_cost || 0;
   const minsCost = teacherHourCost / 60;
-  const teacherBalanceAmount = minsCost * session.sessionDuration;
+  // round to two decimal points
+  let teacherBalanceAmount = minsCost * session.sessionDuration;
+  teacherBalanceAmount =
+    Math.round((teacherBalanceAmount + Number.EPSILON) * 100) / 100;
   const transaction = await sequelize.transaction();
   let updatedSession;
   try {

@@ -1,12 +1,9 @@
 import Teacher from "../db/models/teacher.model";
-import { FindOptions, Op, Transaction } from "sequelize";
+import { FindOptions, Transaction } from "sequelize";
 import { ITeacherInput } from "../db/models/teacher.model";
 import {
   createModelService,
   deleteModelService,
-  getAllModelsByService,
-  getModelByIdService,
-  getModelsService,
   getOneModelByService,
   updateModelService,
 } from "./factory.services";

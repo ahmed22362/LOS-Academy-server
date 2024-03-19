@@ -5,6 +5,7 @@ import { getSubscriptionByUserId } from "./subscription.service";
 import { SubscriptionStatus } from "../db/models/subscription.model";
 import { updateModelService } from "./factory.services";
 import { Op } from "sequelize";
+import { userOwnThisSession } from "./session.service";
 
 export interface UserResponse {
   id: string;
@@ -130,13 +131,14 @@ async function updateUserRemainSessionService({
   amountOfSessions: number;
   transaction?: Transaction;
 }) {
-  const user = await getUserByIdService({ userId });
-  user.increment(["remainSessions"], {
-    by: amountOfSessions,
-    transaction,
-  });
-  await user.save();
-  return;
+  const updated = await User.increment(
+    { remainSessions: amountOfSessions },
+    {
+      where: { id: userId },
+      transaction,
+    },
+  );
+  return updated;
 }
 
 async function deleteUserService({

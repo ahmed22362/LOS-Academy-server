@@ -70,7 +70,9 @@ export const createReport = catchAsync(
       if (session.type === SessionType.PAID) {
         const teacherHourCost = session.sessionInfo?.teacher?.hour_cost || 0;
         const minsCost = teacherHourCost / 60;
-        const teacherBalanceAmount = minsCost * session.sessionDuration;
+        let teacherBalanceAmount = minsCost * session.sessionDuration;
+        teacherBalanceAmount =
+          Math.round((teacherBalanceAmount + Number.EPSILON) * 100) / 100;
         await updateTeacherBalance({
           teacherId: teacherId!,
           amount: teacherBalanceAmount,
