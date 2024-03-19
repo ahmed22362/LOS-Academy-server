@@ -300,7 +300,6 @@ export const checkJWT = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const token = req.query.token;
     const decoded = (await verifyToken(token as string)) as decodedToken;
-
     const teacher = await getTeacherByIdService({ id: decoded.id });
     res.status(200).json({
       status: "success",

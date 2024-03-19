@@ -7,7 +7,6 @@ import rescheduleJobs, {
 } from "./utils/processSchedulerJobs";
 import { createServer } from "node:http";
 import { setupSocket } from "./connect/socket";
-import Mail from "./connect/sendMail";
 
 const PORT = process.env.PORT || 3000;
 

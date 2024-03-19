@@ -73,7 +73,7 @@ export async function updateTeacherCommittedMins({
   mins: number;
   transaction?: Transaction;
 }) {
-  const updated = await Teacher.update(
+  const updated = await Teacher.increment(
     { committed_mins: mins },
     {
       where: { id: teacherId },
