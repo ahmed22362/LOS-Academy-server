@@ -8,7 +8,6 @@ const pg_local_uri = process.env.LOCAL_POSTGRESQL_BD_URL as string;
 let runningDB = pg_local_uri;
 if (process.env.NODE_ENV?.trim() === "production") {
   runningDB = pg_production_uri;
-  logger.info(runningDB);
 }
 export const sequelize = new Sequelize(runningDB, {
   logging: (query) => {
