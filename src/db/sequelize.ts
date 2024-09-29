@@ -1,5 +1,6 @@
 import { Sequelize } from "sequelize-typescript";
 import dotenv from "dotenv";
+import logger from "../utils/logger";
 
 dotenv.config();
 const pg_production_uri = process.env.PRODUCTION_POSTGRESQL_BD_URL as string;
@@ -7,7 +8,7 @@ const pg_local_uri = process.env.LOCAL_POSTGRESQL_BD_URL as string;
 let runningDB = pg_local_uri;
 if (process.env.NODE_ENV?.trim() === "production") {
   runningDB = pg_production_uri;
-  console.log(runningDB);
+  logger.info(runningDB);
 }
 export const sequelize = new Sequelize(runningDB, {
   logging: (query) => {

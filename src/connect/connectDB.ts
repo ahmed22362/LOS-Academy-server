@@ -3,7 +3,7 @@ import logger from "../utils/logger";
 
 let force = false;
 if (process.argv[2] === "force") {
-  console.log("database force deleted successfully!");
+  logger.info("database force deleted successfully!");
   force = true;
 }
 
