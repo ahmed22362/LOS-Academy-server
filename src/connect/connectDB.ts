@@ -19,7 +19,8 @@ async function connectDB() {
       logger.info("database connected SUCCESSFULLY!");
     })
     .catch((err) => {
-      logger.error("Database connection failed:", err);
+      logger.error(`Database connection failed: ${err.message}`);
+      // console.error("Full error:", err); // Log full error details
     });
 }
 
