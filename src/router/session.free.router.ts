@@ -1,42 +1,42 @@
-import { Router } from "express"
-import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
-import { protectTeacher } from "../controller/teacher.controller"
+import { RequestHandler, Router } from "express";
+import { protectUser, setUserOrTeacherId } from "../controller/user.controller";
+import { protectTeacher } from "../controller/teacher.controller";
 import {
   acceptSessionReq,
   getAllAvailableSessionsReq,
   requestSession,
-} from "../controller/sessionReq.controller"
-import { SessionType } from "../db/models/session.model"
-import validate from "../middleware/validate"
+} from "../controller/sessionReq.controller";
+import { SessionType } from "../db/models/session.model";
+import validate from "../middleware/validate";
 import {
   acceptSessionRequestSchema,
   createSessionRequestSchema,
-} from "../schema/session.schema"
+} from "../schema/session.schema";
 
-const freeSessionRouter = Router()
+const freeSessionRouter = Router();
 
 freeSessionRouter
   .route("/request")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(createSessionRequestSchema),
-    requestSession(SessionType.FREE)
-  )
+    requestSession(SessionType.FREE),
+  );
 freeSessionRouter
   .route("/available")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
-    getAllAvailableSessionsReq(SessionType.FREE)
-  )
+    setUserOrTeacherId as RequestHandler,
+    getAllAvailableSessionsReq(SessionType.FREE),
+  );
 freeSessionRouter
   .route("/accept")
   .post(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(acceptSessionRequestSchema),
-    acceptSessionReq
-  )
+    acceptSessionReq,
+  );
 
-export default freeSessionRouter
+export default freeSessionRouter;

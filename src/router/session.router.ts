@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import { protectTeacher } from "../controller/teacher.controller";
 import {
   acceptSessionReq,
@@ -49,22 +49,26 @@ sessionRouter
   .route("/continueAbstract")
   .get(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     getContinueWithTeacherAbstract,
   );
 sessionRouter
   .route("/statistics")
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAdminSessionStats);
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getAdminSessionStats,
+  );
 sessionRouter
   .route("/request/:id")
-  .get(protectTeacher, setUserOrTeacherId, getOneSessionReq);
+  .get(protectTeacher, setUserOrTeacherId as RequestHandler, getOneSessionReq);
 sessionRouter.use("/free", freeSessionRouter);
 sessionRouter.use("/paid", paidSessionRouter);
 sessionRouter
   .route("/cancelSessionRequest")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(cancelRequestSchema),
     cancelSessionReq,
   );
@@ -72,23 +76,23 @@ sessionRouter
   .route("/updateUserAttendance")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(requireEitherTeacherOrUser),
-    updateSessionAttendance,
+    updateSessionAttendance as RequestHandler,
   );
 sessionRouter
   .route("/updateTeacherAttendance")
   .post(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(requireEitherTeacherOrUser),
-    updateSessionAttendance,
+    updateSessionAttendance as RequestHandler,
   );
 sessionRouter
   .route("/continueWithTeacher")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(userContinueWithTeacherSchema),
     userContinueWithTeacher,
   );
@@ -96,7 +100,7 @@ sessionRouter
   .route("/wontContinueWithTeacher")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(userWontContinueWithTeacherSchema),
     userWontContinueWithTeacher,
   );
@@ -104,7 +108,7 @@ sessionRouter
   .route("/assignTeacher")
   .post(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     validate(assignTeacherSchema),
     acceptSessionReq,
   );
@@ -112,7 +116,7 @@ sessionRouter
   .route("/replaceTeacher")
   .post(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     validate(replaceSessionInfoTeacherSchema),
     replaceSessionInfoTeacher,
   );
@@ -120,14 +124,14 @@ sessionRouter
   .route("/rescheduleRequests")
   .get(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     getAllRescheduleRequestsForAdmin,
   );
 sessionRouter
   .route("/createSession")
   .post(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     validate(createSessionByAdminSchema),
     createSessionAdmin,
   );
@@ -135,7 +139,7 @@ sessionRouter
   .route("/updateSessionContinuity")
   .post(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     validate(updateSessionContinuityByAdmin),
     updateContinueWithTeacherAdmin,
   );
@@ -143,20 +147,28 @@ sessionRouter
   .route("/deleteSessionContinuity/:id")
   .delete(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     deleteSessionInfoForAdmin,
   );
 sessionRouter
   .route("/:id")
-  .get(protectTeacher, setUserOrTeacherId, getOneSessionInfo)
-  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateSessionForAdmin)
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteSession);
+  .get(protectTeacher, setUserOrTeacherId as RequestHandler, getOneSessionInfo)
+  .patch(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    updateSessionForAdmin,
+  )
+  .delete(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    deleteSession,
+  );
 sessionRouter
   .route("/")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
-    restrictTo(RoleType.ADMIN),
+    setUserOrTeacherId as RequestHandler,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     getAllSessionsByStatus,
   );
 export default sessionRouter;

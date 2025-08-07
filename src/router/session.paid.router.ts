@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import { protectUser, setUserOrTeacherId } from "../controller/user.controller";
 import { protectTeacher } from "../controller/teacher.controller";
 import {
@@ -18,7 +18,7 @@ paidSessionRouter
   .route("/request")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(createSessionRequestSchema),
     requestSession(SessionType.PAID),
   );
@@ -26,14 +26,14 @@ paidSessionRouter
   .route("/available")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     getAllAvailableSessionsReq(SessionType.PAID),
   );
 paidSessionRouter
   .route("/accept")
   .post(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(acceptSessionRequestSchema),
     acceptSessionReq,
   );

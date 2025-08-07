@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import { protectTeacher } from "../controller/teacher.controller";
 import { setUserOrTeacherId } from "../controller/user.controller";
 import {
@@ -18,27 +18,39 @@ const payoutRouter = Router();
 
 payoutRouter
   .route("/teacherPayout")
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getTeacherPayouts);
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getTeacherPayouts,
+  );
 
 payoutRouter
   .route("/")
   .post(
     protectTeacher,
-    setUserOrTeacherId,
-    restrictTo(RoleType.ADMIN),
+    setUserOrTeacherId as RequestHandler,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     validate(createPayoutSchema),
     createPayout,
   )
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllPayouts);
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getAllPayouts,
+  );
 
 payoutRouter
   .route("/:id")
-  .get(protectTeacher, setUserOrTeacherId, getOnePayout)
+  .get(protectTeacher, setUserOrTeacherId as RequestHandler, getOnePayout)
   .patch(
     protectTeacher,
-    setUserOrTeacherId,
-    restrictTo(RoleType.ADMIN),
+    setUserOrTeacherId as RequestHandler,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     updateAmountPayout,
   )
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deletePayout);
+  .delete(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    deletePayout,
+  );
 export default payoutRouter;

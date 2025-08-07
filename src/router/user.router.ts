@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import {
   checkJWT,
   createUser,
@@ -29,7 +29,7 @@ import {
   updateSessionReqDate,
 } from "../controller/sessionReq.controller";
 import { protectTeacher } from "../controller/teacher.controller";
-import { restrictTo } from "../controller/auth.controller";
+import { IRequestWithUser, restrictTo } from "../controller/auth.controller";
 import { RoleType } from "../db/models/teacher.model";
 import validate from "../middleware/validate";
 import { createUserSchema } from "../schema/user.schema";
@@ -50,107 +50,137 @@ userRouter
   .route("/")
   .post(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
+    restrictTo(RoleType.ADMIN) as RequestHandler,
     validate(createUserSchema),
     createUser,
   )
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllUsers);
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getAllUsers,
+  );
 userRouter
   .route("/me")
-  .get(protectUser, setUserIdToParams, getUser)
-  .patch(protectUser, setUserIdToParams, updateUser);
+  .get(protectUser, setUserIdToParams as RequestHandler, getUser)
+  .patch(protectUser, setUserIdToParams as RequestHandler, updateUser);
 userRouter.get(
   "/mySubscription",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   getMySubscription,
 );
 userRouter.get(
   "/mySessionReq",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   getUserSessionReq,
 );
 userRouter
   .route("/requestReschedule")
-  .post(protectUser, setUserOrTeacherId, requestSessionReschedule)
-  .get(protectUser, setUserOrTeacherId, getMySessionRescheduleRequests);
+  .post(
+    protectUser,
+    setUserOrTeacherId as RequestHandler,
+    requestSessionReschedule,
+  )
+  .get(
+    protectUser,
+    setUserOrTeacherId as RequestHandler,
+    getMySessionRescheduleRequests,
+  );
 userRouter
   .route("/cancelRescheduleRequest")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(cancelRequestSchema),
     cancelSessionRescheduleRequest,
   );
 userRouter
   .route("/receivedRescheduleRequests")
-  .get(protectUser, setUserOrTeacherId, getReceivedSessionRescheduleRequests);
+  .get(
+    protectUser,
+    setUserOrTeacherId as RequestHandler,
+    getReceivedSessionRescheduleRequests,
+  );
 userRouter
   .route("/allRescheduleRequests")
-  .get(protectUser, setUserOrTeacherId, getAllSessionRescheduleRequests);
+  .get(
+    protectUser,
+    setUserOrTeacherId as RequestHandler,
+    getAllSessionRescheduleRequests,
+  );
 userRouter
   .route("/acceptReschedule")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED),
   );
 userRouter
   .route("/declineReschedule")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     updateStatusSessionReschedule(RescheduleRequestStatus.DECLINED),
   );
 userRouter.patch(
   "/mySessionReq/:id",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   updateSessionReqDate,
 );
 userRouter.get(
   "/myHistorySessions",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   getMyHistorySessions,
 );
 userRouter.get(
   "/remainSessions",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   getUserRemainSessions,
 );
 userRouter.get(
   "/upcomingSession",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   getUserUpcomingSession,
 );
 userRouter.get(
   "/ongoingSession",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   getUserOngoingSession,
 );
 userRouter.get(
   "/myLatestSession",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   getUserLatestSession,
 );
-userRouter.get("/myReports", protectUser, setUserOrTeacherId, getUserReports);
-userRouter.get("/mySessions", protectUser, setUserOrTeacherId, getUserSessions);
+userRouter.get(
+  "/myReports",
+  protectUser,
+  setUserOrTeacherId as RequestHandler,
+  getUserReports,
+);
+userRouter.get(
+  "/mySessions",
+  protectUser,
+  setUserOrTeacherId as RequestHandler,
+  getUserSessions,
+);
 userRouter.get(
   "/myStatistics",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   getUserStatistics,
 );
 userRouter.get(
   "/myContinueStatus",
   protectUser,
-  setUserOrTeacherId,
+  setUserOrTeacherId as RequestHandler,
   getUserContinueStatus,
 );
 userRouter.get("/updateMyPlan", protectUser, updateUserPlan);
@@ -159,11 +189,15 @@ userRouter
   .route("/:id")
   .patch(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
-    setUserOrTeacherId,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    setUserOrTeacherId as RequestHandler,
     updateUser,
   )
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteUser)
+  .delete(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    deleteUser,
+  )
   .get(protectTeacher, getUser);
 
 export default userRouter;

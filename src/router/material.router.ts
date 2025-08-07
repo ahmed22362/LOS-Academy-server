@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import memoryMulter from "../middleware/multer";
 import { protectTeacher } from "../controller/teacher.controller";
 import { setUserOrTeacherId } from "../controller/user.controller";
@@ -21,14 +21,14 @@ const upload = memoryMulter;
 
 materialRouter
   .route("/myMaterial")
-  .get(protectTeacher, setUserOrTeacherId, getMyMaterial);
+  .get(protectTeacher, setUserOrTeacherId as RequestHandler, getMyMaterial);
 
 materialRouter
   .route("/")
   .post(
     upload.single("file"),
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     uploadToB2,
     validate(createMaterialSchema),
     createMaterial,
@@ -38,5 +38,9 @@ materialRouter
   .route("/:id")
   .get(protectTeacher, getOneMaterial)
   .patch(protectTeacher, updateOneMaterial)
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteOneMaterial);
+  .delete(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    deleteOneMaterial,
+  );
 export default materialRouter;

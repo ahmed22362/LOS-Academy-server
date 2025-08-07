@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import {
   checkJWT,
   createTeacher,
@@ -50,10 +50,10 @@ const teacherRouter = Router();
 
 teacherRouter
   .route("/me")
-  .get(protectTeacher, setUserIdToParams, getTeacher)
+  .get(protectTeacher, setUserIdToParams as RequestHandler, getTeacher)
   .patch(
     protectTeacher,
-    setUserIdToParams,
+    setUserIdToParams as RequestHandler,
     validate(updateMeSchema),
     updateMeTeacher,
   );
@@ -61,15 +61,23 @@ teacherRouter
 teacherRouter.route("/login").post(validate(loginTeacherSchema), loginTeacher);
 teacherRouter
   .route("/adminBalance")
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAdminBalance);
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getAdminBalance,
+  );
 teacherRouter
   .route("/totalRecordsOf")
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getUsersAndTeachersCount);
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getUsersAndTeachersCount,
+  );
 teacherRouter
   .route("/sessions")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(isTeacherIdExist),
     getTeacherAllSessions,
   );
@@ -77,7 +85,7 @@ teacherRouter
   .route("/remainSessions")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(isTeacherIdExist),
     getTeacherRemainSessions,
   );
@@ -85,7 +93,7 @@ teacherRouter
   .route("/takenSessions")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(isTeacherIdExist),
     getTeacherTakenSessions,
   );
@@ -93,7 +101,7 @@ teacherRouter
   .route("/upcomingSession")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(isTeacherIdExist),
     getTeacherUpcomingSession,
   );
@@ -102,7 +110,7 @@ teacherRouter
   .route("/ongoingSession")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(isTeacherIdExist),
     getTeacherOngoingSession,
   );
@@ -110,32 +118,48 @@ teacherRouter
   .route("/myLatestTakenSession")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(isTeacherIdExist),
     getTeacherLatestTakenSession,
   );
 teacherRouter
   .route("/myReports")
-  .get(protectTeacher, setUserOrTeacherId, getTeacherReports);
+  .get(protectTeacher, setUserOrTeacherId as RequestHandler, getTeacherReports);
 teacherRouter
   .route("/myStudents")
-  .get(protectTeacher, setUserOrTeacherId, getTeacherAllStudents);
+  .get(
+    protectTeacher,
+    setUserOrTeacherId as RequestHandler,
+    getTeacherAllStudents,
+  );
 teacherRouter
   .route("/myPayouts")
-  .get(protectTeacher, setUserOrTeacherId, getMyPayouts);
+  .get(protectTeacher, setUserOrTeacherId as RequestHandler, getMyPayouts);
 teacherRouter
   .route("/myStatistics")
-  .get(protectTeacher, setUserOrTeacherId, getMySessionsStats);
+  .get(
+    protectTeacher,
+    setUserOrTeacherId as RequestHandler,
+    getMySessionsStats,
+  );
 teacherRouter
   .route("/requestReschedule")
-  .post(protectTeacher, setUserOrTeacherId, requestSessionReschedule)
-  .get(protectTeacher, setUserOrTeacherId, getSessionRescheduleRequests);
+  .post(
+    protectTeacher,
+    setUserOrTeacherId as RequestHandler,
+    requestSessionReschedule,
+  )
+  .get(
+    protectTeacher,
+    setUserOrTeacherId as RequestHandler,
+    getSessionRescheduleRequests,
+  );
 
 teacherRouter
   .route("/cancelRescheduleRequest")
   .post(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(cancelRequestSchema),
     cancelSessionRescheduleRequest,
   );
@@ -143,27 +167,35 @@ teacherRouter
   .route("/receivedRescheduleRequests")
   .get(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     getReceivedSessionRescheduleRequests,
   );
 teacherRouter
   .route("/allRescheduleRequests")
-  .get(protectTeacher, setUserOrTeacherId, getAllSessionRescheduleRequests);
+  .get(
+    protectTeacher,
+    setUserOrTeacherId as RequestHandler,
+    getAllSessionRescheduleRequests,
+  );
 teacherRouter
   .route("/acceptReschedule")
   .post(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     updateStatusSessionReschedule(RescheduleRequestStatus.APPROVED),
   );
 teacherRouter
   .route("/myMonthlyReport")
-  .get(protectTeacher, setUserOrTeacherId, getTeacherMonthlyReport);
+  .get(
+    protectTeacher,
+    setUserOrTeacherId as RequestHandler,
+    getTeacherMonthlyReport,
+  );
 teacherRouter
   .route("/declineReschedule")
   .post(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     updateStatusSessionReschedule(RescheduleRequestStatus.DECLINED),
   );
 teacherRouter.get("/checkJWT", checkJWT);
@@ -171,10 +203,22 @@ teacherRouter.get("/checkJWT", checkJWT);
 teacherRouter
   .route("/:id")
   .get(protectTeacher, getTeacher)
-  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateTeacher)
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteTeacher);
+  .patch(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    updateTeacher,
+  )
+  .delete(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    deleteTeacher,
+  );
 teacherRouter
   .route("/")
   .post(validate(createTeacherSchema), createTeacher)
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllTeachers);
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getAllTeachers,
+  );
 export default teacherRouter;

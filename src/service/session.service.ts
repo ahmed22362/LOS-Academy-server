@@ -1,36 +1,36 @@
-import { FindOptions, Op, Transaction, WhereOptions, fn, col } from "sequelize";
-import { sequelize } from "../db/sequelize";
-import Session, { SessionStatus } from "../db/models/session.model";
-import { SessionType } from "../db/models/session.model";
-import AppError from "../utils/AppError";
-import { updateModelService } from "./factory.services";
-import { DATE_PATTERN, FREE_SESSION_DURATION } from "./sessionReq.service";
+import { FindOptions, Op, Transaction, WhereOptions, fn, col } from 'sequelize';
+import { sequelize } from '../db/sequelize';
+import Session, { SessionStatus } from '../db/models/session.model';
+import { SessionType } from '../db/models/session.model';
+import AppError from '../utils/AppError';
+import { updateModelService } from './factory.services';
+import { DATE_PATTERN, FREE_SESSION_DURATION } from './sessionReq.service';
 import {
   getTeacherSessionInfoService,
   getUserSessionInfoService,
-} from "./sessionInfo.service";
-import SessionInfo from "../db/models/sessionInfo.model";
-import ZoomService from "../connect/zoom";
-import Teacher from "../db/models/teacher.model";
-import User from "../db/models/user.model";
-import { getUserAttr } from "../controller/user.controller";
-import { getTeacherAtt } from "../controller/teacher.controller";
+} from './sessionInfo.service';
+import SessionInfo from '../db/models/sessionInfo.model';
+import ZoomService from '../connect/zoom';
+import Teacher from '../db/models/teacher.model';
+import User from '../db/models/user.model';
+import { getUserAttr } from '../controller/user.controller';
+import { getTeacherAtt } from '../controller/teacher.controller';
 import {
   DeleteSessionJobs,
   scheduleSessionReminderMailJob,
   scheduleSessionStartReminderMailJob,
   scheduleUpdateSessionToFinished,
   scheduleUpdateSessionToOngoing,
-} from "../utils/scheduler";
-import { THREE_MINUTES_IN_MILLISECONDS } from "../controller/session.controller";
+} from '../utils/scheduler';
+import { THREE_MINUTES_IN_MILLISECONDS } from '../controller/session.controller';
 import {
   getTeacherByIdService,
   updateTeacherBalance,
   updateTeacherCommittedMins,
-} from "./teacher.service";
-import { updateUserRemainSessionService } from "./user.service";
-import logger from "../utils/logger";
-import SessionReq from "../db/models/sessionReq.model";
+} from './teacher.service';
+import { updateUserRemainSessionService } from './user.service';
+import logger from '../utils/logger';
+import SessionReq from '../db/models/sessionReq.model';
 
 export interface IInfoBody {
   userId: string;
@@ -71,8 +71,8 @@ export interface ISessionDetails {
   meetingLink: string;
 }
 export enum OrderAssociation {
-  DESC = "DESC",
-  ASC = "ASC",
+  DESC = 'DESC',
+  ASC = 'ASC',
 }
 export async function createFreeSessionService({
   sessionInfoId,
@@ -83,7 +83,7 @@ export async function createFreeSessionService({
   sessionDate: Date;
   transaction?: Transaction;
 }) {
-  const start_time = sessionDate.toISOString().split("T")[1];
+  const start_time = sessionDate.toISOString().split('T')[1];
   const sessionBody: any = {
     sessionDate,
     sessionDuration: FREE_SESSION_DURATION,
@@ -186,7 +186,7 @@ export async function updateSessionService({
   transaction?: Transaction;
 }) {
   const cleanedData = Object.fromEntries(
-    Object.entries(updatedData).filter(([key, value]) => value !== undefined),
+    Object.entries(updatedData).filter(([key, value]) => value !== undefined)
   );
   const session = await updateModelService({
     ModelClass: Session,
@@ -312,7 +312,7 @@ export async function getAllSessionsServiceByStatus({
     include: [
       {
         model: SessionInfo,
-        attributes: ["userId", "teacherId"],
+        attributes: ['userId', 'teacherId'],
         required: true,
         include: [
           {
@@ -327,7 +327,7 @@ export async function getAllSessionsServiceByStatus({
     where,
     limit,
     offset: offset ?? 0,
-    order: [["sessionDate", orderBy ?? "DESC"]],
+    order: [['sessionDate', orderBy ?? 'DESC']],
   });
   if (!sessions) {
     throw new AppError(400, "Can't get sessions!");
@@ -343,7 +343,7 @@ export async function getOneSessionDetailsService({
     include: [
       {
         model: SessionInfo,
-        attributes: ["userId", "teacherId"],
+        attributes: ['userId', 'teacherId'],
         include: [
           { model: User, attributes: getUserAttr },
           { model: Teacher, attributes: getTeacherAtt },
@@ -363,7 +363,7 @@ export async function getOneSessionService({
 }) {
   const session = await Session.findByPk(sessionId);
   if (!session) {
-    throw new AppError(404, "There is no session with this id!");
+    throw new AppError(404, 'There is no session with this id!');
   }
   return session;
 }
@@ -376,7 +376,7 @@ export async function getOneSessionWithSessionInfoOnlyService({
     include: [{ model: SessionInfo }],
   });
   if (!session) {
-    throw new AppError(404, "There is no session with this id!");
+    throw new AppError(404, 'There is no session with this id!');
   }
   return session;
 }
@@ -592,12 +592,12 @@ export async function updateSessionTeacherAttendanceService({
     sessionId,
   });
   if (!exist) {
-    throw new AppError(404, "The Teacher is not assign to this session");
+    throw new AppError(404, 'The Teacher is not assign to this session');
   }
   if (!canAttendSession(session.sessionDate)) {
     throw new AppError(
       400,
-      "Can't update attendance now because 15 mins passed!",
+      "Can't update attendance now because 15 mins passed!"
     );
   }
   session.teacherAttended = attend;
@@ -620,12 +620,12 @@ export async function updateSessionStudentAttendanceService({
     sessionId,
   });
   if (!exist) {
-    throw new AppError(404, "The student is not assign to this session");
+    throw new AppError(404, 'The student is not assign to this session');
   }
   if (!canAttendSession(session.sessionDate)) {
     throw new AppError(
       400,
-      "Can't update attendance now because 15 mins passed!",
+      "Can't update attendance now because 15 mins passed!"
     );
   }
   session.studentAttended = attend;
@@ -651,16 +651,16 @@ export async function getTeacherSessionsStatisticsService({
   });
   const sessionInfoIds = sessionInfo.map((info) => info.id);
   const stats = await Session.count({
-    attributes: ["status"],
-    group: "status",
+    attributes: ['status'],
+    group: 'status',
     where: { sessionInfoId: { [Op.in]: sessionInfoIds } },
   });
   return stats;
 }
 export async function getAdminSessionsStatisticsService() {
   const sessionStats = await Session.count({
-    attributes: ["status"],
-    group: "status",
+    attributes: ['status'],
+    group: 'status',
   });
   return sessionStats;
 }
@@ -698,7 +698,7 @@ export async function handleSessionFinishedService({
   let updatedSession;
   try {
     if (!session.studentAttended && !session.teacherAttended) {
-      logger.info("Both Absent!");
+      logger.info('Both Absent!');
       updatedSession = await updateSessionService({
         sessionId,
         updatedData: { status: SessionStatus.BOTH_ABSENT },
@@ -717,7 +717,7 @@ export async function handleSessionFinishedService({
         });
       }
     } else if (!session.studentAttended) {
-      logger.info("student absent");
+      logger.info('student absent');
       updatedSession = await updateSessionService({
         sessionId,
         updatedData: { status: SessionStatus.USER_ABSENT },
@@ -736,7 +736,7 @@ export async function handleSessionFinishedService({
         });
       }
     } else if (!session.teacherAttended) {
-      logger.info("teacher absent");
+      logger.info('teacher absent');
       updatedSession = await updateSessionService({
         sessionId,
         updatedData: { status: SessionStatus.TEACHER_ABSENT },
@@ -748,7 +748,7 @@ export async function handleSessionFinishedService({
         transaction,
       });
     } else if (session.studentAttended && session.teacherAttended) {
-      logger.info("both attended");
+      logger.info('both attended');
       updatedSession = await updateSessionService({
         sessionId,
         updatedData: { status: SessionStatus.TAKEN },
@@ -802,13 +802,13 @@ export async function allTeacherOrUserSessionsService({
     sessionInfo = await getTeacherSessionInfoService({
       teacherId,
     });
-    idAttribute = "userId";
+    idAttribute = 'userId';
     includeObj = { model: User, attributes: getUserAttr };
   } else if (userId) {
     sessionInfo = await getUserSessionInfoService({
       userId,
     });
-    idAttribute = "teacherId";
+    idAttribute = 'teacherId';
     includeObj = { model: Teacher, attributes: getTeacherAtt };
   } else {
     return;
@@ -833,11 +833,11 @@ export async function allTeacherOrUserSessionsService({
       where,
       limit,
       offset,
-      order: [["sessionDate", orderAssociation]],
+      order: [['sessionDate', orderAssociation]],
     },
   });
   if (!sessions) {
-    throw new AppError(400, "Error getting sessions");
+    throw new AppError(400, 'Error getting sessions');
   }
   return sessions;
 }
@@ -893,19 +893,19 @@ function generateSessions({
       400,
       `Your request has dates that is not equal to your sessions per week plan 
       your session per week is:${sessionsPerWeek} 
-      you dates you provided length:${sessionDates.length}and are ${sessionDates}`,
+      you dates you provided length:${sessionDates.length}and are ${sessionDates}`
     );
   }
   for (let session = 0; session < sessionCount; session++) {
     const weekIndex = Math.floor(session / sessionsPerWeek);
     const date = sessionDates[session % sessionsPerWeek];
     if (!date) {
-      throw new AppError(400, "date is not defined while generating sessions!");
+      throw new AppError(400, 'date is not defined while generating sessions!');
     }
     const timestamp = date?.valueOf();
     const newDate = new Date(timestamp + weekIndex * milSecToWeek);
 
-    const sessionTime = newDate.toISOString().split("T")[1];
+    const sessionTime = newDate.toISOString().split('T')[1];
 
     sessions.push({
       sessionDate: newDate,
@@ -920,17 +920,17 @@ function generateSessions({
 export function isSessionWithinTimeRange(sessionDate: Date): boolean {
   const currentTime: Date = new Date();
   const timeRangeStart: Date = new Date(
-    sessionDate.getTime() - THREE_MINUTES_IN_MILLISECONDS,
+    sessionDate.getTime() - THREE_MINUTES_IN_MILLISECONDS
   );
   return timeRangeStart.getTime() <= currentTime.getTime();
 }
 export function isSessionAfterItsTimeRange(
   sessionDate: Date,
-  sessionDuration: number,
+  sessionDuration: number
 ): boolean {
   const currentTime: Date = new Date();
   const timeRangeStart: Date = new Date(
-    currentTime.getMinutes() + sessionDuration,
+    currentTime.getMinutes() + sessionDuration
   );
   return timeRangeStart.getTime() >= sessionDate.getTime();
 }
@@ -946,7 +946,7 @@ export async function isThereOngoingSessionForTheSameTeacher({
   if (sessions?.rows && sessions.count > 0) {
     throw new AppError(
       400,
-      "Can't update session to be ongoing while there is another ongoing one!",
+      "Can't update session to be ongoing while there is another ongoing one!"
     );
   }
   return false;
@@ -958,7 +958,7 @@ export async function getUserSessionStats({ userId }: { userId: string }) {
   const sessionInfoIds = sessionInfo.map((info) => info.id);
 
   const { rows, count } = (await Session.findAndCountAll({
-    attributes: ["status", [fn("COUNT", col("status")), "count"]],
+    attributes: ['status', [fn('COUNT', col('status')), 'count']],
     where: {
       sessionInfoId: {
         [Op.in]: sessionInfoIds,
@@ -968,7 +968,7 @@ export async function getUserSessionStats({ userId }: { userId: string }) {
         { status: SessionStatus.USER_ABSENT },
       ],
     },
-    group: ["status"],
+    group: ['status'],
     subQuery: false,
     raw: true,
   })) as any;
@@ -1016,49 +1016,55 @@ export async function isTeacherHasOverlappingSessions({
   teacherId,
   wantedSessionDates,
   wantedSessionDuration,
+  sessionIdToSkip,
 }: {
   teacherId: string;
   wantedSessionDates: Date[];
   wantedSessionDuration: number;
+  sessionIdToSkip?: number;
 }) {
   const sessions = await getTeacherRemainSessionsService({ teacherId });
   const teacherSessions = sessions?.rows;
+
   if (!Array.isArray(teacherSessions)) {
     throw new AppError(400, "Can't get teacher sessions");
   }
 
-  // Sort all sessions by start time
-  teacherSessions.sort(
-    (a, b) => a.sessionDate.getTime() - b.sessionDate.getTime(),
-  );
-  // Check each wanted date
-  for (let wantedDate of wantedSessionDates) {
-    // Get wanted range for overlapping sessions
+  const MS_IN_MINUTE = 60 * 1000;
+  const wantedDurationMs = wantedSessionDuration * MS_IN_MINUTE;
+  for (const wantedDate of wantedSessionDates) {
     const wantedStart = wantedDate.getTime();
-    const wantedEnd =
-      wantedDate.getTime() + wantedSessionDuration * MS_IN_MINUTE;
-    // Binary search
-    let lowerIdx = 0;
-    let upperIdx = teacherSessions.length - 1;
+    const wantedEnd = wantedStart + wantedDurationMs;
+    for (const session of teacherSessions) {
+      console.log('Sessiont:', session.id, sessionIdToSkip);
+      if (sessionIdToSkip && session.id === sessionIdToSkip) continue;
 
-    while (lowerIdx <= upperIdx) {
-      const midIdx = Math.floor((lowerIdx + upperIdx) / 2);
-      const session = teacherSessions[midIdx];
-      const sessionEndDate =
-        session.sessionDate.getTime() + session.sessionDuration * MS_IN_MINUTE;
-      if (wantedStart >= sessionEndDate) {
-        lowerIdx = midIdx + 1;
-      } else if (wantedEnd <= session.sessionDate.getTime()) {
-        upperIdx = midIdx - 1;
-      } else {
+      const sessionStart = session.sessionDate.getTime();
+      const sessionEnd = sessionStart + session.sessionDuration * MS_IN_MINUTE;
+      console.log(
+        `Checking overlap: wanted (${new Date(
+          wantedStart
+        ).toISOString()} - ${new Date(wantedEnd).toISOString()}) ` +
+          `vs existing (${new Date(sessionStart).toISOString()} -) ${new Date(
+            sessionEnd
+          ).toISOString()})`
+      );
+      if (wantedStart < sessionEnd && sessionStart < wantedEnd) {
         throw new AppError(
           400,
-          `Teacher has conflict in times with his sessions wantedDate: ${wantedDate}, session with conflict: ${session.sessionDate}`,
+          `Scheduling conflict: ` +
+            `New session (${new Date(wantedStart).toISOString()} - ${new Date(
+              wantedEnd
+            ).toISOString()}) ` +
+            `overlaps with existing session (${new Date(
+              sessionStart
+            ).toISOString()} - ${new Date(sessionEnd).toISOString()})`
         );
       }
     }
   }
-  return false;
+
+  return true;
 }
 export async function updateSessionServiceWithUserAndTeacherBalance({
   sessionId,
@@ -1155,7 +1161,7 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
       console.error("Can't update session status with unknown status!");
       throw new AppError(
         400,
-        "Can't update session status with unknown status!",
+        "Can't update session status with unknown status!"
       );
   }
 }

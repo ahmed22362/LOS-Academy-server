@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import {
   createFeedBack,
   deleteFeedBack,
@@ -21,16 +21,28 @@ feedBackRouter.route("/shown").get(getAllShownFeedbacks);
 feedBackRouter
   .route("/")
   .post(
-    protectUser,
-    setUserOrTeacherId,
+    protectUser as RequestHandler,
+    setUserOrTeacherId as RequestHandler,
     validate(createFeedbackSchema),
-    createFeedBack,
+    createFeedBack as RequestHandler,
   )
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllFeedBacks);
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getAllFeedBacks,
+  );
 feedBackRouter
   .route("/:id")
-  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateFeedBack)
+  .patch(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    updateFeedBack,
+  )
   .get(getFeedBack)
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteFeedBack);
+  .delete(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    deleteFeedBack,
+  );
 
 export default feedBackRouter;

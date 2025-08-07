@@ -1,35 +1,43 @@
-import { Router } from "express"
+import { RequestHandler, Router } from "express";
 import {
   createSubscription,
   deleteSubscription,
   getAllUsersSubscriptions,
   updateSubscription,
-} from "../controller/subscription.controller"
-import { protectUser, setUserOrTeacherId } from "../controller/user.controller"
-import { protectTeacher } from "../controller/teacher.controller"
-import { restrictTo } from "../controller/auth.controller"
-import validate from "../middleware/validate"
-import { RoleType } from "../db/models/teacher.model"
-import { createCustomSubscriptionSchema } from "../schema/subscription.schema"
-const subscriptionRouter = Router()
+} from "../controller/subscription.controller";
+import { protectUser, setUserOrTeacherId } from "../controller/user.controller";
+import { protectTeacher } from "../controller/teacher.controller";
+import { restrictTo } from "../controller/auth.controller";
+import validate from "../middleware/validate";
+import { RoleType } from "../db/models/teacher.model";
+import { createCustomSubscriptionSchema } from "../schema/subscription.schema";
+const subscriptionRouter = Router();
 
 subscriptionRouter
   .route("/")
   .post(
     protectUser,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(createCustomSubscriptionSchema),
-    createSubscription
+    createSubscription,
   )
   .get(
     protectTeacher,
-    setUserOrTeacherId,
-    restrictTo(RoleType.ADMIN),
-    getAllUsersSubscriptions
-  )
+    setUserOrTeacherId as RequestHandler,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getAllUsersSubscriptions,
+  );
 subscriptionRouter
   .route("/:id")
-  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateSubscription)
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteSubscription)
+  .patch(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    updateSubscription,
+  )
+  .delete(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    deleteSubscription,
+  );
 
-export default subscriptionRouter
+export default subscriptionRouter;

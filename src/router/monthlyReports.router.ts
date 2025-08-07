@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { RequestHandler, Router } from "express";
 import {
   createMonthlyReport,
   deleteMonthlyReport,
@@ -24,18 +24,30 @@ monthlyReportRouter
   .route("/")
   .post(
     protectTeacher,
-    setUserOrTeacherId,
+    setUserOrTeacherId as RequestHandler,
     validate(createMonthlyReportSchema),
     createMonthlyReport,
   )
-  .get(protectTeacher, restrictTo(RoleType.ADMIN), getAllMonthlyReports);
+  .get(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler,
+    getAllMonthlyReports,
+  );
 monthlyReportRouter
   .route("/user")
-  .get(protectUser, setUserOrTeacherId, getUserMonthlyReport);
+  .get(protectUser, setUserOrTeacherId as RequestHandler, getUserMonthlyReport);
 monthlyReportRouter
   .route("/:id")
-  .patch(protectTeacher, setUserOrTeacherId, updateMonthlyReport)
+  .patch(
+    protectTeacher,
+    setUserOrTeacherId as RequestHandler,
+    updateMonthlyReport,
+  )
   .get(getMonthlyReport)
-  .delete(protectTeacher, setUserOrTeacherId, deleteMonthlyReport);
+  .delete(
+    protectTeacher,
+    setUserOrTeacherId as RequestHandler,
+    deleteMonthlyReport,
+  );
 
 export default monthlyReportRouter;

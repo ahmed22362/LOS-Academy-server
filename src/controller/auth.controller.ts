@@ -1,28 +1,33 @@
-import { Response, NextFunction, CookieOptions, Request } from "express";
-import catchAsync from "../utils/catchAsync";
-import User, { IUserInput } from "../db/models/user.model";
-import { LoginUserSchemaBody } from "../schema/user.schema";
-import AppError from "../utils/AppError";
-import { singJWTToken, verifyToken } from "../utils/jwt";
-import Mail from "../connect/sendMail";
-import crypto from "crypto";
-import dotenv from "dotenv";
-import bcrypt from "bcrypt";
+import {
+  Response,
+  NextFunction,
+  CookieOptions,
+  Request,
+  RequestHandler,
+} from 'express';
+import catchAsync from '../utils/catchAsync';
+import User, { IUserInput } from '../db/models/user.model';
+import { LoginUserSchemaBody } from '../schema/user.schema';
+import AppError from '../utils/AppError';
+import { singJWTToken, verifyToken } from '../utils/jwt';
+import Mail from '../connect/sendMail';
+import crypto from 'crypto';
+import dotenv from 'dotenv';
 import {
   UserResponse,
   createUserService,
   getUserByResetTokenService,
   getUserByService,
   updateUserService,
-} from "../service/user.service";
+} from '../service/user.service';
 import {
   ModelClass,
   getModelByEmailService,
   getModelByIdService,
-} from "../service/factory.services";
-import Teacher from "../db/models/teacher.model";
-import { createStripeCustomer } from "../service/stripe.service";
-import { scheduleVerifyMailJob } from "../utils/scheduler";
+} from '../service/factory.services';
+import Teacher from '../db/models/teacher.model';
+import { createStripeCustomer } from '../service/stripe.service';
+import { scheduleVerifyMailJob } from '../utils/scheduler';
 dotenv.config();
 
 export interface IRequestWithUser extends Request {
@@ -58,25 +63,25 @@ const createSendToken = ({
   };
 
   // local host is not https so for test purpose we will make this if statement
-  if (process.env.NODE_ENV?.trim() === "production") {
+  if (process.env.NODE_ENV?.trim() === 'production') {
     cookieOptions.secure = true;
   }
 
-  res.cookie("token", token, cookieOptions);
+  res.cookie('token', token, cookieOptions);
   if (statusCode) {
     return res
       .status(statusCode)
-      .json({ status: "success", token, data: user });
+      .json({ status: 'success', token, data: user });
   } else if (redirect) {
     return res.redirect(redirect);
   }
-  res.status(200).json({ status: "success", token, data: user });
+  res.status(200).json({ status: 'success', token, data: user });
 };
 
 export const signup = catchAsync(async function (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   const { name, email, password, phone, age, gender }: IUserInput = req.body;
   const stripeCustomer = await createStripeCustomer({
@@ -96,7 +101,7 @@ export const signup = catchAsync(async function (
 
   const newUser = await createUserService({ userData });
   if (!newUser) {
-    return next(new AppError(400, "Cant signup now try again later"));
+    return next(new AppError(400, 'Cant signup now try again later'));
   }
   const userRes: UserResponse = {
     id: newUser.id,
@@ -111,14 +116,14 @@ export const signup = catchAsync(async function (
   };
   await createAndSendConfirmMail(newUser, req);
   res.status(201).json({
-    status: "success",
-    message: "Confirmation Mail sent, Now confirm your mail so you can log in!",
+    status: 'success',
+    message: 'Confirmation Mail sent, Now confirm your mail so you can log in!',
     data: userRes,
   });
 });
 
 export const checkToken = (req: Request, res: Response, next: NextFunction) => {
-  res.send(singJWTToken({ test: "test" }));
+  res.send(singJWTToken({ test: 'test' }));
 };
 
 export const login = (Model: ModelClass) =>
@@ -131,14 +136,14 @@ export const login = (Model: ModelClass) =>
       email,
     })) as Teacher | User;
     if (!model || !(await model.correctPassword(password, model.password))) {
-      return next(new AppError(401, "There email or password is not correct!"));
+      return next(new AppError(401, 'There email or password is not correct!'));
     }
     if (model instanceof User && !model.verified) {
       return next(
         new AppError(
           403,
-          "Can't log in before you verify you email if you miss the first mail you can always resend it!",
-        ),
+          "Can't log in before you verify you email if you miss the first mail you can always resend it!"
+        )
       );
     }
     if (model instanceof User) {
@@ -162,24 +167,24 @@ export const protect = (Model: ModelClass) =>
   catchAsync(
     async (req: IRequestWithUser, res: Response, next: NextFunction) => {
       if (!Model) {
-        return next(new AppError(404, "Please provide model to search with!"));
+        return next(new AppError(404, 'Please provide model to search with!'));
       }
       // 1) Getting token and check if it's there
       let token: string | undefined;
       if (
         req.headers.authorization &&
-        req.headers.authorization.startsWith("Bearer")
+        req.headers.authorization.startsWith('Bearer')
       ) {
-        token = req.headers.authorization.split(" ")[1];
+        token = req.headers.authorization.split(' ')[1];
       } else if (req.cookies.token !== undefined) {
         token = req.cookies.token;
       }
-      if (!token || token === "null") {
+      if (!token || token === 'null') {
         return next(
           new AppError(
             401,
-            "You are not logged in! Please log in to get access.",
-          ),
+            'You are not logged in! Please log in to get access.'
+          )
         );
       }
       // 2) Verification token
@@ -191,7 +196,7 @@ export const protect = (Model: ModelClass) =>
       })) as User | Teacher;
       if (!currentUser) {
         return next(
-          new AppError(401, "The user belonging to this token does not exist."),
+          new AppError(401, 'The user belonging to this token does not exist.')
         );
       }
 
@@ -200,8 +205,8 @@ export const protect = (Model: ModelClass) =>
         return next(
           new AppError(
             401,
-            "User recently changed password! Please log in again.",
-          ),
+            'User recently changed password! Please log in again.'
+          )
         );
       }
       // GRANT ACCESS TO PROTECTED ROUTE
@@ -213,7 +218,7 @@ export const protect = (Model: ModelClass) =>
         return next(new AppError(400, "Can't identify the object identity!"));
       }
       next();
-    },
+    }
   );
 
 export const restrictTo = (...roles: string[]) => {
@@ -237,14 +242,14 @@ export const forgetPassword = catchAsync(
     await user.save(); // saved the hashed token in the user document
     //send the mail
     const resetURL: string = `${req.protocol}://${req.get(
-      "host",
+      'host'
     )}/api/v1/user/auth/resetPassword/${resetToken}`;
     try {
       const mail = new Mail(user.email, `${user.name}`);
       await mail.sendForgetPassword({ link: resetURL });
       res
         .status(200)
-        .json({ status: "success", message: "token sent to mail" });
+        .json({ status: 'success', message: 'token sent to mail' });
     } catch (error: any) {
       await updateUserService({
         userId: user.id,
@@ -256,35 +261,35 @@ export const forgetPassword = catchAsync(
       return next(
         new AppError(
           400,
-          "There are error while sending the mail. Try again later!: " +
-            error.message,
-        ),
+          'There are error while sending the mail. Try again later!: ' +
+            error.message
+        )
       );
     }
-  },
+  }
 );
 
 export const resetPassword = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { token, password, passwordConfirmation } = req.body;
     const hashedToken: string = crypto
-      .createHash("sha256")
+      .createHash('sha256')
       .update(token)
-      .digest("hex");
+      .digest('hex');
     const user = await getUserByResetTokenService({ hashedToken });
     if (!user) {
-      return res.render("resetPasswordError", { error: "Link is not valid!" });
+      return res.render('resetPasswordError', { error: 'Link is not valid!' });
     }
     if (user.passwordResetCode !== hashedToken) {
-      return res.render("resetPasswordError", { error: "Link is not valid!" });
+      return res.render('resetPasswordError', { error: 'Link is not valid!' });
     }
     // Validate the new password and confirmation
     if (password !== passwordConfirmation) {
-      return next(new AppError(400, "Passwords do not match!"));
+      return next(new AppError(400, 'Passwords do not match!'));
     }
     if (new Date() > (user.passwordResetExpire as Date)) {
-      return res.render("errorPage", {
-        message: "Looks like the this link has expired Request a new link",
+      return res.render('errorPage', {
+        message: 'Looks like the this link has expired Request a new link',
       });
     }
     await updateUserService({
@@ -298,8 +303,8 @@ export const resetPassword = catchAsync(
     // createSendToken(user, 200, res)
     // Set a success message
     // Redirect to the login page
-    res.render("resetPasswordSuccess");
-  },
+    res.render('resetPasswordSuccess');
+  }
 );
 export const updatePassword = catchAsync(
   async (req: IRequestWithUser, res: Response, next: NextFunction) => {
@@ -312,12 +317,12 @@ export const updatePassword = catchAsync(
       return next(
         new AppError(
           400,
-          "some thing wend wrong while getting the user in update password",
-        ),
+          'some thing wend wrong while getting the user in update password'
+        )
       );
     }
     if (!(await user.correctPassword(currentPassword, user.password))) {
-      return next(new AppError(400, "Your current password is wrong"));
+      return next(new AppError(400, 'Your current password is wrong'));
     }
     // 3) If so, update password
     const updatedUser = (await updateUserService({
@@ -329,29 +334,29 @@ export const updatePassword = catchAsync(
     // User.findByIdAndUpdate will NOT work as intended!
     // 4) Log user in, send JWT
     createSendToken({ user: updatedUser, statusCode: 200, res });
-  },
+  }
 );
 export const verifyMail = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { token } = req.query;
     if (!token) {
-      return res.render("errorPage", { message: "some thing wrong happened" });
+      return res.render('errorPage', { message: 'some thing wrong happened' });
     }
     const hashedToken: string = crypto
-      .createHash("sha256")
+      .createHash('sha256')
       .update(token as string)
-      .digest("hex");
+      .digest('hex');
     const user = await User.findOne({
       where: { OTPToken: hashedToken },
     });
     if (!user) {
-      return res.render("errorPage", {
-        message: "Looks like the link is invalid",
+      return res.render('errorPage', {
+        message: 'Looks like the link is invalid',
       });
     }
     if (new Date() > (user!.OTPexpireAt as Date)) {
-      return res.render("errorPage", {
-        message: "Looks like the link has expired! request a new one",
+      return res.render('errorPage', {
+        message: 'Looks like the link has expired! request a new one',
       });
     }
     await updateUserService({
@@ -362,12 +367,12 @@ export const verifyMail = catchAsync(
         OTPexpireAt: null,
       },
     });
-    res.render("successPage", {
-      successMessage: "Your Email confirmed successfully!",
-      redirectLink: "/",
-      to: "Home",
+    res.render('successPage', {
+      successMessage: 'Your Email confirmed successfully!',
+      redirectLink: '/',
+      to: 'Home',
     });
-  },
+  }
 );
 export const resendMailConfirmation = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -376,34 +381,31 @@ export const resendMailConfirmation = catchAsync(
       return next(
         new AppError(
           400,
-          "Please provide mail to resend token to confirm the mail",
-        ),
+          'Please provide mail to resend token to confirm the mail'
+        )
       );
     }
     const user = await getUserByService({ findOptions: { where: { email } } });
     if (!user) {
       return next(
-        new AppError(404, "Can't find user registered with this email!"),
+        new AppError(404, "Can't find user registered with this email!")
       );
     }
     if (user.verified) {
       return next(
-        new AppError(
-          400,
-          "User already verified his mail user can log in now!",
-        ),
+        new AppError(400, 'User already verified his mail user can log in now!')
       );
     }
     await createAndSendConfirmMail(user, req);
     res
       .status(200)
-      .json({ status: "success", message: "email send successfully" });
-  },
+      .json({ status: 'success', message: 'email send successfully' });
+  }
 );
 const createAndSendConfirmMail = async (user: User, req: Request) => {
   const code = await user.createVerifyEmailCode();
   const link: string = `${req.protocol}://${req.get(
-    "host",
+    'host'
   )}/api/v1/user/auth/verifyEmail?token=${code}`;
   scheduleVerifyMailJob({ to: user.email, name: user.name, link });
 };

@@ -1,32 +1,58 @@
-import { Router } from "express"
+import { RequestHandler, Router } from "express";
 import {
   createCourse,
   deleteCourse,
   getAllCourses,
   getCourse,
   updateCourse,
-} from "../controller/course.controller"
-import validate from "../middleware/validate"
-import { createCourseSchema } from "../schema/course.schema"
-import { protectTeacher } from "../controller/teacher.controller"
-import { restrictTo } from "../controller/auth.controller"
-import { RoleType } from "../db/models/teacher.model"
+} from "../controller/course.controller";
+import validate from "../middleware/validate";
+import { createCourseSchema } from "../schema/course.schema";
+import { protectTeacher } from "../controller/teacher.controller";
+import { IRequestWithUser, restrictTo } from "../controller/auth.controller";
+import { RoleType } from "../db/models/teacher.model";
 
-const courseRouter = Router()
+const courseRouter = Router();
 
 courseRouter
   .route("/")
   .post(
     protectTeacher,
-    restrictTo(RoleType.ADMIN),
+    restrictTo(RoleType.ADMIN) as RequestHandler<
+      {},
+      {},
+      {},
+      {},
+      IRequestWithUser
+    >,
     validate(createCourseSchema),
-    createCourse
+    createCourse,
   )
-  .get(getAllCourses)
+  .get(getAllCourses);
 courseRouter
   .route("/:id")
-  .patch(protectTeacher, restrictTo(RoleType.ADMIN), updateCourse)
+  .patch(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler<
+      {},
+      {},
+      {},
+      {},
+      IRequestWithUser
+    >,
+    updateCourse,
+  )
   .get(getCourse)
-  .delete(protectTeacher, restrictTo(RoleType.ADMIN), deleteCourse)
+  .delete(
+    protectTeacher,
+    restrictTo(RoleType.ADMIN) as RequestHandler<
+      {},
+      {},
+      {},
+      {},
+      IRequestWithUser
+    >,
+    deleteCourse,
+  );
 
-export default courseRouter
+export default courseRouter;
