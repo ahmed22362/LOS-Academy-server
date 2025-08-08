@@ -164,62 +164,57 @@ export const login = (Model: ModelClass) =>
   });
 
 export const protect = (Model: ModelClass) =>
-  catchAsync(
-    async (req: IRequestWithUser, res: Response, next: NextFunction) => {
-      if (!Model) {
-        return next(new AppError(404, 'Please provide model to search with!'));
-      }
-      // 1) Getting token and check if it's there
-      let token: string | undefined;
-      if (
-        req.headers.authorization &&
-        req.headers.authorization.startsWith('Bearer')
-      ) {
-        token = req.headers.authorization.split(' ')[1];
-      } else if (req.cookies.token !== undefined) {
-        token = req.cookies.token;
-      }
-      if (!token || token === 'null') {
-        return next(
-          new AppError(
-            401,
-            'You are not logged in! Please log in to get access.'
-          )
-        );
-      }
-      // 2) Verification token
-      const decoded = await verifyToken(token);
-      // 3) Check if user still exists
-      const currentUser = (await getModelByIdService({
-        ModelClass: Model,
-        Id: decoded.id,
-      })) as User | Teacher;
-      if (!currentUser) {
-        return next(
-          new AppError(401, 'The user belonging to this token does not exist.')
-        );
-      }
-
-      // 4) Check if user changed password after the token was issued
-      if (currentUser.changedPasswordAfter(decoded.iat)) {
-        return next(
-          new AppError(
-            401,
-            'User recently changed password! Please log in again.'
-          )
-        );
-      }
-      // GRANT ACCESS TO PROTECTED ROUTE
-      if (currentUser instanceof User) {
-        req.user = currentUser;
-      } else if (currentUser instanceof Teacher) {
-        req.teacher = currentUser;
-      } else {
-        return next(new AppError(400, "Can't identify the object identity!"));
-      }
-      next();
+  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    if (!Model) {
+      return next(new AppError(404, 'Please provide model to search with!'));
     }
-  );
+    // 1) Getting token and check if it's there
+    let token: string | undefined;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies.token !== undefined) {
+      token = req.cookies.token;
+    }
+    if (!token || token === 'null') {
+      return next(
+        new AppError(401, 'You are not logged in! Please log in to get access.')
+      );
+    }
+    // 2) Verification token
+    const decoded = await verifyToken(token);
+    // 3) Check if user still exists
+    const currentUser = (await getModelByIdService({
+      ModelClass: Model,
+      Id: decoded.id,
+    })) as User | Teacher;
+    if (!currentUser) {
+      return next(
+        new AppError(401, 'The user belonging to this token does not exist.')
+      );
+    }
+
+    // 4) Check if user changed password after the token was issued
+    if (currentUser.changedPasswordAfter(decoded.iat)) {
+      return next(
+        new AppError(
+          401,
+          'User recently changed password! Please log in again.'
+        )
+      );
+    }
+    // GRANT ACCESS TO PROTECTED ROUTE
+    if (currentUser instanceof User) {
+      req.user = currentUser;
+    } else if (currentUser instanceof Teacher) {
+      (req as IRequestWithUser).teacher = currentUser;
+    } else {
+      return next(new AppError(400, "Can't identify the object identity!"));
+    }
+    next();
+  });
 
 export const restrictTo = (...roles: string[]) => {
   return (req: IRequestWithUser, res: Response, next: NextFunction) => {
@@ -307,9 +302,9 @@ export const resetPassword = catchAsync(
   }
 );
 export const updatePassword = catchAsync(
-  async (req: IRequestWithUser, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     const { currentPassword, newPassword } = req.body;
-    const userId = req.user!.id;
+    const userId = (req.user as User)!.id;
     const user = await getUserByService({
       findOptions: { where: { id: userId } },
     });
@@ -326,7 +321,7 @@ export const updatePassword = catchAsync(
     }
     // 3) If so, update password
     const updatedUser = (await updateUserService({
-      userId: req.user!.id,
+      userId: (req.user as User)!.id,
       updatedData: {
         password: newPassword,
       },

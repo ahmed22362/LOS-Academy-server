@@ -7,3 +7,4 @@
 /models
 # Sequelize config Template 
 /config/config.json.template
+/build
