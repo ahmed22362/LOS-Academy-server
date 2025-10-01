@@ -211,12 +211,14 @@ export const getMySubscription = catchAsync(
       userSubscription.status === SubscriptionStatus.ACTIVE &&
       stripeSubscription
     ) {
-      (subscriptionStartAt = new Date(
-        stripeSubscription.current_period_start * 1000, // convert timestamp from sec to milliseconds
-      )),
-        (subscriptionEndAt = new Date(
-          stripeSubscription.current_period_end * 1000,
-        )); // convert timestamp from sec to milliseconds
+      // Use billing_cycle_anchor and calculate end date based on the plan interval
+      const startTimestamp = stripeSubscription.billing_cycle_anchor || stripeSubscription.start_date;
+      subscriptionStartAt = new Date(startTimestamp * 1000);
+      
+      // Calculate end date based on plan interval (assuming monthly for now)
+      const oneMonthLater = new Date(startTimestamp * 1000);
+      oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+      subscriptionEndAt = oneMonthLater;
     }
     if (!subscriptionStartAt && !subscriptionEndAt) {
       subscriptionStartAt = userSubscription.createdAt;

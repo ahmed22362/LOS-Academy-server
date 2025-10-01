@@ -3,9 +3,7 @@ import dotenv from "dotenv";
 import AppError from "../utils/AppError";
 dotenv.config();
 const sk_key = process.env.STRIPE_SECRET_KEY as string;
-export const stripe = new Stripe(sk_key, {
-  apiVersion: "2023-10-16",
-});
+export const stripe = new Stripe(sk_key);
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET as string;
 
