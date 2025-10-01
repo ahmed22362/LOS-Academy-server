@@ -3,17 +3,17 @@ import {
   IncludeOptions,
   Transaction,
   WhereOptions,
-} from "sequelize";
+} from 'sequelize';
 import sessionReport, {
   GradeOptions,
   ReportsCourses,
-} from "../db/models/report.model";
-import AppError from "../utils/AppError";
-import { updateModelService } from "./factory.services";
-import User from "../db/models/user.model";
-import Teacher from "../db/models/teacher.model";
-import { getUserAttr } from "../controller/user.controller";
-import { getTeacherAtt } from "../controller/teacher.controller";
+} from '../db/models/report.model';
+import AppError from '../utils/AppError';
+import { updateModelService } from './factory.services';
+import User from '../db/models/user.model';
+import Teacher from '../db/models/teacher.model';
+import { getUserAttr } from '../controller/user.controller';
+import { getTeacherAtt } from '../controller/teacher.controller';
 interface IReportBody {
   reportCourses: ReportsCourses;
   comment?: string;
@@ -81,7 +81,7 @@ export async function getSessionReportService({
 }) {
   const report = await sessionReport.findOne({ where: { sessionId } });
   if (!report) {
-    throw new AppError(404, "there is no report for this session!");
+    throw new AppError(404, 'there is no report for this session!');
   }
   return report;
 }
@@ -90,11 +90,13 @@ export async function getUserOrTeacherReportsService({
   teacherId,
   limit,
   offset,
+  order,
 }: {
   userId?: string;
   teacherId?: string;
   limit?: number;
   offset?: number;
+  order?: any[];
 }) {
   let where: WhereOptions = {};
   if (userId) {
@@ -106,6 +108,7 @@ export async function getUserOrTeacherReportsService({
     where,
     limit,
     offset: offset ?? 0,
+    order: order || [['createdAt', 'DESC']], // Default order by creation date
     include: [
       {
         model: userId ? Teacher : User,

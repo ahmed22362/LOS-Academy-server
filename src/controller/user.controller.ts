@@ -282,18 +282,33 @@ export const getMyHistorySessions = catchAsync(
 );
 export const getUserRemainSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { nLimit, offset } = getPaginationParameter(req);
-    const result = await getUserRemainSessionsService({
-      userId: req.body.userId,
-      limit: nLimit,
-      offset,
-    });
-    if (!result) {
-      return next(new AppError(400, "can't get this user Sessions"));
+    const userId = req.body.userId;
+    const user = await getUserByIdService({ userId });
+    if (!user) {
+      return next(new AppError(404, 'User not found'));
     }
-    res
-      .status(200)
-      .json({ status: 'success', length: result.count, data: result.rows });
+
+    // Return actual user credits and pending sessions for reference
+    const pendingSessions = await getUserRemainSessionsService({
+      userId,
+      limit: undefined,
+      offset: undefined,
+    });
+
+    if (!pendingSessions) {
+      return next(new AppError(400, "Can't get pending sessions"));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        remainingCredits: user.remainSessions,
+        pendingSessions: {
+          count: pendingSessions.count,
+          sessions: pendingSessions.rows,
+        },
+      },
+    });
   }
 );
 export const getUserUpcomingSession = catchAsync(
@@ -431,19 +446,39 @@ export function getPaginationParameter(req: Request) {
   let nLimit;
   let offset;
   let orderBy;
-  if (
-    req.query.orderBy &&
-    !Object.values(OrderAssociation).includes(
-      req.query.orderBy as OrderAssociation
-    )
-  ) {
-    throw new AppError(
-      400,
-      'Please enter order by one of those ["DESC", "ASC"] '
-    );
-  } else {
-    orderBy = req.query.orderBy as OrderAssociation;
+  let order;
+
+  // Handle order direction (DESC/ASC)
+  if (req.query.order) {
+    if (
+      !Object.values(OrderAssociation).includes(
+        req.query.order as OrderAssociation
+      )
+    ) {
+      throw new AppError(
+        400,
+        'Please enter order direction one of those ["DESC", "ASC"]'
+      );
+    }
+    order = req.query.order as OrderAssociation;
   }
+
+  // Handle orderBy field (for backward compatibility, also check if orderBy contains DESC/ASC)
+  if (req.query.orderBy) {
+    // Check if orderBy contains direction values (backward compatibility)
+    if (
+      Object.values(OrderAssociation).includes(
+        req.query.orderBy as OrderAssociation
+      )
+    ) {
+      order = req.query.orderBy as OrderAssociation;
+      orderBy = undefined; // Don't use orderBy as field name in this case
+    } else {
+      // orderBy contains field name
+      orderBy = req.query.orderBy as string;
+    }
+  }
+
   if (page) {
     nPage = Number(page);
   }
@@ -453,5 +488,5 @@ export function getPaginationParameter(req: Request) {
   if (page && limit) {
     offset = (nPage! - 1) * nLimit!;
   }
-  return { nLimit, nPage, offset, status, orderBy };
+  return { nLimit, nPage, offset, status, orderBy, order };
 }

@@ -1,11 +1,11 @@
-import { NextFunction, Response, Request } from "express";
-import catchAsync from "../utils/catchAsync";
+import { NextFunction, Response, Request } from 'express';
+import catchAsync from '../utils/catchAsync';
 import {
   getOneSessionWithSessionInfoOnlyService,
   teacherOwnThisSession,
   updateSessionService,
-} from "../service/session.service";
-import AppError from "../utils/AppError";
+} from '../service/session.service';
+import AppError from '../utils/AppError';
 import {
   createReportService,
   deleteReportService,
@@ -13,19 +13,16 @@ import {
   getReportService,
   getUserOrTeacherReportsService,
   updateReportService,
-} from "../service/report.service";
-import Session, {
-  SessionStatus,
-  SessionType,
-} from "../db/models/session.model";
-import User from "../db/models/user.model";
-import { getPaginationParameter, getUserAttr } from "./user.controller";
-import Teacher from "../db/models/teacher.model";
-import { getTeacherAtt } from "./teacher.controller";
-import logger from "../utils/logger";
-import { updateTeacherBalance } from "../service/teacher.service";
-import { sequelize } from "../db/sequelize";
-import { emitReportAddedForUser } from "../connect/socket";
+} from '../service/report.service';
+import { SessionStatus, SessionType } from '../db/models/session.model';
+import User from '../db/models/user.model';
+import { getPaginationParameter, getUserAttr } from './user.controller';
+import Teacher from '../db/models/teacher.model';
+import { getTeacherAtt } from './teacher.controller';
+import logger from '../utils/logger';
+import { updateTeacherBalance } from '../service/teacher.service';
+import { sequelize } from '../db/sequelize';
+import { emitReportAddedForUser } from '../connect/socket';
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -36,8 +33,8 @@ export const createReport = catchAsync(
       next(
         new AppError(
           401,
-          "Teacher does not own this session to write report for it",
-        ),
+          'Teacher does not own this session to write report for it'
+        )
       );
     }
     const session = await getOneSessionWithSessionInfoOnlyService({
@@ -50,8 +47,8 @@ export const createReport = catchAsync(
       return next(
         new AppError(
           400,
-          "Session already has report you can't add two reports for the same session!",
-        ),
+          "Session already has report you can't add two reports for the same session!"
+        )
       );
     }
     const transaction = await sequelize.transaction();
@@ -87,8 +84,8 @@ export const createReport = catchAsync(
       await transaction.commit();
       emitReportAddedForUser(session.sessionInfo?.userId!, report);
       res.status(201).json({
-        status: "success",
-        message: "report created successfully",
+        status: 'success',
+        message: 'report created successfully',
         data: report,
       });
     } catch (error: any) {
@@ -96,7 +93,7 @@ export const createReport = catchAsync(
       logger.error(`Error while creating report ${error}`);
       return next(new AppError(400, `Error creating report ${error.message}`));
     }
-  },
+  }
 );
 export const updateReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -108,7 +105,7 @@ export const updateReport = catchAsync(
     });
     if (!report) {
       return next(
-        new AppError(403, "there are no report with this id and teacher!"),
+        new AppError(403, 'there are no report with this id and teacher!')
       );
     }
     const updatedReport = await updateReportService({
@@ -120,18 +117,18 @@ export const updateReport = catchAsync(
       },
     });
     res.status(200).json({
-      status: "success",
-      message: "report updated successfully",
+      status: 'success',
+      message: 'report updated successfully',
       data: updatedReport,
     });
-  },
+  }
 );
 export const getReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const reportId = req.params.id;
     const report = await getReportService({ reportId: +reportId });
-    res.status(200).json({ status: "success", data: report });
-  },
+    res.status(200).json({ status: 'success', data: report });
+  }
 );
 export const deleteReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -143,12 +140,22 @@ export const deleteReport = catchAsync(
     await deleteReportService({ reportId: +reportId });
     res
       .status(200)
-      .json({ status: "success", message: "report deleted successfully" });
-  },
+      .json({ status: 'success', message: 'report deleted successfully' });
+  }
 );
 export const getAllReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { offset, nLimit } = getPaginationParameter(req);
+    const { offset, nLimit, orderBy, order } = getPaginationParameter(req);
+
+    // Build order clause
+    let orderClause: any = [['createdAt', 'DESC']]; // Default ordering
+    if (orderBy && order) {
+      orderClause = [[orderBy, order]];
+    } else if (order) {
+      orderClause = [['createdAt', order]];
+    } else if (orderBy) {
+      orderClause = [[orderBy, 'DESC']];
+    }
 
     const reports = await getAllReportsService({
       findOptions: {
@@ -158,40 +165,65 @@ export const getAllReports = catchAsync(
         ],
         limit: nLimit,
         offset: offset,
+        order: orderClause,
       },
     });
     res.status(200).json({
-      status: "success",
+      status: 'success',
       length: reports.count,
       data: reports.rows,
     });
-  },
+  }
 );
 export const getUserReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { offset, nLimit } = getPaginationParameter(req);
+    const { offset, nLimit, orderBy, order } = getPaginationParameter(req);
     const userId = req.query.userId || req.body.userId;
+
+    // Build order clause
+    let orderClause: any = [['createdAt', 'DESC']]; // Default ordering
+    if (orderBy && order) {
+      orderClause = [[orderBy, order]];
+    } else if (order) {
+      orderClause = [['createdAt', order]];
+    } else if (orderBy) {
+      orderClause = [[orderBy, 'DESC']];
+    }
+
     const reports = await getUserOrTeacherReportsService({
       userId,
       offset,
       limit: nLimit,
+      order: orderClause,
     });
     res
       .status(200)
-      .json({ status: "success", length: reports.length, data: reports });
-  },
+      .json({ status: 'success', length: reports.length, data: reports });
+  }
 );
 export const getTeacherReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { offset, nLimit } = getPaginationParameter(req);
+    const { offset, nLimit, orderBy, order } = getPaginationParameter(req);
     const teacherId = req.query.teacherId || req.body.teacherId;
+
+    // Build order clause
+    let orderClause: any = [['createdAt', 'DESC']]; // Default ordering
+    if (orderBy && order) {
+      orderClause = [[orderBy, order]];
+    } else if (order) {
+      orderClause = [['createdAt', order]];
+    } else if (orderBy) {
+      orderClause = [[orderBy, 'DESC']];
+    }
+
     const reports = await getUserOrTeacherReportsService({
       teacherId,
       offset: offset,
       limit: nLimit,
+      order: orderClause,
     });
     res
       .status(200)
-      .json({ status: "success", length: reports.length, data: reports });
-  },
+      .json({ status: 'success', length: reports.length, data: reports });
+  }
 );

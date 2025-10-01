@@ -710,11 +710,7 @@ export async function handleSessionFinishedService({
           amount: -teacherBalanceAmount,
           transaction,
         });
-        await updateUserRemainSessionService({
-          userId: session.sessionInfo?.userId!,
-          amountOfSessions: -1,
-          transaction,
-        });
+        // No credit refund when both are absent - session credit is lost
       }
     } else if (!session.studentAttended) {
       logger.info('student absent');
@@ -729,11 +725,7 @@ export async function handleSessionFinishedService({
           amount: teacherBalanceAmount,
           transaction,
         });
-        await updateUserRemainSessionService({
-          userId: session.sessionInfo?.userId!,
-          amountOfSessions: -1,
-          transaction,
-        });
+        // No credit refund when student is absent - session credit is lost
       }
     } else if (!session.teacherAttended) {
       logger.info('teacher absent');
@@ -747,6 +739,14 @@ export async function handleSessionFinishedService({
         amount: -teacherBalanceAmount,
         transaction,
       });
+      if (session.type === SessionType.PAID) {
+        // Refund credit when teacher is absent (not student's fault)
+        await updateUserRemainSessionService({
+          userId: session.sessionInfo?.userId!,
+          amountOfSessions: 1,
+          transaction,
+        });
+      }
     } else if (session.studentAttended && session.teacherAttended) {
       logger.info('both attended');
       updatedSession = await updateSessionService({
@@ -759,13 +759,7 @@ export async function handleSessionFinishedService({
         mins: session.sessionDuration,
         transaction,
       });
-      if (session.type === SessionType.PAID) {
-        await updateUserRemainSessionService({
-          userId: session.sessionInfo?.userId!,
-          amountOfSessions: -1,
-          transaction,
-        });
-      }
+      // No credit change - session was successfully taken (credit already deducted during scheduling)
     }
     await transaction.commit();
     return { updatedSession, session };
@@ -1093,13 +1087,7 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         updatedData: { status },
         transaction,
       });
-      if (updatedSession.type === SessionType.PAID) {
-        await updateUserRemainSessionService({
-          userId: userId,
-          amountOfSessions: -1,
-          transaction,
-        });
-      }
+      // No credit change for TAKEN status - credits were already deducted during scheduling
       await updateTeacherCommittedMins({
         teacherId,
         mins: updatedSession.sessionDuration,
@@ -1139,11 +1127,7 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         updatedData: { status },
         transaction,
       });
-      await updateUserRemainSessionService({
-        userId,
-        amountOfSessions: -1,
-        transaction,
-      });
+      // No credit refund for user absent - credit is lost as penalty
       const session = await getOneSessionDetailsService({
         sessionId,
       });
