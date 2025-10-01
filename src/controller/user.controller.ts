@@ -1,6 +1,6 @@
-import { NextFunction, Request, Response } from "express";
-import User, { IUserInput, USER_TABLE_NAME } from "../db/models/user.model";
-import catchAsync from "../utils/catchAsync";
+import { NextFunction, Request, Response } from 'express';
+import User, { IUserInput, USER_TABLE_NAME } from '../db/models/user.model';
+import catchAsync from '../utils/catchAsync';
 import {
   createUserService,
   deleteUserService,
@@ -8,14 +8,14 @@ import {
   getUserSubscriptionPlan,
   getUsersService,
   updateUserService,
-} from "../service/user.service";
-import AppError from "../utils/AppError";
-import { decodedToken, login, protect, restrictTo } from "./auth.controller";
+} from '../service/user.service';
+import AppError from '../utils/AppError';
+import { decodedToken, login, protect, restrictTo } from './auth.controller';
 import {
   createStripeBillingPortal,
   createStripeCustomer,
   getStripeSubscription,
-} from "../service/stripe.service";
+} from '../service/stripe.service';
 import {
   OrderAssociation,
   getUserAllSessionsService,
@@ -25,23 +25,23 @@ import {
   getUserRemainSessionsService,
   getUserSessionStats,
   getUserUpcomingSessionService,
-} from "../service/session.service";
-import { verifyToken } from "../utils/jwt";
+} from '../service/session.service';
+import { verifyToken } from '../utils/jwt';
 import {
   getUserAllRescheduleRequestsService,
   getUserReceivedRescheduleRequestsService,
   getUserRescheduleRequestsService,
-} from "../service/rescheduleReq.service";
-import { SubscriptionStatus } from "../db/models/subscription.model";
-import { getTeacherByIdService } from "../service/teacher.service";
-import Teacher, { RoleType } from "../db/models/teacher.model";
-import { SessionStatus } from "../db/models/session.model";
+} from '../service/rescheduleReq.service';
+import { SubscriptionStatus } from '../db/models/subscription.model';
+import { getTeacherByIdService } from '../service/teacher.service';
+import Teacher, { RoleType } from '../db/models/teacher.model';
+import { SessionStatus } from '../db/models/session.model';
 
 export const MONTH_IN_MS = 2629800000;
 export const setUserOrTeacherId = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   if (!req.body.user && !req.body.userId)
     req.body.userId = (req.user as User)?.id;
@@ -52,23 +52,23 @@ export const setUserOrTeacherId = (
 export const setUserIdToParams = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) => {
   if (!req.params.id) req.params.id = (req.user as User)?.id as string;
   if (!req.params.id) req.params.id = (req.teacher as Teacher)?.id as string;
   next();
 };
 export const getUserAttr = [
-  "id",
-  "name",
-  "phone",
-  "email",
-  "availableFreeSession",
-  "remainSessions",
-  "age",
-  "gender",
-  "verified",
-  "sessionPlaced",
+  'id',
+  'name',
+  'phone',
+  'email',
+  'availableFreeSession',
+  'remainSessions',
+  'age',
+  'gender',
+  'verified',
+  'sessionPlaced',
 ];
 
 export const loginUser = login(User);
@@ -89,8 +89,8 @@ export const createUser = catchAsync(
     });
     newUser.customerId = stripeCustomer.id;
     await newUser.save();
-    res.status(200).json({ status: "success", data: newUser });
-  },
+    res.status(200).json({ status: 'success', data: newUser });
+  }
 );
 export const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -99,14 +99,14 @@ export const getAllUsers = catchAsync(
       findOptions: { attributes: getUserAttr, limit: nLimit, offset },
     });
     if (!users) {
-      return next(new AppError(400, "Error getting all users!"));
+      return next(new AppError(400, 'Error getting all users!'));
     }
     res.status(200).json({
-      status: "success",
+      status: 'success',
       length: users?.count,
       data: users.rows,
     });
-  },
+  }
 );
 export const deleteUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -118,12 +118,12 @@ export const deleteUser = catchAsync(
       force,
     });
     if (!deleteState) {
-      return next(new AppError(400, "Error Deleting User!"));
+      return next(new AppError(400, 'Error Deleting User!'));
     }
     res
       .status(200)
-      .json({ status: "success", message: "user Deleted successfully" });
-  },
+      .json({ status: 'success', message: 'user Deleted successfully' });
+  }
 );
 export const updateUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -169,11 +169,11 @@ export const updateUser = catchAsync(
       return next(new AppError(404, "Can't find user to update!"));
     }
     res.status(200).json({
-      status: "success",
-      message: "user updated successfully",
+      status: 'success',
+      message: 'user updated successfully',
       data: user,
     });
-  },
+  }
 );
 export const getUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -185,8 +185,8 @@ export const getUser = catchAsync(
     if (!user) {
       return next(new AppError(404, "Can't find user with this id!"));
     }
-    res.status(200).json({ status: "success", data: user });
-  },
+    res.status(200).json({ status: 'success', data: user });
+  }
 );
 export const getMySubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -195,7 +195,7 @@ export const getMySubscription = catchAsync(
     });
     if (!userSubscription) {
       return res.status(200).json({
-        status: "success",
+        status: 'success',
         message: "user didn't subscript to any plans yet!!",
         data: [],
       });
@@ -205,16 +205,18 @@ export const getMySubscription = catchAsync(
     let subscriptionEndAt;
 
     stripeSubscription = await getStripeSubscription(
-      userSubscription.stripe_subscription_id as string,
+      userSubscription.stripe_subscription_id as string
     );
     if (
       userSubscription.status === SubscriptionStatus.ACTIVE &&
       stripeSubscription
     ) {
       // Use billing_cycle_anchor and calculate end date based on the plan interval
-      const startTimestamp = stripeSubscription.billing_cycle_anchor || stripeSubscription.start_date;
+      const startTimestamp =
+        stripeSubscription.billing_cycle_anchor ||
+        stripeSubscription.start_date;
       subscriptionStartAt = new Date(startTimestamp * 1000);
-      
+
       // Calculate end date based on plan interval (assuming monthly for now)
       const oneMonthLater = new Date(startTimestamp * 1000);
       oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
@@ -223,7 +225,7 @@ export const getMySubscription = catchAsync(
     if (!subscriptionStartAt && !subscriptionEndAt) {
       subscriptionStartAt = userSubscription.createdAt;
       subscriptionEndAt = new Date(
-        new Date(userSubscription.createdAt).getTime() + MONTH_IN_MS,
+        new Date(userSubscription.createdAt).getTime() + MONTH_IN_MS
       );
     }
     const subscriptionRes = {
@@ -238,8 +240,8 @@ export const getMySubscription = catchAsync(
       subscriptionStartAt,
       subscriptionEndAt,
     };
-    res.status(200).json({ status: "success", data: [subscriptionRes] });
-  },
+    res.status(200).json({ status: 'success', data: [subscriptionRes] });
+  }
 );
 export const updateUserPlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -253,16 +255,16 @@ export const updateUserPlan = catchAsync(
 
     if (!subscription) {
       return next(
-        new AppError(404, "The user is not subscribed to plan to upgrade it !"),
+        new AppError(404, 'The user is not subscribed to plan to upgrade it !')
       );
     }
     const portal = await createStripeBillingPortal(customerId);
     res.status(200).json({
-      status: "success",
+      status: 'success',
       data: portal,
-      message: "redirect to the portal to change the plan from it!",
+      message: 'redirect to the portal to change the plan from it!',
     });
-  },
+  }
 );
 export const getMyHistorySessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -275,8 +277,8 @@ export const getMyHistorySessions = catchAsync(
 
     res
       .status(200)
-      .json({ status: "success", length: result?.count, data: result?.rows });
-  },
+      .json({ status: 'success', length: result?.count, data: result?.rows });
+  }
 );
 export const getUserRemainSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -291,8 +293,8 @@ export const getUserRemainSessions = catchAsync(
     }
     res
       .status(200)
-      .json({ status: "success", length: result.count, data: result.rows });
-  },
+      .json({ status: 'success', length: result.count, data: result.rows });
+  }
 );
 export const getUserUpcomingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -301,8 +303,8 @@ export const getUserUpcomingSession = catchAsync(
     if (!result) {
       return next(new AppError(400, "can't get this user Sessions"));
     }
-    res.status(200).json({ status: "success", data: result.rows });
-  },
+    res.status(200).json({ status: 'success', data: result.rows });
+  }
 );
 export const getUserOngoingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -311,8 +313,8 @@ export const getUserOngoingSession = catchAsync(
     if (!result) {
       return next(new AppError(400, "can't get this user Sessions"));
     }
-    res.status(200).json({ status: "success", data: result.rows });
-  },
+    res.status(200).json({ status: 'success', data: result.rows });
+  }
 );
 export const getUserLatestSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -321,8 +323,8 @@ export const getUserLatestSession = catchAsync(
     if (!result) {
       return next(new AppError(400, "Can't get this user sessions"));
     }
-    res.status(200).json({ status: "success", data: result.rows });
-  },
+    res.status(200).json({ status: 'success', data: result.rows });
+  }
 );
 export const getUserSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -339,15 +341,15 @@ export const getUserSessions = catchAsync(
     }
     res
       .status(200)
-      .json({ status: "success", length: result.count, data: result.rows });
-  },
+      .json({ status: 'success', length: result.count, data: result.rows });
+  }
 );
 export const getUserStatistics = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId;
     const stats = await getUserSessionStats({ userId });
-    res.status(200).json({ status: "success", data: stats });
-  },
+    res.status(200).json({ status: 'success', data: stats });
+  }
 );
 export const getMySessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -360,11 +362,11 @@ export const getMySessionRescheduleRequests = catchAsync(
       status: status as any,
     });
     res.status(200).json({
-      status: "success",
+      status: 'success',
       length: rescheduleRequests.length,
       data: rescheduleRequests,
     });
-  },
+  }
 );
 export const getReceivedSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -377,11 +379,11 @@ export const getReceivedSessionRescheduleRequests = catchAsync(
       status: status as any,
     });
     res.status(200).json({
-      status: "success",
+      status: 'success',
       length: rescheduleRequests.length,
       data: rescheduleRequests,
     });
-  },
+  }
 );
 export const getAllSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -394,11 +396,11 @@ export const getAllSessionRescheduleRequests = catchAsync(
       status: status as any,
     });
     res.status(200).json({
-      status: "success",
+      status: 'success',
       length: rescheduleRequests.length,
       data: rescheduleRequests,
     });
-  },
+  }
 );
 export const checkJWT = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -406,11 +408,11 @@ export const checkJWT = catchAsync(
     const decoded = (await verifyToken(token as string)) as decodedToken;
     const user = await getUserByIdService({ userId: decoded.id });
     res.status(200).json({
-      status: "success",
-      message: "The token is verified!",
+      status: 'success',
+      message: 'The token is verified!',
       userName: user?.name,
     });
-  },
+  }
 );
 export function getPaginationParameter(req: Request) {
   const status = req.query.status;
@@ -420,7 +422,7 @@ export function getPaginationParameter(req: Request) {
   ) {
     throw new AppError(
       400,
-      `Please provide status one of those: ${Object.values(SessionStatus)}`,
+      `Please provide status one of those: ${Object.values(SessionStatus)}`
     );
   }
   let page = req.query.page;
@@ -432,12 +434,12 @@ export function getPaginationParameter(req: Request) {
   if (
     req.query.orderBy &&
     !Object.values(OrderAssociation).includes(
-      req.query.orderBy as OrderAssociation,
+      req.query.orderBy as OrderAssociation
     )
   ) {
     throw new AppError(
       400,
-      'Please enter order by one of those ["DESC", "ASC"] ',
+      'Please enter order by one of those ["DESC", "ASC"] '
     );
   } else {
     orderBy = req.query.orderBy as OrderAssociation;

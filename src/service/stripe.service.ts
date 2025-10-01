@@ -1,6 +1,6 @@
-import Stripe from "stripe";
-import dotenv from "dotenv";
-import AppError from "../utils/AppError";
+import Stripe from 'stripe';
+import dotenv from 'dotenv';
+import AppError from '../utils/AppError';
 dotenv.config();
 const sk_key = process.env.STRIPE_SECRET_KEY as string;
 export const stripe = new Stripe(sk_key);
@@ -19,7 +19,7 @@ export async function createStripeCustomer({
   const params: Stripe.CustomerCreateParams = {
     name,
     email,
-    description: "test customer",
+    description: 'test customer',
     phone,
   };
   try {
@@ -28,7 +28,7 @@ export async function createStripeCustomer({
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While creating stripe customer: ${error.message}`,
+      `Error While creating stripe customer: ${error.message}`
     );
   }
 }
@@ -43,7 +43,7 @@ export async function createStripePrice({
 }) {
   const params: Stripe.PriceCreateParams = {
     currency,
-    recurring: { interval: "month", interval_count: 1 },
+    recurring: { interval: 'month', interval_count: 1 },
     active: true,
     unit_amount: amount * 100, // amount accept in cents,
     product_data: product,
@@ -127,7 +127,7 @@ export async function createStripeSession({
   //   const successLink: string = `${req.protocol}://${req.get("host")}/success`
 
   const params: Stripe.Checkout.SessionCreateParams = {
-    mode: "subscription",
+    mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
     customer: customerId,
     success_url,
@@ -140,7 +140,7 @@ export async function createStripeSession({
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While Creating subscriptions!: ${error.message}`,
+      `Error While Creating subscriptions!: ${error.message}`
     );
   }
 }
@@ -153,7 +153,7 @@ export async function createStripeBillingPortal(customerId: string) {
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While Creating subscriptions!: ${error.message}`,
+      `Error While Creating subscriptions!: ${error.message}`
     );
   }
 }
@@ -169,7 +169,7 @@ export const createWebhook = (rawBody: any, sig: string) => {
   const event = stripe.webhooks.constructEvent(
     rawBody,
     sig,
-    STRIPE_WEBHOOK_SECRET,
+    STRIPE_WEBHOOK_SECRET
   );
   return event;
 };
@@ -182,7 +182,7 @@ export async function createStripeCouponOnce({
 }: {
   percent_off: number;
 }) {
-  const params: Stripe.CouponCreateParams = { percent_off, duration: "once" };
+  const params: Stripe.CouponCreateParams = { percent_off, duration: 'once' };
   const coupon = await stripe.coupons.create(params);
   return coupon;
 }
