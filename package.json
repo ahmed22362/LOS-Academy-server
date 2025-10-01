@@ -4,20 +4,19 @@
   "description": "The Quran Academy System is an online platform designed to facilitate Quranic education and learning. This comprehensive system provides a user-friendly and efficient way for students to connect with experienced teachers for Quranic instruction. Whether you're a student seeking to deepen your understanding of the Quran or a teacher looking to share your knowledge, the Quran Academy System offers a range of features to meet your needs.",
   "main": "server.ts",
   "scripts": {
-    "start": "ts-node-dev src/server.ts",
+    "build": "tsc && cp -r src/views build/",
+    "start": "node build/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "production": "SET NODE_ENV=production& ts-node-dev --respawn --transpile-only src/server.ts",
-    "format": "prettier --write 'src/**/*.ts'"
-  },
-  "engines": {
-    "node": "20"
+    "format": "prettier --write 'src/**/*.ts'",
+    "lproduction": "NODE_ENV=production ts-node-dev --respawn --transpile-only src/server.ts"
   },
   "author": "CodeGate",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.5.1",
     "backblaze-b2": "^1.7.0",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.6",
     "crypto": "^1.0.1",
     "dotenv": "^16.3.1",
@@ -53,7 +52,7 @@
     "@types/body-parser": "^1.19.5",
     "@types/cookie-parser": "^1.4.6",
     "@types/express": "^4.17.18",
-    "@types/jsonwebtoken": "^9.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.9",
     "@types/multer": "^1.4.10",
     "@types/node": "^20.8.2",

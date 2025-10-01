@@ -10,13 +10,7 @@ import {
   updateUserService,
 } from "../service/user.service";
 import AppError from "../utils/AppError";
-import {
-  IRequestWithUser,
-  decodedToken,
-  login,
-  protect,
-  restrictTo,
-} from "./auth.controller";
+import { decodedToken, login, protect, restrictTo } from "./auth.controller";
 import {
   createStripeBillingPortal,
   createStripeCustomer,
@@ -40,27 +34,28 @@ import {
 } from "../service/rescheduleReq.service";
 import { SubscriptionStatus } from "../db/models/subscription.model";
 import { getTeacherByIdService } from "../service/teacher.service";
-import { RoleType } from "../db/models/teacher.model";
+import Teacher, { RoleType } from "../db/models/teacher.model";
 import { SessionStatus } from "../db/models/session.model";
 
 export const MONTH_IN_MS = 2629800000;
 export const setUserOrTeacherId = (
-  req: IRequestWithUser,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  if (!req.body.user && !req.body.userId) req.body.userId = req.user?.id;
+  if (!req.body.user && !req.body.userId)
+    req.body.userId = (req.user as User)?.id;
   if (!req.body.teacher && !req.body.teacherId)
-    req.body.teacherId = req.teacher?.id;
+    req.body.teacherId = (req.teacher as Teacher)?.id;
   next();
 };
 export const setUserIdToParams = (
-  req: IRequestWithUser,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  if (!req.params.id) req.params.id = req.user?.id as string;
-  if (!req.params.id) req.params.id = req.teacher?.id as string;
+  if (!req.params.id) req.params.id = (req.user as User)?.id as string;
+  if (!req.params.id) req.params.id = (req.teacher as Teacher)?.id as string;
   next();
 };
 export const getUserAttr = [
@@ -245,13 +240,13 @@ export const getMySubscription = catchAsync(
   },
 );
 export const updateUserPlan = catchAsync(
-  async (req: IRequestWithUser, res: Response, next: NextFunction) => {
-    const customerId = req.user?.customerId;
+  async (req: Request, res: Response, next: NextFunction) => {
+    const customerId = (req.user as User)?.customerId;
     if (!customerId) {
       throw new AppError(404, "Can't ind customer Id to update it's plan!");
     }
     const subscription = await getUserSubscriptionPlan({
-      userId: req.user?.id as string,
+      userId: (req.user as User)?.id as string,
     });
 
     if (!subscription) {

@@ -21,6 +21,9 @@ import {
 import { sequelize } from "../db/sequelize";
 import AppError from "../utils/AppError";
 import logger from "../utils/logger";
+interface TeacherRequest extends Request {
+  teacher?: any;
+}
 
 export const createSubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

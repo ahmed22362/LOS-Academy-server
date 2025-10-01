@@ -29,7 +29,7 @@ import {
   updateSessionReqDate,
 } from "../controller/sessionReq.controller";
 import { protectTeacher } from "../controller/teacher.controller";
-import { IRequestWithUser, restrictTo } from "../controller/auth.controller";
+import { restrictTo } from "../controller/auth.controller";
 import { RoleType } from "../db/models/teacher.model";
 import validate from "../middleware/validate";
 import { createUserSchema } from "../schema/user.schema";

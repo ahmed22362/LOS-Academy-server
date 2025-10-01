@@ -7,3 +7,10 @@
 /models
 # Sequelize config Template 
 /config/config.json.template
+# .gitignore
+node_modules/
+build/
+dist/
+*.log
+.env
+.env.local
