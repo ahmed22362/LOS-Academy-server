@@ -98,16 +98,26 @@ export class Session extends Model<Session> {
   hasReport!: boolean;
 
   @AfterDestroy
-  static async hashPassword(instance: Session) {
+  static async cancelScheduledJobs(instance: Session) {
     const jobReminderName = `session #${instance.id} Reminder`;
     const jobStartedName = `session #${instance.id} Started`;
     const jobOngoingName = `session #${instance.id} ONGOING Updating`;
     const jobFinishedName = `session #${instance.id} finished Updating`;
     const jobs = schedule.scheduledJobs;
-    const reminderJob = jobs[jobReminderName].cancel();
-    const sessionStartedJob = jobs[jobStartedName].cancel();
-    const sessionOngoingJob = jobs[jobOngoingName].cancel();
-    const sessionFinishedJob = jobs[jobFinishedName].cancel();
+    
+    // Cancel jobs only if they exist
+    if (jobs[jobReminderName]) {
+      jobs[jobReminderName].cancel();
+    }
+    if (jobs[jobStartedName]) {
+      jobs[jobStartedName].cancel();
+    }
+    if (jobs[jobOngoingName]) {
+      jobs[jobOngoingName].cancel();
+    }
+    if (jobs[jobFinishedName]) {
+      jobs[jobFinishedName].cancel();
+    }
   }
 }
 
