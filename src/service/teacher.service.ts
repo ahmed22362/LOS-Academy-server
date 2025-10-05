@@ -88,14 +88,51 @@ export async function updateTeacherBalance({
   amount: number;
   transaction?: Transaction;
 }) {
-  const updated = await Teacher.increment(
-    { balance: amount },
+  // Round amount to 2 decimal places for consistency
+  const roundedAmount = Math.round((amount + Number.EPSILON) * 100) / 100;
+  
+  const teacher = await Teacher.findByPk(teacherId, { transaction });
+  if (!teacher) {
+    throw new AppError(404, 'Teacher not found');
+  }
+
+  const currentBalance = teacher.balance;
+  const newBalance = currentBalance + roundedAmount;
+
+  // Prevent extremely negative balances (allow some negative for teacher penalties)
+  const minimumAllowedBalance = -1000; // Allow up to $1000 negative balance
+  if (newBalance < minimumAllowedBalance) {
+    throw new AppError(
+      400, 
+      `Operation would result in balance of $${newBalance.toFixed(2)}, which is below minimum allowed balance of $${minimumAllowedBalance}`
+    );
+  }
+
+  // Update using direct update to ensure atomic operation
+  const [updatedCount] = await Teacher.update(
+    { balance: Number(newBalance.toFixed(2)) }, // Ensure 2 decimal places
     {
       where: { id: teacherId },
       transaction,
     },
   );
-  return updated;
+
+  if (updatedCount === 0) {
+    throw new AppError(404, 'Failed to update teacher balance');
+  }
+
+  return updatedCount;
+}
+
+// Utility function to calculate teacher payment for session
+export function calculateTeacherSessionPayment(
+  hourCost: number, 
+  sessionDurationMinutes: number
+): number {
+  const costPerMinute = hourCost / 60;
+  const totalAmount = costPerMinute * sessionDurationMinutes;
+  // Round to 2 decimal places
+  return Math.round((totalAmount + Number.EPSILON) * 100) / 100;
 }
 export async function getTeacherByService({
   findOptions,

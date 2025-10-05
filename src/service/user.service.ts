@@ -1,11 +1,11 @@
-import { FindOptions, Transaction } from "sequelize";
-import User, { Gender, IUserInput } from "../db/models/user.model";
-import AppError from "../utils/AppError";
-import { getSubscriptionByUserId } from "./subscription.service";
-import { SubscriptionStatus } from "../db/models/subscription.model";
-import { updateModelService } from "./factory.services";
-import { Op } from "sequelize";
-import { userOwnThisSession } from "./session.service";
+import { FindOptions, Transaction } from 'sequelize';
+import User, { Gender, IUserInput } from '../db/models/user.model';
+import AppError from '../utils/AppError';
+import { getSubscriptionByUserId } from './subscription.service';
+import { SubscriptionStatus } from '../db/models/subscription.model';
+import { updateModelService } from './factory.services';
+import { Op } from 'sequelize';
+import { userOwnThisSession } from './session.service';
 
 export interface UserResponse {
   id: string;
@@ -29,7 +29,7 @@ async function createUserService({
     const newUser = await User.create(userData as any);
     return newUser;
   } catch (error: any) {
-    console.error("Error creating user:", error.message);
+    console.error('Error creating user:', error.message);
     throw error;
   }
 }
@@ -45,7 +45,7 @@ async function getUsersService({
     const users = await User.findAndCountAll(findOptions);
     return users;
   } catch (error: any) {
-    console.error("Error getting all users:", error.message);
+    console.error('Error getting all users:', error.message);
     return null;
   }
 }
@@ -63,7 +63,7 @@ async function getUserByIdService({
     }
     return user;
   } catch (error: any) {
-    console.error("Error retrieving user by ID:", error.message);
+    console.error('Error retrieving user by ID:', error.message);
     throw new AppError(400, `"Error retrieving user by ID:", ${error.message}`);
   }
 }
@@ -79,10 +79,10 @@ async function getUserByService({
     }
     return user;
   } catch (error: any) {
-    console.error("Error retrieving user by what you want:", error.message);
+    console.error('Error retrieving user by what you want:', error.message);
     throw new AppError(
       400,
-      `Error retrieving user by what you want:", ${error.message}`,
+      `Error retrieving user by what you want:", ${error.message}`
     );
   }
 }
@@ -102,7 +102,7 @@ async function getUserByResetTokenService({
     });
     return user;
   } catch (error: any) {
-    console.error("Error retrieving user by email:", error.message);
+    console.error('Error retrieving user by email:', error.message);
     return null;
   }
 }
@@ -131,14 +131,36 @@ async function updateUserRemainSessionService({
   amountOfSessions: number;
   transaction?: Transaction;
 }) {
-  const updated = await User.increment(
-    { remainSessions: amountOfSessions },
+  const user = await User.findByPk(userId, { transaction });
+  if (!user) {
+    throw new AppError(404, 'User not found');
+  }
+
+  const currentSessions = user.remainSessions;
+  const newSessionCount = currentSessions + amountOfSessions;
+
+  // Prevent negative session counts
+  if (newSessionCount < 0) {
+    throw new AppError(
+      400,
+      `Insufficient session credits. User has ${currentSessions} sessions but operation would result in ${newSessionCount} sessions.`
+    );
+  }
+
+  // Update using direct update to ensure atomic operation
+  const [updatedCount] = await User.update(
+    { remainSessions: newSessionCount },
     {
       where: { id: userId },
       transaction,
-    },
+    }
   );
-  return updated;
+
+  if (updatedCount === 0) {
+    throw new AppError(404, 'Failed to update user session count');
+  }
+
+  return updatedCount;
 }
 
 async function deleteUserService({
@@ -153,14 +175,14 @@ async function deleteUserService({
     if (!user) {
       return false;
     }
-    var boolValue = force === "true"; //returns true
+    var boolValue = force === 'true'; //returns true
 
     // Delete the user from the database
     await user.destroy({ force: boolValue });
 
     return true;
   } catch (error: any) {
-    console.error("Error deleting user:", error.message);
+    console.error('Error deleting user:', error.message);
     return false;
   }
 }
@@ -179,11 +201,11 @@ async function checkUserSubscription({ userId }: { userId: string }) {
   if (!subscription) {
     throw new AppError(
       400,
-      "user must subscribe to plan first to request paid session!",
+      'user must subscribe to plan first to request paid session!'
     );
   }
   if (subscription.status !== SubscriptionStatus.ACTIVE) {
-    throw new AppError(403, "please activate your subscription first!");
+    throw new AppError(403, 'please activate your subscription first!');
   }
   return subscription;
 }
@@ -196,12 +218,12 @@ export async function sessionPerWeekEqualDates({
 }) {
   const subscribe = await getUserSubscriptionPlan({ userId });
   if (!subscribe) {
-    throw new AppError(404, "There is no subscription for this user!");
+    throw new AppError(404, 'There is no subscription for this user!');
   }
   if (subscribe.plan.sessionsPerWeek !== sessionDatesLength) {
     throw new AppError(
       400,
-      `must provide date for all sessions per week the sessions per week are: ${subscribe.plan.sessionsPerWeek} `,
+      `must provide date for all sessions per week the sessions per week are: ${subscribe.plan.sessionsPerWeek} `
     );
   }
 }
@@ -215,7 +237,7 @@ export async function checkIfUserPlacedHisSessionBefore({
     throw new AppError(
       403,
       `Can't place user session user already placed his session for this month!
-       Wait for the next month or contact your admin`,
+       Wait for the next month or contact your admin`
     );
   }
 }

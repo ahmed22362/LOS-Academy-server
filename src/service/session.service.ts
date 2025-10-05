@@ -27,6 +27,7 @@ import {
   getTeacherByIdService,
   updateTeacherBalance,
   updateTeacherCommittedMins,
+  calculateTeacherSessionPayment,
 } from './teacher.service';
 import { updateUserRemainSessionService } from './user.service';
 import logger from '../utils/logger';
@@ -689,11 +690,11 @@ export async function handleSessionFinishedService({
   const session = await getOneSessionDetailsService({ sessionId });
 
   const teacherHourCost = session.sessionInfo?.teacher?.hour_cost || 0;
-  const minsCost = teacherHourCost / 60;
-  // round to two decimal points
-  let teacherBalanceAmount = minsCost * session.sessionDuration;
-  teacherBalanceAmount =
-    Math.round((teacherBalanceAmount + Number.EPSILON) * 100) / 100;
+  // Use consistent calculation utility
+  const teacherBalanceAmount = calculateTeacherSessionPayment(
+    teacherHourCost,
+    session.sessionDuration
+  );
   const transaction = await sequelize.transaction();
   let updatedSession;
   try {
@@ -710,7 +711,12 @@ export async function handleSessionFinishedService({
           amount: -teacherBalanceAmount,
           transaction,
         });
-        // No credit refund when both are absent - session credit is lost
+        // Deduct credit when both are absent - session credit is lost as penalty
+        await updateUserRemainSessionService({
+          userId: session.sessionInfo?.userId!,
+          amountOfSessions: -1,
+          transaction,
+        });
       }
     } else if (!session.studentAttended) {
       logger.info('student absent');
@@ -725,7 +731,12 @@ export async function handleSessionFinishedService({
           amount: teacherBalanceAmount,
           transaction,
         });
-        // No credit refund when student is absent - session credit is lost
+        // Deduct credit when student is absent - session credit is lost as penalty
+        await updateUserRemainSessionService({
+          userId: session.sessionInfo?.userId!,
+          amountOfSessions: -1,
+          transaction,
+        });
       }
     } else if (!session.teacherAttended) {
       logger.info('teacher absent');
@@ -739,14 +750,7 @@ export async function handleSessionFinishedService({
         amount: -teacherBalanceAmount,
         transaction,
       });
-      if (session.type === SessionType.PAID) {
-        // Refund credit when teacher is absent (not student's fault)
-        await updateUserRemainSessionService({
-          userId: session.sessionInfo?.userId!,
-          amountOfSessions: 1,
-          transaction,
-        });
-      }
+      // No credit deduction when teacher is absent - not student's fault
     } else if (session.studentAttended && session.teacherAttended) {
       logger.info('both attended');
       updatedSession = await updateSessionService({
@@ -759,7 +763,14 @@ export async function handleSessionFinishedService({
         mins: session.sessionDuration,
         transaction,
       });
-      // No credit change - session was successfully taken (credit already deducted during scheduling)
+      if (session.type === SessionType.PAID) {
+        // Deduct credit when session is successfully taken
+        await updateUserRemainSessionService({
+          userId: session.sessionInfo?.userId!,
+          amountOfSessions: -1,
+          transaction,
+        });
+      }
     }
     await transaction.commit();
     return { updatedSession, session };
@@ -1087,7 +1098,14 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         updatedData: { status },
         transaction,
       });
-      // No credit change for TAKEN status - credits were already deducted during scheduling
+      // Deduct credit when session is successfully taken
+      if (updatedSession.type === SessionType.PAID) {
+        await updateUserRemainSessionService({
+          userId: userId,
+          amountOfSessions: -1,
+          transaction,
+        });
+      }
       await updateTeacherCommittedMins({
         teacherId,
         mins: updatedSession.sessionDuration,
@@ -1112,14 +1130,16 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
       });
       const teacherHourCost =
         sessionWithTeacher.sessionInfo?.teacher?.hour_cost || 0;
-      const minsCost = teacherHourCost / 60;
-      const teacherBalanceAmount =
-        minsCost * sessionWithTeacher.sessionDuration;
+      const teacherBalanceAmount = calculateTeacherSessionPayment(
+        teacherHourCost,
+        sessionWithTeacher.sessionDuration
+      );
       await updateTeacherBalance({
         teacherId: teacherId,
         amount: -teacherBalanceAmount,
         transaction,
       });
+      // No credit deduction when teacher is absent - not student's fault
       break;
     case SessionStatus.USER_ABSENT:
       updatedSession = await updateSessionStatusService({
@@ -1127,13 +1147,22 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         updatedData: { status },
         transaction,
       });
-      // No credit refund for user absent - credit is lost as penalty
+      // Deduct credit when student is absent - session credit is lost as penalty
+      if (updatedSession.type === SessionType.PAID) {
+        await updateUserRemainSessionService({
+          userId: userId,
+          amountOfSessions: -1,
+          transaction,
+        });
+      }
       const session = await getOneSessionDetailsService({
         sessionId,
       });
       const teacherPerMinCost = session.sessionInfo?.teacher?.hour_cost || 0;
-      const cost = teacherPerMinCost / 60;
-      const amount = cost * session.sessionDuration;
+      const amount = calculateTeacherSessionPayment(
+        teacherPerMinCost,
+        session.sessionDuration
+      );
 
       await updateTeacherBalance({
         teacherId: teacherId,

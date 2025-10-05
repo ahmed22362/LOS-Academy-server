@@ -46,6 +46,7 @@ import Session, {
 import {
   getTeacherByIdService,
   updateTeacherBalance,
+  calculateTeacherSessionPayment,
 } from '../service/teacher.service';
 import {
   checkUserSubscription,
@@ -278,12 +279,7 @@ export const createSessionAdmin = catchAsync(
           sessionCount: sessionCount ?? sessionsPerWeek * 4, // 4 weeks per month
           sessionsPerWeek,
         });
-        // Deduct session credits when sessions are scheduled
-        await updateUserRemainSessionService({
-          userId,
-          amountOfSessions: -session.length, // Deduct credits when scheduling
-          transaction: t,
-        });
+        // Credits will be deducted when sessions are finished, not when created
       }
       await t.commit();
       res.status(201).json({ status: 'success', data: session });
@@ -806,9 +802,10 @@ export const userContinueWithTeacher = catchAsync(
     });
     const transaction = await sequelize.transaction();
     try {
-      const teacherHourCost = sessionInfo.teacher?.hour_cost || 0;
-      const minsCost = teacherHourCost / 60;
-      const teacherBalanceAmount = minsCost * session.sessionDuration;
+      const teacherBalanceAmount = calculateTeacherSessionPayment(
+        sessionInfo.teacher?.hour_cost || 0,
+        session.sessionDuration
+      );
       await updateTeacherBalance({
         teacherId: sessionInfo.teacherId!,
         amount: teacherBalanceAmount,
