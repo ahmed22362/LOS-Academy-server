@@ -211,6 +211,9 @@ export async function handelSubscriptionPayed(
     const user = await getUserByService({
       findOptions: { where: { customerId: payment_intent.customer } },
     });
+    if (!user) {
+      throw new AppError(404, "there is no user with this customer id!");
+    }
     const membership = await getSubscriptionByUserId({ userId: user?.id });
     if (!membership) {
       throw new AppError(404, "there is no subscription for this user!");
