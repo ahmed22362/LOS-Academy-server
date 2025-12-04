@@ -80,6 +80,10 @@ export const signup = catchAsync(async function (
   next: NextFunction
 ) {
   const { name, email, password, phone, age, gender }: IUserInput = req.body;
+  const existingUser = await getUserByService({ findOptions: { where: { email } } });
+  if (existingUser) {
+    return next(new AppError(400, 'User already exist with this email!'));
+  }
   const stripeCustomer = await createStripeCustomer({
     email,
     name: name,
@@ -110,7 +114,33 @@ export const signup = catchAsync(async function (
     verified: newUser.verified,
     sessionPlaced: newUser.sessionPlaced,
   };
-  await createAndSendConfirmMail(newUser, req);
+  
+  // Send verification email to user
+  try {
+    await createAndSendConfirmMail(newUser, req);
+  } catch (error: any) {
+    console.error('Failed to send verification email:', error.message);
+    console.error('Full error:', error);
+  }
+  
+  // Send admin notification about new student signup
+  if (process.env.ADMIN_EMAIL) {
+    try {
+      const adminMail = new Mail(newUser.email, newUser.name);
+      await adminMail.sendNewStudentSignupNotification({
+        studentName: newUser.name,
+        studentEmail: newUser.email,
+        studentPhone: newUser.phone || 'Not provided',
+        studentAge: newUser.age,
+        studentGender: newUser.gender,
+        adminEmail: process.env.ADMIN_EMAIL,
+      });
+    } catch (error: any) {
+      console.error('Failed to send admin notification:', error.message);
+      // Don't fail the signup if admin notification fails
+    }
+  }
+  
   res.status(201).json({
     status: 'success',
     message: 'Confirmation Mail sent, Now confirm your mail so you can log in!',
@@ -398,5 +428,7 @@ const createAndSendConfirmMail = async (user: User, req: Request) => {
   const link: string = `${req.protocol}://${req.get(
     'host'
   )}/api/v1/user/auth/verifyEmail?token=${code}`;
-  scheduleVerifyMailJob({ to: user.email, name: user.name, link });
+  // Send verification email immediately
+  const mail = new Mail(user.email, user.name);
+  await mail.sendVerifyMail({ link });
 };

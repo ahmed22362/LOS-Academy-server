@@ -71,12 +71,9 @@ async function getUserByService({
   findOptions,
 }: {
   findOptions?: FindOptions;
-}): Promise<User> {
+}): Promise<User | null> {
   try {
     const user = await User.findOne(findOptions);
-    if (!user) {
-      throw new AppError(404, "Can't find user");
-    }
     return user;
   } catch (error: any) {
     console.error('Error retrieving user by what you want:', error.message);

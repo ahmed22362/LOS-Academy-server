@@ -7,6 +7,7 @@ import {
   SessionStartReminderForAdminPayload,
   SessionStartReminderForUserPayload,
   forgetPasswordPayload,
+  newStudentSignupAdminPayload,
   payoutPayload,
   payoutRequestStatusPayload,
   sessionPlacedPayload,
@@ -68,10 +69,20 @@ class Mail {
   }
 
   async sendVerifyMail({ link }: { link: string }) {
-    const verifyMailTemplate = generateVerifyEmail({ name: this.name, link });
-    const info = await this.send(verifyMailTemplate, "Email Confirmation!");
-    if (process.env.NODE_ENV === "development") {
-      console.log("Message sent: %s", info.data);
+    try {
+      console.log("Preparing to send verification email to:", this.to);
+      const verifyMailTemplate = generateVerifyEmail({ name: this.name, link });
+      console.log("Verification email template generated");
+      const info = await this.send(verifyMailTemplate, "Email Confirmation!");
+      console.log("Verification email sent successfully:", info); 
+      if (process.env.NODE_ENV === "development") {
+        console.log("Message sent: %s", info.data);
+      }
+      return info;
+    } catch (error: any) {
+      console.error("Error sending verification email:", error.message);
+      console.error("Full error:", error);
+      throw error;
     }
   }
   async sendForgetPassword({ link }: { link: string }) {
@@ -90,6 +101,48 @@ class Mail {
     let info = await this.send(forgetTemplate, "Password Reset Request!");
     if (process.env.NODE_ENV === "development") {
       console.log("Message sent: %s", info.data);
+    }
+  }
+  async sendNewStudentSignupNotification({
+    studentName,
+    studentEmail,
+    studentPhone,
+    studentAge,
+    studentGender,
+    adminEmail,
+  }: {
+    studentName: string;
+    studentEmail: string;
+    studentPhone: string;
+    studentAge: number;
+    studentGender: string;
+    adminEmail: string;
+  }) {
+    const { header, title, paragraph, footer, mailAdds } =
+      newStudentSignupAdminPayload({
+        studentName,
+        studentEmail,
+        studentPhone,
+        studentAge,
+        studentGender,
+      });
+    const adminNotificationTemplate = generateGenericEmail({
+      header,
+      paragraph,
+      footer,
+      mailAdds,
+      title,
+    });
+    // Temporarily override the recipient
+    const originalTo = this.to;
+    this.to = adminEmail;
+    const info = await this.send(
+      adminNotificationTemplate,
+      "New Student Registration - LOS Academy"
+    );
+    this.to = originalTo; // Restore original recipient
+    if (process.env.NODE_ENV === "development") {
+      console.log("Admin notification sent: %s", info.data);
     }
   }
   async sendSubscriptionCreateMail({

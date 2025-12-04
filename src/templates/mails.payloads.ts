@@ -1,5 +1,95 @@
 import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model";
 
+export const newStudentSignupAdminPayload = ({
+  studentName,
+  studentEmail,
+  studentPhone,
+  studentAge,
+  studentGender,
+}: {
+  studentName: string;
+  studentEmail: string;
+  studentPhone: string;
+  studentAge: number;
+  studentGender: string;
+}) => {
+  const header = "🎓 New Student Registration";
+  const title = "New Student Signup Alert";
+  const paragraph = `<div style="margin-bottom: 20px;">
+    <p style="font-size: 16px; color: #333; line-height: 1.6;">Hello Admin,</p>
+    <p style="font-size: 16px; color: #333; line-height: 1.6;">Great news! A new student has just registered on <strong>LOS Academy</strong>.</p>
+    <p style="font-size: 14px; color: #666; line-height: 1.6;">Below are the student's contact details for your reference:</p>
+  </div>`;
+  const footer = `<div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-left: 4px solid #0B193E; border-radius: 4px;">
+    <p style="margin: 0; font-size: 14px; color: #555; line-height: 1.6;">
+      <strong>📞 Action Required:</strong> Please reach out to the student to welcome them and assist with their onboarding process.
+    </p>
+  </div>
+  <div style="margin-top: 20px; text-align: center;">
+    <p style="font-size: 12px; color: #999;">
+      This is an automated notification from LOS Academy Admin System.
+    </p>
+  </div>`;
+  const mailAdds = `    
+  <table style="width: 100%; border-collapse: collapse; margin-top: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+  <thead>
+    <tr style="background: linear-gradient(135deg, #0B193E 0%, #1a2f5e 100%); color: #ffffff;">
+      <th colspan="2" style="padding: 18px 20px; text-align: left; font-size: 18px; font-weight: 600; letter-spacing: 0.5px;">
+        👤 Student Information
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e9ecef;">
+      <td style="padding: 16px 20px; text-align: left; width: 30%; font-weight: 600; color: #495057; font-size: 14px;">
+        📝 Full Name
+      </td>
+      <td style="padding: 16px 20px; text-align: left; color: #212529; font-size: 14px;">
+        ${studentName}
+      </td>
+    </tr>
+    <tr style="background-color: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+      <td style="padding: 16px 20px; text-align: left; width: 30%; font-weight: 600; color: #495057; font-size: 14px;">
+        📧 Email Address
+      </td>
+      <td style="padding: 16px 20px; text-align: left; color: #212529; font-size: 14px;">
+        <a href="mailto:${studentEmail}" style="color: #0B193E; text-decoration: none; font-weight: 500; border-bottom: 2px solid #0B193E;">${studentEmail}</a>
+      </td>
+    </tr>
+    <tr style="background-color: #ffffff; border-bottom: 1px solid #e9ecef;">
+      <td style="padding: 16px 20px; text-align: left; width: 30%; font-weight: 600; color: #495057; font-size: 14px;">
+        📞 Phone Number
+      </td>
+      <td style="padding: 16px 20px; text-align: left; color: #212529; font-size: 14px;">
+        <a href="tel:${studentPhone}" style="color: #0B193E; text-decoration: none;">${studentPhone}</a>
+      </td>
+    </tr>
+    <tr style="background-color: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+      <td style="padding: 16px 20px; text-align: left; width: 30%; font-weight: 600; color: #495057; font-size: 14px;">
+        🎂 Age
+      </td>
+      <td style="padding: 16px 20px; text-align: left; color: #212529; font-size: 14px;">
+        ${studentAge} years old
+      </td>
+    </tr>
+    <tr style="background-color: #ffffff;">
+      <td style="padding: 16px 20px; text-align: left; width: 30%; font-weight: 600; color: #495057; font-size: 14px;">
+        👥 Gender
+      </td>
+      <td style="padding: 16px 20px; text-align: left; color: #212529; font-size: 14px;">
+        ${studentGender}
+      </td>
+    </tr>
+  </tbody>
+</table>
+<div style="margin-top: 25px; padding: 16px; background-color: #e7f3ff; border-radius: 6px; border-left: 4px solid #0B193E;">
+  <p style="margin: 0; font-size: 13px; color: #0B193E; line-height: 1.6;">
+    <strong>💡 Quick Tip:</strong> Students typically respond best to contact within the first 24 hours of registration. Consider sending a personalized welcome message!
+  </p>
+</div>`;
+  return { header, title, paragraph, footer, mailAdds };
+};
+
 export const forgetPasswordPayload = ({
   name,
   link,
