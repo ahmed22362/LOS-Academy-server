@@ -595,12 +595,12 @@ export async function updateSessionTeacherAttendanceService({
   if (!exist) {
     throw new AppError(404, 'The Teacher is not assign to this session');
   }
-  if (!canAttendSession(session.sessionDate)) {
-    throw new AppError(
-      400,
-      "Can't update attendance now because 15 mins passed!"
-    );
-  }
+  // if (!canAttendSession(session.sessionDate)) {
+  //   throw new AppError(
+  //     400,
+  //     "Can't update attendance now because 15 mins passed!"
+  //   );
+  // }
   session.teacherAttended = attend;
   await session.save({ transaction });
 }
@@ -623,12 +623,12 @@ export async function updateSessionStudentAttendanceService({
   if (!exist) {
     throw new AppError(404, 'The student is not assign to this session');
   }
-  if (!canAttendSession(session.sessionDate)) {
-    throw new AppError(
-      400,
-      "Can't update attendance now because 15 mins passed!"
-    );
-  }
+  // if (!canAttendSession(session.sessionDate)) {
+  //   throw new AppError(
+  //     400,
+  //     "Can't update attendance now because 15 mins passed!"
+  //   );
+  // }
   session.studentAttended = attend;
   await session.save({ transaction });
 }
