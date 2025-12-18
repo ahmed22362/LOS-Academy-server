@@ -4,6 +4,7 @@ import logger from './utils/logger';
 import connectDB from './connect/connectDB';
 import rescheduleJobs, {
   cleanupJobsWeekly,
+  resetTeachersMonthly,
 } from './utils/processSchedulerJobs';
 import { createServer } from 'node:http';
 import { setupSocket } from './connect/socket';
@@ -27,5 +28,6 @@ server.listen(PORT, async () => {
   await connectDB();
   rescheduleJobs();
   cleanupJobsWeekly();
+  resetTeachersMonthly();
   routes(app);
 });

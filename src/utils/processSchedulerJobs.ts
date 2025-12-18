@@ -49,6 +49,22 @@ export function cleanupJobsWeekly() {
     console.log("Deleted all failed and outdated jobs");
   });
 }
+
+export function resetTeachersMonthly() {
+  const rule = new RecurrenceRule();
+  rule.date = 1; // runs on the 1st day of the month
+  rule.hour = 0; // runs at midnight
+  rule.minute = 0;
+  scheduleJob("reset-teachers-monthly", rule, async function () {
+    try {
+      const { resetAllTeachersService } = await import("../service/teacher.service");
+      await resetAllTeachersService();
+      logger.info("Successfully reset all teachers' balance and committed_mins for new month");
+    } catch (error: any) {
+      logger.error(`Failed to reset teachers monthly: ${error.message}`);
+    }
+  });
+}
 export function getSessionReminderJobName(sessionId: number) {
   return `session #${sessionId} Reminder`;
 }

@@ -163,3 +163,18 @@ export async function getTeacherStudentsService({
   ].map((item) => JSON.parse(item));
   return { unique, count };
 }
+
+export async function resetAllTeachersService() {
+  // Reset balance and committed_mins for all teachers at the start of each month
+  const [updatedCount] = await Teacher.update(
+    { 
+      balance: 0,
+      committed_mins: 0
+    },
+    {
+      where: {}, // Update all teachers
+    }
+  );
+  return updatedCount;
+}
+
