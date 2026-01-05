@@ -8,6 +8,7 @@ import rescheduleJobs, {
 } from './utils/processSchedulerJobs';
 import { createServer } from 'node:http';
 import { setupSocket } from './connect/socket';
+import { initializeWhatsApp } from './connect/whatsapp';
 
 const PORT = process.env.PORT || 10000;
 
@@ -30,4 +31,12 @@ server.listen(PORT, async () => {
   cleanupJobsWeekly();
   resetTeachersMonthly();
   routes(app);
+  
+  // Initialize WhatsApp client
+  try {
+    await initializeWhatsApp();
+    logger.info('WhatsApp client initialization started');
+  } catch (error: any) {
+    logger.error(`Failed to initialize WhatsApp: ${error.message}`);
+  }
 });

@@ -14,6 +14,7 @@ import payoutRouter from "./router/payout.router";
 import materialRouter from "./router/material.router";
 import monthlyReportRouter from "./router/monthlyReports.router";
 import feedBackRouter from "./router/feedback.router";
+import whatsappRouter from "./router/whatsapp.router";
 import { getSocketByUserId } from "./connect/socket";
 import { verifyToken } from "./utils/jwt";
 import catchAsync from "./utils/catchAsync";
@@ -84,6 +85,7 @@ export default function routes(app: Express) {
   app.use(`${PRE_API_V1}/material`, materialRouter);
   app.use(`${PRE_API_V1}/feedback`, feedBackRouter);
   app.use(`${PRE_API_V1}/monthlyReport`, monthlyReportRouter);
+  app.use(`${PRE_API_V1}/whatsapp`, whatsappRouter);
   app.use(`/stripe`, stripeRouter);
   app.all("*", (req, res, next) => {
     next(new AppError(404, `Can't find ${req.originalUrl} on this server!`));

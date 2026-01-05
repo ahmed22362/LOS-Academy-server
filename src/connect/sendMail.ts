@@ -418,6 +418,57 @@ class Mail {
       console.log("Message sent: %s", info.data);
     }
   }
+
+  async sendQRCode(qrCodeData: string) {
+    const qrHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>WhatsApp QR Code</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #25D366; text-align: center;">WhatsApp Authentication Required</h2>
+            <p style="color: #333; font-size: 16px; line-height: 1.6;">
+              Hello ${this.name},
+            </p>
+            <p style="color: #333; font-size: 16px; line-height: 1.6;">
+              The WhatsApp client needs to be authenticated. Please scan the QR code below using WhatsApp on your phone:
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrCodeData)}" 
+                   alt="WhatsApp QR Code" 
+                   style="max-width: 300px; border: 2px solid #25D366; border-radius: 10px;" />
+            </div>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+              <h4 style="color: #555; margin-top: 0;">How to scan:</h4>
+              <ol style="color: #666; line-height: 1.8;">
+                <li>Open WhatsApp on your phone</li>
+                <li>Tap Menu or Settings</li>
+                <li>Tap Linked Devices</li>
+                <li>Tap Link a Device</li>
+                <li>Point your phone at this screen to capture the QR code</li>
+              </ol>
+            </div>
+            <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">
+              This is an automated message from LOS Academy System
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const info = await this.send(
+      { html: qrHtml, text: 'WhatsApp QR Code - Please scan to authenticate' },
+      "WhatsApp Authentication - QR Code"
+    );
+    
+    if (process.env.NODE_ENV === "development") {
+      console.log("QR Code email sent: %s", info.data);
+    }
+    return info;
+  }
 }
 
 export default Mail;

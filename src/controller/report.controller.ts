@@ -23,6 +23,8 @@ import logger from '../utils/logger';
 import { updateTeacherBalance } from '../service/teacher.service';
 import { sequelize } from '../db/sequelize';
 import { emitReportAddedForUser } from '../connect/socket';
+import { sendWhatsAppPDF, getWhatsAppStatus } from '../connect/whatsapp';
+import { generateReportPDF } from '../utils/generateReportPDF';
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -40,17 +42,17 @@ export const createReport = catchAsync(
     const session = await getOneSessionWithSessionInfoOnlyService({
       sessionId,
     });
-    if (session.status !== SessionStatus.TAKEN) {
-      return next(new AppError(400, "can't add report to a non taken session"));
-    }
-    if (session.hasReport) {
-      return next(
-        new AppError(
-          400,
-          "Session already has report you can't add two reports for the same session!"
-        )
-      );
-    }
+    // if (session.status !== SessionStatus.TAKEN) {
+    //   return next(new AppError(400, "can't add report to a non taken session"));
+    // }
+    // if (session.hasReport) {
+    //   return next(
+    //     new AppError(
+    //       400,
+    //       "Session already has report you can't add two reports for the same session!"
+    //     )
+    //   );
+    // }
     const transaction = await sequelize.transaction();
     try {
       const report = await createReportService({
@@ -83,6 +85,73 @@ export const createReport = catchAsync(
       });
       await transaction.commit();
       emitReportAddedForUser(session.sessionInfo?.userId!, report);
+      
+      // Send report via WhatsApp (async, don't block response)
+      (async () => {
+        try {
+          if (getWhatsAppStatus()) {
+            // Fetch full report with user and teacher details
+            const fullReport = await getReportService({
+              reportId: report.id,
+              findOptions: {
+                include: [
+                  {
+                    model: User,
+                    as: 'user',
+                    attributes: getUserAttr,
+                  },
+                  {
+                    model: Teacher,
+                    as: 'teacher',
+                    attributes: getTeacherAtt,
+                  },
+                ],
+              },
+            });
+
+            const user = fullReport.user;
+            if (user?.phone) {
+              // Generate PDF
+              const pdfBuffer = await generateReportPDF({
+                id: fullReport.id,
+                title: fullReport.title,
+                grade: fullReport.grade,
+                comment: fullReport.comment,
+                reportCourses: fullReport.reportCourses,
+                createdAt: fullReport.createdAt,
+                user: {
+                  name: user.name,
+                  email: user.email,
+                },
+                teacher: {
+                  name: fullReport.teacher?.name || 'Unknown',
+                },
+              });
+
+              // Send via WhatsApp
+              const success = await sendWhatsAppPDF(
+                user.phone,
+                pdfBuffer,
+                `Session_Report_${report.id}.pdf`,
+                `📚 Your session report is ready!\n\nReport: ${title || 'Session Report'}\nGrade: ${grade.toUpperCase()}`
+              );
+
+              if (success) {
+                logger.info(`Report ${report.id} sent to user ${user.id} via WhatsApp`);
+              } else {
+                logger.warn(`Failed to send report ${report.id} via WhatsApp to user ${user.id}`);
+              }
+            } else {
+              logger.warn(`User ${session.sessionInfo?.userId} has no phone number for WhatsApp`);
+            }
+          } else {
+            logger.warn('WhatsApp client is not ready, skipping report sending');
+          }
+        } catch (error: any) {
+          logger.error(`Error sending report via WhatsApp: ${error.message}`);
+        }
+      })();
+
       res.status(201).json({
         status: 'success',
         message: 'report created successfully',
