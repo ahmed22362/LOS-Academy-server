@@ -1,13 +1,13 @@
 import { z } from "zod"
 
-const sessionDuration = z.number({
-  required_error: "SessionDuration must be provided",
+const sessionDuration = z.number().refine(val => val !== undefined, {
+  message: "SessionDuration must be provided",
 })
-const sessionsCount = z.number({
-  required_error: "SessionsCount must be provided",
+const sessionsCount = z.number().refine(val => val !== undefined, {
+  message: "SessionsCount must be provided",
 })
-const sessionsPerWeek = z.number({
-  required_error: "SessionsPerWeek must be provided",
+const sessionsPerWeek = z.number().refine(val => val !== undefined, {
+  message: "SessionsPerWeek must be provided",
 })
 const planId = z.number()
 

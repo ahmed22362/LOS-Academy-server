@@ -108,7 +108,7 @@ export const updatePlan = catchAsync(
       price,
       type,
     } = req.body;
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const data = {
       title,
       sessionDuration,
@@ -156,7 +156,7 @@ export const updatePlan = catchAsync(
 );
 export const deletePlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const plan = await getPlanBy({ findOptions: { where: { id } } });
     if (!plan) {
       next(new AppError(404, "Can't find plan with this id!"));
@@ -173,7 +173,7 @@ export const deletePlan = catchAsync(
 );
 export const getPlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const plan = await getPlanService({ id });
     if (!plan) {
       return next(new AppError(404, "can't find plan with this id!"));

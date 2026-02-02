@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 10000;
 
 process.on('uncaughtException', (err) => {
   logger.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
-  logger.error(err.name, err.message);
+  logger.error(`${err.name}: ${err.message}`);
   process.exit(1);
 });
 process.on('unhandledRejection', (err: any) => {
@@ -34,7 +34,7 @@ server.listen(PORT, async () => {
   
   // Initialize WhatsApp client
   try {
-    await initializeWhatsApp();
+    // await initializeWhatsApp();
     logger.info('WhatsApp client initialization started');
   } catch (error: any) {
     logger.error(`Failed to initialize WhatsApp: ${error.message}`);

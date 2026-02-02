@@ -1,22 +1,22 @@
 import { z } from "zod";
 import { SessionType } from "../db/models/session.model";
 const sessionId = z.number({
-  required_error: "please provide sessionid in the body!",
+  message: "please provide sessionid in the body!",
 });
 const teacherId = z.string({
-  required_error: "Please provide teacherId in the body!",
+  message: "Please provide teacherId in the body!",
 });
 const userId = z.string({
-  required_error: "Please provide user id in the body!",
+  message: "Please provide user id in the body!",
 });
 const sessionReqId = z.number({
-  required_error: "please provide the session request id!",
+  message: "please provide the session request id!",
 });
 const sessionInfoId = z.number({
-  required_error: "please provide the session request id!",
+  message: "please provide the session request id!",
 });
 const sessionDuration = z.number({
-  required_error: "please provide the session request id!",
+  message: "please provide the session request id!",
 });
 
 export const SessionStatusSchema = z.enum([
@@ -61,18 +61,18 @@ export const assignTeacherSchema = z.object({
 export const cancelRequestSchema = z.object({
   body: z.object({
     requestId: z.number({
-      required_error: "please enter the number of the request!",
+      message: "please enter the number of the request!",
     }),
   }),
 });
 export const replaceSessionInfoTeacherSchema = z.object({
   body: z.object({
-    userId: z.string({ required_error: "please provide userId" }),
+    userId: z.string({ message: "please provide userId" }),
     oldTeacherId: z.string({
-      required_error: "please provide oldTeacherId to be replaced",
+      message: "please provide oldTeacherId to be replaced",
     }),
     newTeacherId: z.string({
-      required_error: "please provide newTeacherId to replace with",
+      message: "please provide newTeacherId to replace with",
     }),
   }),
 });
@@ -108,7 +108,7 @@ export const createSessionByAdminSchema = z.object({
 export const getSessionCoursesSchema = z.object({
   query: z.object({
     sessionId: z.string({
-      required_error: "please provide sessionId as query",
+      message: "please provide sessionId as query",
     }),
   }),
 });

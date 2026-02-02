@@ -69,7 +69,7 @@ export const getAllMaterial = catchAsync(
 );
 export const getOneMaterial = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sMaterialId = req.params.id;
+    const sMaterialId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const materialId = parseInt(sMaterialId);
     const material = await getOneMaterialService({
       materialId,
@@ -80,7 +80,7 @@ export const getOneMaterial = catchAsync(
 );
 export const updateOneMaterial = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sMaterialId = req.params.id;
+    const sMaterialId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const materialId = parseInt(sMaterialId);
     const { name, age, course, status } = req.body;
     const updatedMaterial = await updateMaterialService({
@@ -96,7 +96,7 @@ export const updateOneMaterial = catchAsync(
 );
 export const deleteOneMaterial = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const sMaterialId = req.params.id;
+    const sMaterialId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const materialId = parseInt(sMaterialId);
     await deleteMaterialService({ materialId });
     res

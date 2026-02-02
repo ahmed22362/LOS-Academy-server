@@ -4,34 +4,32 @@ const payload = {
   body: z
     .object({
       name: z.string({
-        required_error: "name is required",
+        message: "name is required",
       }),
       nationalId: z
-        .string({
-          required_error: "nationalId is required",
-        })
+        .string({ message: "nationalId is required" })
+        .min(1, { message: "nationalId is required" })
         .refine((data) => data.length === 14, {
           message: "National id must be exactly 14 characters long.",
         }),
-      phone: z.string({ required_error: "phone is required" }),
+      phone: z.string({ message: "phone is required" }).min(1, { message: "phone is required" }),
       hour_cost: z.number({
-        required_error:
+        message:
           "the teacher session cost is required to create a teacher!",
       }),
       role: z.enum(["admin", "teacher"]),
       password: z
         .string({
-          required_error: "Password is required",
+          message: "Password is required",
         })
         .min(6, "Password too short - should be 6 chars minimum"),
       passwordConfirmation: z.string({
-        required_error: "passwordConfirmation is required",
+        message: "passwordConfirmation is required",
       }),
       email: z
         .string({
-          required_error: "Email is required",
+          message: "Email is required",
         })
-        .email("Not a valid email"),
     })
     .refine((data) => data.password === data.passwordConfirmation, {
       message: "Passwords do not match",
@@ -54,17 +52,18 @@ export const createTeacherSchema = z.object({ ...payload });
 export const loginTeacherSchema = z.object({
   body: z.object({
     email: z
-      .string({ required_error: "Email is required for log in!" })
+      .string({ message: "Email is required for log in!" })
+      .min(1, { message: "Email is required for log in!" })
       .email("Not a valid mail!"),
     password: z
-      .string({ required_error: "password is required" })
+      .string({ message: "password is required" })
       .min(6, "Password too short - it was 6 chars minimum"),
   }),
 });
 export const isTeacherIdExist = z.object({
   body: z.object({
     teacherId: z.string({
-      required_error: "TeacherId is required for this task",
-    }),
+      message: "TeacherId is required for this task",
+    }).min(1, { message: "TeacherId is required for this task" }),
   }),
 });

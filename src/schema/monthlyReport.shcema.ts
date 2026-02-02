@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { CourseSchema } from "./report.schema";
 
-const userId = z.string({ required_error: "userId is required!" });
-const teacherId = z.string({ required_error: "teacherId is required!" });
+const userId = z.string({ message: "userId is required!" });
+const teacherId = z.string({ message: "teacherId is required!" });
 export const createMonthlyReportSchema = z.object({
   body: z.object({
     userId,

@@ -38,7 +38,7 @@ export const getAllCourses = catchAsync(
 );
 export const getCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const course = await getCourseService({ id });
     if (!course) {
       return next(new AppError(404, "Can't find course with this id!"));
@@ -48,7 +48,7 @@ export const getCourse = catchAsync(
 );
 export const updateCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const { title, description, details } = req.body;
     const course = await updateCourseService({
       id,
@@ -59,7 +59,7 @@ export const updateCourse = catchAsync(
 );
 export const deleteCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const course = await getCourseService({ id });
     await deleteCourseService({
       id: course?.id,

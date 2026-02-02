@@ -5,26 +5,26 @@ const payload = {
   body: z
     .object({
       name: z.string({
-        required_error: "name is required",
+        message: "name is required",
       }),
       phone: z.string({
-        required_error: "phone is required",
+        message: "phone is required",
       }),
       age: z.number({
-        required_error: "age is required",
+        message: "age is required",
       }),
       gender: z.enum(["male", "female"]),
       password: z
         .string({
-          required_error: "Password is required",
+          message: "Password is required",
         })
         .min(6, "Password too short - should be 6 chars minimum"),
       passwordConfirmation: z.string({
-        required_error: "passwordConfirmation is required",
+        message: "passwordConfirmation is required",
       }),
       email: z
         .string({
-          required_error: "Email is required",
+          message: "Email is required",
         })
         .email("Not a valid email"),
     })
@@ -39,10 +39,10 @@ export const signupUserSchema = z.object({ ...payload })
 export const loginUserSchema = z.object({
   body: z.object({
     email: z
-      .string({ required_error: "Email is required for log in!" })
+      .string({ message: "Email is required for log in!" })
       .email("Not a valid mail!"),
     password: z
-      .string({ required_error: "password is required" })
+      .string({ message: "password is required" })
       .min(6, "Password too short - it was 6 chars minimum"),
   }),
 })
@@ -50,7 +50,7 @@ export const loginUserSchema = z.object({
 export const forgetPasswordSchema = z.object({
   body: z.object({
     email: z
-      .string({ required_error: "Email is required !" })
+      .string({ message: "Email is required !" })
       .email("Not a valid mail!"),
   }),
 })
@@ -58,12 +58,12 @@ export const resetPasswordSchema = z.object({
   body: z
     .object({
       password: z
-        .string({ required_error: "password is required" })
+        .string({ message: "password is required" })
         .min(6, "Password too short - it was 6 chars minimum"),
       passwordConfirmation: z.string({
-        required_error: "passwordConfirmation is required",
+        message: "passwordConfirmation is required",
       }),
-      token: z.string({ required_error: "token is Required!" }),
+      token: z.string({ message: "token is Required!" }),
     })
     .refine((data) => data.password === data.passwordConfirmation, {
       message: "Passwords do not match",
@@ -75,13 +75,13 @@ export const updateMyPasswordSchema = z.object({
   body: z
     .object({
       currentPassword: z
-        .string({ required_error: "password is required" })
+        .string({ message: "password is required" })
         .min(6, "Password too short - it was 6 chars minimum"),
       newPassword: z
-        .string({ required_error: "new Password is required" })
+        .string({ message: "new Password is required" })
         .min(6, "Password too short - it was 6 chars minimum"),
       newPasswordConfirm: z.string({
-        required_error: "confirm new password is required",
+        message: "confirm new password is required",
       }),
     })
     .refine((data) => data.newPassword === data.newPasswordConfirm, {
@@ -102,7 +102,7 @@ export const updateMeSchema = z.object({
 const params = {
   params: z.object({
     id: z.string({
-      required_error: "Add ID to params to get the associated user!",
+      message: "Add ID to params to get the associated user!",
     }),
   }),
 }

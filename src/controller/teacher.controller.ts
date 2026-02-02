@@ -94,7 +94,7 @@ export const getAllTeachers = catchAsync(
 );
 export const deleteTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
     const deleteState = await deleteTeacherService({ id });
     if (!deleteState) {
@@ -107,7 +107,7 @@ export const deleteTeacher = catchAsync(
 );
 export const updateTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const {
       name,
       hour_cost,
@@ -153,7 +153,7 @@ export const updateTeacher = catchAsync(
 );
 export const updateMeTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const { name, email, phone, password } = req.body;
     const body = {
       name,
@@ -182,7 +182,7 @@ export const updateMeTeacher = catchAsync(
 );
 export const getTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const teacher = await getTeacherByIdService({
       id,
       findOptions: {

@@ -110,7 +110,7 @@ export const getAllUsers = catchAsync(
 );
 export const deleteUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = req.params.id as string;
     const force = <string>req.query.force;
 
     const deleteState = await deleteUserService({
@@ -162,7 +162,7 @@ export const updateUser = catchAsync(
     }
 
     const user = await updateUserService({
-      userId: id,
+      userId: id as string,
       updatedData: body as object,
     });
     if (!user) {
@@ -177,7 +177,7 @@ export const updateUser = catchAsync(
 );
 export const getUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.params.id;
+    const id = req.params.id as string;
     const user = await getUserByIdService({
       userId: id,
       findOptions: { attributes: getUserAttr },

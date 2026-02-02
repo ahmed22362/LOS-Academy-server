@@ -63,12 +63,12 @@ export const initializeWhatsApp = async () => {
     });
 
     whatsappClient.on("auth_failure", (msg) => {
-      logger.error("WhatsApp authentication failure:", msg);
+      logger.error(`WhatsApp authentication failure: ${msg}`);
       isReady = false;
     });
 
     whatsappClient.on("disconnected", (reason) => {
-      logger.warn("WhatsApp client disconnected:", reason);
+      logger.warn(`WhatsApp client disconnected: ${reason}`);
       isReady = false;
     });
 
