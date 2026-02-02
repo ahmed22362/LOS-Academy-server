@@ -15,3 +15,5 @@ dist/
 .env
 .env.local
 *.dump
+.wwebjs_auth
+.wwebjs_cache
