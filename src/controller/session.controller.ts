@@ -91,13 +91,12 @@ export const getAllSessionsByStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { nLimit, status, offset, orderBy, order } =
       getPaginationParameter(req);
-    const userSearch = req.query.user as string | undefined;
-    const teacherSearch = req.query.teacher as string | undefined;
+    const search = req.query.search as string | undefined;
     let searchQuery: { [key: string]: any } | undefined;
-    if (userSearch || teacherSearch) {
+    if (search) {
       searchQuery = {
-        user: userSearch as any,
-        teacher: teacherSearch as any,
+        user: search,
+        teacher: search,
       };
     }
 
@@ -125,7 +124,7 @@ export const getAllSessionsByStatus = catchAsync(
       length: sessions.count,
       data: sessions.rows,
     });
-  }
+  },
 );
 export const getOneSessionInfo = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -134,7 +133,7 @@ export const getOneSessionInfo = catchAsync(
       sessionId: +sessionId,
     });
     res.status(200).json({ status: 'success', data: session });
-  }
+  },
 );
 export const replaceSessionInfoTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -146,8 +145,8 @@ export const replaceSessionInfoTeacher = catchAsync(
       return next(
         new AppError(
           404,
-          'There is no sessions where this user choose to continue with this old teacher!'
-        )
+          'There is no sessions where this user choose to continue with this old teacher!',
+        ),
       );
     }
     const transaction: Transaction = await sequelize.transaction();
@@ -192,10 +191,10 @@ export const replaceSessionInfoTeacher = catchAsync(
     } catch (error: any) {
       await transaction.rollback();
       return next(
-        new AppError(400, `Error While Replace teacher: ${error.message}`)
+        new AppError(400, `Error While Replace teacher: ${error.message}`),
       );
     }
-  }
+  },
 );
 export const createSessionAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -216,8 +215,8 @@ export const createSessionAdmin = catchAsync(
         return next(
           new AppError(
             400,
-            'please provide date that is in the future not in the past!'
-          )
+            'please provide date that is in the future not in the past!',
+          ),
         );
       }
       newSessionDates.push(new Date(date));
@@ -226,14 +225,14 @@ export const createSessionAdmin = catchAsync(
       return next(
         new AppError(
           400,
-          'please provide dates that have the same length of sessions per week!'
-        )
+          'please provide dates that have the same length of sessions per week!',
+        ),
       );
     }
     if (type === SessionType.FREE && newSessionDates.length > 1) {
       throw new AppError(
         400,
-        'please provide only one date for the free session!'
+        'please provide only one date for the free session!',
       );
     }
     const t = await sequelize.transaction();
@@ -247,7 +246,7 @@ export const createSessionAdmin = catchAsync(
         if (user.remainSessions < sessionsToCreate) {
           throw new AppError(
             400,
-            `Insufficient session credits. You have ${user.remainSessions} credits but need ${sessionsToCreate} sessions.`
+            `Insufficient session credits. You have ${user.remainSessions} credits but need ${sessionsToCreate} sessions.`,
           );
         }
       }
@@ -286,15 +285,15 @@ export const createSessionAdmin = catchAsync(
     } catch (error: any) {
       await t.rollback();
       return next(
-        new AppError(400, `Error creating session! ${error.message}`)
+        new AppError(400, `Error creating session! ${error.message}`),
       );
     }
-  }
+  },
 );
 export const updateSessionAttendance = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const t = await sequelize.transaction();
   try {
@@ -324,7 +323,7 @@ export const updateSessionAttendance = async (
   } catch (error: any) {
     await t.rollback();
     return next(
-      new AppError(400, `Some thing went wrong like : ${error.message}`)
+      new AppError(400, `Some thing went wrong like : ${error.message}`),
     );
   }
 };
@@ -338,16 +337,16 @@ export const requestSessionReschedule = catchAsync(
       return next(
         new AppError(
           400,
-          "Can't request new schedule because every session has maximum two requests and this session take all it's opportunities!"
-        )
+          "Can't request new schedule because every session has maximum two requests and this session take all it's opportunities!",
+        ),
       );
     }
     if (!canRescheduleSession(session.sessionDate)) {
       return next(
         new AppError(
           403,
-          'Cant Request a reschedule before 10 minutes of the session!'
-        )
+          'Cant Request a reschedule before 10 minutes of the session!',
+        ),
       );
     }
     if (!Array.isArray(newDatesOptions)) {
@@ -366,15 +365,15 @@ export const requestSessionReschedule = catchAsync(
         return next(
           new AppError(
             400,
-            `please provide date that is after the session date not before it!: Session Date=> ${session.sessionDate} Your Date => ${newSessionDate}`
-          )
+            `please provide date that is after the session date not before it!: Session Date=> ${session.sessionDate} Your Date => ${newSessionDate}`,
+          ),
         );
       } else if (currentDate.getTime() > newSessionDate.getTime()) {
         return next(
           new AppError(
             400,
-            `Please provide date in the future not in the past!: Your Entered Date=> ${newSessionDate}`
-          )
+            `Please provide date in the future not in the past!: Your Entered Date=> ${newSessionDate}`,
+          ),
         );
       } else if (
         currentDate.getTime() + HOUR_IN_MILLISECONDS >
@@ -383,8 +382,8 @@ export const requestSessionReschedule = catchAsync(
         return next(
           new AppError(
             400,
-            `Please provide date and time that is at least one hour from now!`
-          )
+            `Please provide date and time that is at least one hour from now!`,
+          ),
         );
       }
       datesArr.push(newSessionDate);
@@ -396,24 +395,24 @@ export const requestSessionReschedule = catchAsync(
       return next(
         new AppError(
           400,
-          "Can't request another reschedule before the previous request has response"
-        )
+          "Can't request another reschedule before the previous request has response",
+        ),
       );
     }
     if (teacherId && session.status === SessionStatus.TEACHER_ABSENT) {
       return next(
         new AppError(
           403,
-          "Can't request a reschedule for session you were absent at the user only who can request reschedule!"
-        )
+          "Can't request a reschedule for session you were absent at the user only who can request reschedule!",
+        ),
       );
     }
     if (userId && session.status === SessionStatus.USER_ABSENT) {
       return next(
         new AppError(
           403,
-          "Can't request a reschedule for session you were absent at the teacher only who can request reschedule!"
-        )
+          "Can't request a reschedule for session you were absent at the teacher only who can request reschedule!",
+        ),
       );
     }
     const transaction = await sequelize.transaction();
@@ -466,10 +465,10 @@ export const requestSessionReschedule = catchAsync(
     } catch (error: any) {
       await transaction.rollback();
       return next(
-        new AppError(400, `Error while request reschedule: ${error.message}`)
+        new AppError(400, `Error while request reschedule: ${error.message}`),
       );
     }
-  }
+  },
 );
 export const cancelSessionRescheduleRequest = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -479,8 +478,8 @@ export const cancelSessionRescheduleRequest = catchAsync(
       return next(
         new AppError(
           400,
-          "Can't delete request because it's already responded to!"
-        )
+          "Can't delete request because it's already responded to!",
+        ),
       );
     }
     let localSession;
@@ -493,13 +492,13 @@ export const cancelSessionRescheduleRequest = catchAsync(
         return next(
           new AppError(
             403,
-            "you don't own this session that associated with the request!"
-          )
+            "you don't own this session that associated with the request!",
+          ),
         );
       }
       if (request.requestedBy !== RoleType.USER) {
         return next(
-          new AppError(400, "Can't cancel request that you didn't requested")
+          new AppError(400, "Can't cancel request that you didn't requested"),
         );
       }
       localSession = session;
@@ -512,26 +511,26 @@ export const cancelSessionRescheduleRequest = catchAsync(
         return next(
           new AppError(
             403,
-            "you don't own this session that associated with the request!"
-          )
+            "you don't own this session that associated with the request!",
+          ),
         );
       }
       if (request.requestedBy !== RoleType.TEACHER) {
         return next(
-          new AppError(400, "Can't cancel request that you didn't requested")
+          new AppError(400, "Can't cancel request that you didn't requested"),
         );
       }
       localSession = session;
     } else {
       return next(
-        new AppError(400, "Can't determine who is signed in user or teacher")
+        new AppError(400, "Can't determine who is signed in user or teacher"),
       );
     }
     const transaction = await sequelize.transaction();
     try {
       await localSession.decrement(
         { reschedule_request_count: 1 },
-        { transaction }
+        { transaction },
       );
       await request.destroy({ transaction });
       await transaction.commit();
@@ -541,10 +540,10 @@ export const cancelSessionRescheduleRequest = catchAsync(
     } catch (error: any) {
       await transaction.rollback();
       return next(
-        new AppError(400, `Error while deleting request: ${error.message}`)
+        new AppError(400, `Error while deleting request: ${error.message}`),
       );
     }
-  }
+  },
 );
 export const getAllRescheduleRequestsForAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -576,10 +575,10 @@ export const getAllRescheduleRequestsForAdmin = catchAsync(
       },
     });
     res.status(200).json({ status: 'success', data: requests });
-  }
+  },
 );
 export const updateStatusSessionReschedule = (
-  status: RescheduleRequestStatus
+  status: RescheduleRequestStatus,
 ) =>
   catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { teacherId, userId, rescheduleRequestId, newDate } = req.body;
@@ -592,7 +591,7 @@ export const updateStatusSessionReschedule = (
       (requestedBy === RoleType.USER && userId)
     ) {
       return next(
-        new AppError(403, "can't update status of request that you asked!")
+        new AppError(403, "can't update status of request that you asked!"),
       );
     }
     if (rescheduleRequest.status !== RescheduleRequestStatus.PENDING) {
@@ -607,7 +606,7 @@ export const updateStatusSessionReschedule = (
       });
       if (!exist) {
         return next(
-          new AppError(401, "can't update request for session is not yours")
+          new AppError(401, "can't update request for session is not yours"),
         );
       }
       localSession = session;
@@ -618,7 +617,7 @@ export const updateStatusSessionReschedule = (
       });
       if (!exist) {
         return next(
-          new AppError(401, "can't update request for session is not yours")
+          new AppError(401, "can't update request for session is not yours"),
         );
       }
       localSession = session;
@@ -651,8 +650,8 @@ export const updateStatusSessionReschedule = (
         return next(
           new AppError(
             400,
-            `please provide date that in the the reschedule request in: ${dateStr}`
-          )
+            `please provide date that in the the reschedule request in: ${dateStr}`,
+          ),
         );
       }
       if (teacherId) {
@@ -730,8 +729,8 @@ export const updateStatusSessionReschedule = (
         return next(
           new AppError(
             404,
-            `Error while updating request session! can't determine the status of the request!`
-          )
+            `Error while updating request session! can't determine the status of the request!`,
+          ),
         );
       }
       // no need now for the job that checked missed requests
@@ -750,7 +749,7 @@ export const updateStatusSessionReschedule = (
     } catch (error: any) {
       await transaction.rollback();
       return next(
-        new AppError(400, `Error updating request :${error.message}`)
+        new AppError(400, `Error updating request :${error.message}`),
       );
     }
   });
@@ -765,8 +764,8 @@ export const userContinueWithTeacher = catchAsync(
       return next(
         new AppError(
           400,
-          "Can't continue with teacher from paid session you already with him!"
-        )
+          "Can't continue with teacher from paid session you already with him!",
+        ),
       );
     }
     const sessionInfo = await getSessionInfoService({
@@ -781,19 +780,19 @@ export const userContinueWithTeacher = catchAsync(
       return next(
         new AppError(
           403,
-          'You already placed your session wait for the next month or contact your admin'
-        )
+          'You already placed your session wait for the next month or contact your admin',
+        ),
       );
     }
     const subscription = await checkUserSubscription({ userId });
     if (subscription.status !== SubscriptionStatus.ACTIVE) {
       return next(
-        new AppError(400, 'You  must activate your subscription first!')
+        new AppError(400, 'You  must activate your subscription first!'),
       );
     }
     if (!Array.isArray(sessionDates)) {
       return next(
-        new AppError(400, 'Please provide sessionDates as list or array!')
+        new AppError(400, 'Please provide sessionDates as list or array!'),
       );
     }
     await sessionPerWeekEqualDates({
@@ -804,7 +803,7 @@ export const userContinueWithTeacher = catchAsync(
     try {
       const teacherBalanceAmount = calculateTeacherSessionPayment(
         sessionInfo.teacher?.hour_cost || 0,
-        session.sessionDuration
+        session.sessionDuration,
       );
       await updateTeacherBalance({
         teacherId: sessionInfo.teacherId!,
@@ -820,8 +819,8 @@ export const userContinueWithTeacher = catchAsync(
           return next(
             new AppError(
               400,
-              'please provide date that is in the future not in the past!'
-            )
+              'please provide date that is in the future not in the past!',
+            ),
           );
         }
         newSessionDates.push(new Date(date));
@@ -857,7 +856,7 @@ export const userContinueWithTeacher = catchAsync(
       await transaction.rollback();
       return next(new AppError(400, `Error Placed Session: ${error.message}`));
     }
-  }
+  },
 );
 export const userWontContinueWithTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -870,8 +869,8 @@ export const userWontContinueWithTeacher = catchAsync(
       return next(
         new AppError(
           400,
-          "Can't choose continue option with teacher from paid session!"
-        )
+          "Can't choose continue option with teacher from paid session!",
+        ),
       );
     }
     const sessionInfo = await getSessionInfoService({
@@ -886,7 +885,7 @@ export const userWontContinueWithTeacher = catchAsync(
       status: 'success',
       message: 'user chose to NOT continue with teacher!',
     });
-  }
+  },
 );
 export const getUserContinueStatus = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -903,13 +902,13 @@ export const getUserContinueStatus = catchAsync(
       ],
     });
     res.status(200).json({ status: 'success', data: sessionInfo });
-  }
+  },
 );
 export const getAdminSessionStats = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const sessionStats = await getAdminSessionsStatisticsService();
     res.status(200).json({ status: 'success', data: sessionStats });
-  }
+  },
 );
 export const getContinueWithTeacherAbstract = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -946,7 +945,7 @@ export const getContinueWithTeacherAbstract = catchAsync(
       length: sessionInfo.length,
       data: formattedData,
     });
-  }
+  },
 );
 export const deleteSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -955,7 +954,7 @@ export const deleteSession = catchAsync(
     res
       .status(200)
       .json({ status: 'success', message: 'session deleted successfully!' });
-  }
+  },
 );
 export const updateContinueWithTeacherAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -969,7 +968,7 @@ export const updateContinueWithTeacherAdmin = catchAsync(
       message: 'Status updated successfully',
       data: sessionInfo,
     });
-  }
+  },
 );
 export const updateSessionForAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -994,7 +993,7 @@ export const updateSessionForAdmin = catchAsync(
       status,
       reschedule_request_count,
       hasReport,
-      meetingLink
+      meetingLink,
     );
     try {
       if (
@@ -1054,11 +1053,11 @@ export const updateSessionForAdmin = catchAsync(
       return next(
         new AppError(
           400,
-          `Can't update session Some thing went wrong like : ${error.message}`
-        )
+          `Can't update session Some thing went wrong like : ${error.message}`,
+        ),
       );
     }
-  }
+  },
 );
 export const deleteSessionInfoForAdmin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -1069,5 +1068,5 @@ export const deleteSessionInfoForAdmin = catchAsync(
       message:
         'Every session User and Teacher had or will have together has been deleted!',
     });
-  }
+  },
 );
