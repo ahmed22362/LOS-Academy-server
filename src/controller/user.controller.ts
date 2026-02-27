@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { Op } from 'sequelize';
 import User, { IUserInput, USER_TABLE_NAME } from '../db/models/user.model';
 import catchAsync from '../utils/catchAsync';
 import {
@@ -41,7 +42,7 @@ export const MONTH_IN_MS = 2629800000;
 export const setUserOrTeacherId = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   if (!req.body.user && !req.body.userId)
     req.body.userId = (req.user as User)?.id;
@@ -52,7 +53,7 @@ export const setUserOrTeacherId = (
 export const setUserIdToParams = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   if (!req.params.id) req.params.id = (req.user as User)?.id as string;
   if (!req.params.id) req.params.id = (req.teacher as Teacher)?.id as string;
@@ -90,13 +91,25 @@ export const createUser = catchAsync(
     newUser.customerId = stripeCustomer.id;
     await newUser.save();
     res.status(200).json({ status: 'success', data: newUser });
-  }
+  },
 );
 export const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { nLimit, offset } = getPaginationParameter(req);
+    const search = req.query.search as string | undefined;
+
+    let where: any = {};
+    if (search) {
+      console.log('Searching for users with:', search);
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+        { phone: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
     const users = await getUsersService({
-      findOptions: { attributes: getUserAttr, limit: nLimit, offset },
+      findOptions: { attributes: getUserAttr, limit: nLimit, offset, where },
     });
     if (!users) {
       return next(new AppError(400, 'Error getting all users!'));
@@ -106,7 +119,7 @@ export const getAllUsers = catchAsync(
       length: users?.count,
       data: users.rows,
     });
-  }
+  },
 );
 export const deleteUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -123,7 +136,7 @@ export const deleteUser = catchAsync(
     res
       .status(200)
       .json({ status: 'success', message: 'user Deleted successfully' });
-  }
+  },
 );
 export const updateUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -173,7 +186,7 @@ export const updateUser = catchAsync(
       message: 'user updated successfully',
       data: user,
     });
-  }
+  },
 );
 export const getUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -186,7 +199,7 @@ export const getUser = catchAsync(
       return next(new AppError(404, "Can't find user with this id!"));
     }
     res.status(200).json({ status: 'success', data: user });
-  }
+  },
 );
 export const getMySubscription = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -205,7 +218,7 @@ export const getMySubscription = catchAsync(
     let subscriptionEndAt;
 
     stripeSubscription = await getStripeSubscription(
-      userSubscription.stripe_subscription_id as string
+      userSubscription.stripe_subscription_id as string,
     );
     if (
       userSubscription.status === SubscriptionStatus.ACTIVE &&
@@ -225,7 +238,7 @@ export const getMySubscription = catchAsync(
     if (!subscriptionStartAt && !subscriptionEndAt) {
       subscriptionStartAt = userSubscription.createdAt;
       subscriptionEndAt = new Date(
-        new Date(userSubscription.createdAt).getTime() + MONTH_IN_MS
+        new Date(userSubscription.createdAt).getTime() + MONTH_IN_MS,
       );
     }
     const subscriptionRes = {
@@ -241,7 +254,7 @@ export const getMySubscription = catchAsync(
       subscriptionEndAt,
     };
     res.status(200).json({ status: 'success', data: [subscriptionRes] });
-  }
+  },
 );
 export const updateUserPlan = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -255,7 +268,7 @@ export const updateUserPlan = catchAsync(
 
     if (!subscription) {
       return next(
-        new AppError(404, 'The user is not subscribed to plan to upgrade it !')
+        new AppError(404, 'The user is not subscribed to plan to upgrade it !'),
       );
     }
     const portal = await createStripeBillingPortal(customerId);
@@ -264,7 +277,7 @@ export const updateUserPlan = catchAsync(
       data: portal,
       message: 'redirect to the portal to change the plan from it!',
     });
-  }
+  },
 );
 export const getMyHistorySessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -278,7 +291,7 @@ export const getMyHistorySessions = catchAsync(
     res
       .status(200)
       .json({ status: 'success', length: result?.count, data: result?.rows });
-  }
+  },
 );
 export const getUserRemainSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -309,7 +322,7 @@ export const getUserRemainSessions = catchAsync(
         },
       },
     });
-  }
+  },
 );
 export const getUserUpcomingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -319,7 +332,7 @@ export const getUserUpcomingSession = catchAsync(
       return next(new AppError(400, "can't get this user Sessions"));
     }
     res.status(200).json({ status: 'success', data: result.rows });
-  }
+  },
 );
 export const getUserOngoingSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -329,7 +342,7 @@ export const getUserOngoingSession = catchAsync(
       return next(new AppError(400, "can't get this user Sessions"));
     }
     res.status(200).json({ status: 'success', data: result.rows });
-  }
+  },
 );
 export const getUserLatestSession = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -339,7 +352,7 @@ export const getUserLatestSession = catchAsync(
       return next(new AppError(400, "Can't get this user sessions"));
     }
     res.status(200).json({ status: 'success', data: result.rows });
-  }
+  },
 );
 export const getUserSessions = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -357,14 +370,14 @@ export const getUserSessions = catchAsync(
     res
       .status(200)
       .json({ status: 'success', length: result.count, data: result.rows });
-  }
+  },
 );
 export const getUserStatistics = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.body.userId;
     const stats = await getUserSessionStats({ userId });
     res.status(200).json({ status: 'success', data: stats });
-  }
+  },
 );
 export const getMySessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -381,7 +394,7 @@ export const getMySessionRescheduleRequests = catchAsync(
       length: rescheduleRequests.length,
       data: rescheduleRequests,
     });
-  }
+  },
 );
 export const getReceivedSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -398,7 +411,7 @@ export const getReceivedSessionRescheduleRequests = catchAsync(
       length: rescheduleRequests.length,
       data: rescheduleRequests,
     });
-  }
+  },
 );
 export const getAllSessionRescheduleRequests = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -415,7 +428,7 @@ export const getAllSessionRescheduleRequests = catchAsync(
       length: rescheduleRequests.length,
       data: rescheduleRequests,
     });
-  }
+  },
 );
 export const checkJWT = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -427,7 +440,7 @@ export const checkJWT = catchAsync(
       message: 'The token is verified!',
       userName: user?.name,
     });
-  }
+  },
 );
 export function getPaginationParameter(req: Request) {
   const status = req.query.status;
@@ -437,7 +450,7 @@ export function getPaginationParameter(req: Request) {
   ) {
     throw new AppError(
       400,
-      `Please provide status one of those: ${Object.values(SessionStatus)}`
+      `Please provide status one of those: ${Object.values(SessionStatus)}`,
     );
   }
   let page = req.query.page;
@@ -452,12 +465,12 @@ export function getPaginationParameter(req: Request) {
   if (req.query.order) {
     if (
       !Object.values(OrderAssociation).includes(
-        req.query.order as OrderAssociation
+        req.query.order as OrderAssociation,
       )
     ) {
       throw new AppError(
         400,
-        'Please enter order direction one of those ["DESC", "ASC"]'
+        'Please enter order direction one of those ["DESC", "ASC"]',
       );
     }
     order = req.query.order as OrderAssociation;
@@ -468,7 +481,7 @@ export function getPaginationParameter(req: Request) {
     // Check if orderBy contains direction values (backward compatibility)
     if (
       Object.values(OrderAssociation).includes(
-        req.query.orderBy as OrderAssociation
+        req.query.orderBy as OrderAssociation,
       )
     ) {
       order = req.query.orderBy as OrderAssociation;

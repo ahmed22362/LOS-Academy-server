@@ -31,7 +31,7 @@ server.listen(PORT, async () => {
   cleanupJobsWeekly();
   resetTeachersMonthly();
   routes(app);
-  
+
   // Initialize WhatsApp client
   try {
     // await initializeWhatsApp();

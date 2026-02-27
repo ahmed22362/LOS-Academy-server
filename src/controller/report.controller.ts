@@ -1,4 +1,5 @@
 import { NextFunction, Response, Request } from 'express';
+import { Op } from 'sequelize';
 import catchAsync from '../utils/catchAsync';
 import {
   getOneSessionWithSessionInfoOnlyService,
@@ -35,8 +36,8 @@ export const createReport = catchAsync(
       next(
         new AppError(
           401,
-          'Teacher does not own this session to write report for it'
-        )
+          'Teacher does not own this session to write report for it',
+        ),
       );
     }
     const session = await getOneSessionWithSessionInfoOnlyService({
@@ -85,7 +86,7 @@ export const createReport = catchAsync(
       });
       await transaction.commit();
       emitReportAddedForUser(session.sessionInfo?.userId!, report);
-      
+
       // Send report via WhatsApp (async, don't block response)
       (async () => {
         try {
@@ -133,19 +134,27 @@ export const createReport = catchAsync(
                 user.phone,
                 pdfBuffer,
                 `Session_Report_${report.id}.pdf`,
-                `📚 Your session report is ready!\n\nReport: ${title || 'Session Report'}\nGrade: ${grade.toUpperCase()}`
+                `📚 Your session report is ready!\n\nReport: ${title || 'Session Report'}\nGrade: ${grade.toUpperCase()}`,
               );
 
               if (success) {
-                logger.info(`Report ${report.id} sent to user ${user.id} via WhatsApp`);
+                logger.info(
+                  `Report ${report.id} sent to user ${user.id} via WhatsApp`,
+                );
               } else {
-                logger.warn(`Failed to send report ${report.id} via WhatsApp to user ${user.id}`);
+                logger.warn(
+                  `Failed to send report ${report.id} via WhatsApp to user ${user.id}`,
+                );
               }
             } else {
-              logger.warn(`User ${session.sessionInfo?.userId} has no phone number for WhatsApp`);
+              logger.warn(
+                `User ${session.sessionInfo?.userId} has no phone number for WhatsApp`,
+              );
             }
           } else {
-            logger.warn('WhatsApp client is not ready, skipping report sending');
+            logger.warn(
+              'WhatsApp client is not ready, skipping report sending',
+            );
           }
         } catch (error: any) {
           logger.error(`Error sending report via WhatsApp: ${error.message}`);
@@ -162,7 +171,7 @@ export const createReport = catchAsync(
       logger.error(`Error while creating report ${error}`);
       return next(new AppError(400, `Error creating report ${error.message}`));
     }
-  }
+  },
 );
 export const updateReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -174,7 +183,7 @@ export const updateReport = catchAsync(
     });
     if (!report) {
       return next(
-        new AppError(403, 'there are no report with this id and teacher!')
+        new AppError(403, 'there are no report with this id and teacher!'),
       );
     }
     const updatedReport = await updateReportService({
@@ -190,14 +199,14 @@ export const updateReport = catchAsync(
       message: 'report updated successfully',
       data: updatedReport,
     });
-  }
+  },
 );
 export const getReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const reportId = req.params.id;
     const report = await getReportService({ reportId: +reportId });
     res.status(200).json({ status: 'success', data: report });
-  }
+  },
 );
 export const deleteReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -210,11 +219,12 @@ export const deleteReport = catchAsync(
     res
       .status(200)
       .json({ status: 'success', message: 'report deleted successfully' });
-  }
+  },
 );
 export const getAllReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { offset, nLimit, orderBy, order } = getPaginationParameter(req);
+    const userSearch = req.query.search as string | undefined;
 
     // Build order clause
     let orderClause: any = [['createdAt', 'DESC']]; // Default ordering
@@ -226,11 +236,30 @@ export const getAllReports = catchAsync(
       orderClause = [[orderBy, 'DESC']];
     }
 
+    let userWhere: any = {};
+    let teacherWhere: any = {};
+    if (userSearch) {
+      userWhere[Op.or] = [
+        { name: { [Op.iLike]: `%${userSearch}%` } },
+        { email: { [Op.iLike]: `%${userSearch}%` } },
+      ];
+    }
+
     const reports = await getAllReportsService({
       findOptions: {
         include: [
-          { model: User, attributes: getUserAttr },
-          { model: Teacher, attributes: getTeacherAtt },
+          {
+            model: User,
+            attributes: getUserAttr,
+            where: userWhere,
+            required: userSearch ? true : false,
+          },
+          {
+            model: Teacher,
+            attributes: getTeacherAtt,
+            where: teacherWhere,
+            required: userSearch ? true : false,
+          },
         ],
         limit: nLimit,
         offset: offset,
@@ -242,7 +271,7 @@ export const getAllReports = catchAsync(
       length: reports.count,
       data: reports.rows,
     });
-  }
+  },
 );
 export const getUserReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -268,7 +297,7 @@ export const getUserReports = catchAsync(
     res
       .status(200)
       .json({ status: 'success', length: reports.length, data: reports });
-  }
+  },
 );
 export const getTeacherReports = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -294,5 +323,5 @@ export const getTeacherReports = catchAsync(
     res
       .status(200)
       .json({ status: 'success', length: reports.length, data: reports });
-  }
+  },
 );
