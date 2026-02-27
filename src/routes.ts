@@ -1,72 +1,72 @@
-import { Express } from "express";
-import { join } from "node:path";
-import errorHandler from "./middleware/error.handler";
-import AppError from "./utils/AppError";
-import userRouter from "./router/user.router";
-import teacherRouter from "./router/teacher.router";
-import planRouter from "./router/plan.router";
-import sessionRouter from "./router/session.router";
-import courseRouter from "./router/course.router";
-import subscriptionRouter from "./router/subscription.router";
-import stripeRouter from "./router/stripe.router";
-import reportRouter from "./router/report.router";
-import payoutRouter from "./router/payout.router";
-import materialRouter from "./router/material.router";
-import monthlyReportRouter from "./router/monthlyReports.router";
-import feedBackRouter from "./router/feedback.router";
-import whatsappRouter from "./router/whatsapp.router";
-import { getSocketByUserId } from "./connect/socket";
-import { verifyToken } from "./utils/jwt";
-import catchAsync from "./utils/catchAsync";
+import { Express } from 'express';
+import { join } from 'node:path';
+import errorHandler from './middleware/error.handler';
+import AppError from './utils/AppError';
+import userRouter from './router/user.router';
+import teacherRouter from './router/teacher.router';
+import planRouter from './router/plan.router';
+import sessionRouter from './router/session.router';
+import courseRouter from './router/course.router';
+import subscriptionRouter from './router/subscription.router';
+import stripeRouter from './router/stripe.router';
+import reportRouter from './router/report.router';
+import payoutRouter from './router/payout.router';
+import materialRouter from './router/material.router';
+import monthlyReportRouter from './router/monthlyReports.router';
+import feedBackRouter from './router/feedback.router';
+import whatsappRouter from './router/whatsapp.router';
+import { getSocketByUserId } from './connect/socket';
+import { verifyToken } from './utils/jwt';
+import catchAsync from './utils/catchAsync';
 // import swaggerJsdoc from "../swagger-output.json"
 // import swaggerUi from "swagger-ui-express";
-import schedule from "node-schedule";
-import logger from "./utils/logger";
+import schedule from 'node-schedule';
+import logger from './utils/logger';
 
-const PRE_API_V1: string = "/api/v1";
+const PRE_API_V1: string = '/api/v1';
 
 export default function routes(app: Express) {
   // app.get("/api-doc", swaggerUi.serve, swaggerUi.setup(swaggerJsdoc));
-  app.get("/", (req, res) => {
+  app.get('/', (req, res) => {
     res.send(
       `<h1 style="text-align:center; padding-top:100px" >LOS Academy Up And Running🚀</h1>`,
     );
   });
-  app.get("/success", (req, res) => {
+  app.get('/success', (req, res) => {
     res.send(
       `<h1 style="text-align:center; padding-top:100px" >Success! 🐱‍🏍🐱‍👤</h1>`,
     );
   });
-  app.get("/cancel", (req, res) => {
+  app.get('/cancel', (req, res) => {
     res.send(
       `<h1 style="text-align:center; padding-top:100px" >canceled! 😒</h1>`,
     );
   });
   //only for test purpose
-  app.get("/chat", (req, res) => {
+  app.get('/chat', (req, res) => {
     let token = req.cookies.token;
     if (!token) {
-      console.error("there is no token in chat test router");
-      token = "no token";
+      console.error('there is no token in chat test router');
+      token = 'no token';
     }
-    const link = `${req.protocol}s://${req.get("host")}/`;
-    res.render(join(__dirname, "/views/index.ejs"), { token, link });
+    const link = `${req.protocol}s://${req.get('host')}/`;
+    res.render(join(__dirname, '/views/index.ejs'), { token, link });
   });
-  app.get("/jobs", (req, res, next) => {
+  app.get('/jobs', (req, res, next) => {
     const jobs = schedule.scheduledJobs;
     console.log(jobs);
-    res.status(200).json({ status: "success", jobs });
+    res.status(200).json({ status: 'success', jobs });
   });
   app.get(
-    "/emit",
+    '/emit',
     catchAsync(async (req, res, next) => {
       const token = req.cookies.token;
       if (!token) {
-        return next(new AppError(404, "there is no token!"));
+        return next(new AppError(404, 'there is no token!'));
       }
       const user = await verifyToken(token);
       const message = req.query.message;
-      const event = req.query.event || "event";
+      const event = req.query.event || 'event';
       const socket = getSocketByUserId(user.id);
       console.log(`socket founded socketId: ${socket?.id}`);
       socket?.emit(event as string, message);
@@ -87,7 +87,7 @@ export default function routes(app: Express) {
   app.use(`${PRE_API_V1}/monthlyReport`, monthlyReportRouter);
   app.use(`${PRE_API_V1}/whatsapp`, whatsappRouter);
   app.use(`/stripe`, stripeRouter);
-  app.all("*", (req, res, next) => {
+  app.all('/{*path}', (req, res, next) => {
     next(new AppError(404, `Can't find ${req.originalUrl} on this server!`));
   });
   app.use(errorHandler);
