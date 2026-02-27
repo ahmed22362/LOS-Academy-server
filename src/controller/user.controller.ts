@@ -44,6 +44,7 @@ export const setUserOrTeacherId = (
   res: Response,
   next: NextFunction,
 ) => {
+  if (!req.body) req.body = {};
   if (!req.body.user && !req.body.userId)
     req.body.userId = (req.user as User)?.id;
   if (!req.body.teacher && !req.body.teacherId)
