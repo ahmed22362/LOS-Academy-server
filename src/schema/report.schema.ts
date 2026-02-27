@@ -1,15 +1,15 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 const teacherId = z.string();
 
 export const CourseSchema = z.object({
   courseName: z.string(),
   courseGrade: z.enum([
-    "excellent",
-    "good",
-    "very good",
-    "average",
-    "below average",
+    'excellent',
+    'good',
+    'very good',
+    'average',
+    'below average',
   ]),
   courseComment: z.string().optional(),
 });
@@ -17,15 +17,15 @@ export const CourseSchema = z.object({
 export const createReportSchema = z.object({
   body: z.object({
     sessionId: z.number(),
-    teacherId,
+    // teacherId,
     reportCourses: z.array(CourseSchema).optional(),
     comment: z.string().optional(),
     grade: z.enum([
-      "excellent",
-      "good",
-      "very good",
-      "average",
-      "below average",
+      'excellent',
+      'good',
+      'very good',
+      'average',
+      'below average',
     ]),
   }),
 });
