@@ -42,7 +42,7 @@ jobs:
 
             # Install dependencies
             echo "📦 Installing dependencies..."
-            pnpm install --frozen-lockfile
+            pnpm install
 
             # Run tests (if applicable)
             # echo "🧪 Running tests..."
