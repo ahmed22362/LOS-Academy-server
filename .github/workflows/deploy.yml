@@ -10,7 +10,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
-    
+
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
@@ -22,47 +22,50 @@ jobs:
           command_timeout: 30m
           script: |
             set -e
-            
+
             echo "🚀 Starting deployment..."
-            
+
             # Load NVM
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            
+
+            # Ensure pnpm is available
+            npm install -g pnpm --silent 2>/dev/null || true
+
             # Navigate to project directory
             cd ~/LOS-Academy-server || exit 1
-            
+
             # Fetch latest changes
             echo "📥 Pulling latest code..."
             git fetch origin main
             git reset --hard origin/main
-            
+
             # Install dependencies
             echo "📦 Installing dependencies..."
-            npm ci --production=false
-            
+            pnpm install --frozen-lockfile
+
             # Run tests (if applicable)
             # echo "🧪 Running tests..."
             # npm test
-            
+
             # Build the project
             echo "🔨 Building project..."
-            npm run build
-            
+            pnpm run build
+
             # Restart PM2 application
             echo "♻️ Restarting application..."
             pm2 restart backend --update-env
-            
+
             # Save PM2 process list
             pm2 save
-            
+
             # Health check
             echo "🏥 Performing health check..."
             sleep 5
             pm2 status backend
-            
+
             echo "✅ Deployment completed successfully!"
-      
+
       - name: Notify on failure
         if: failure()
         run: echo "❌ Deployment failed! Check the logs above for details."
