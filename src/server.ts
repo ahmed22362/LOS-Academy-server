@@ -5,6 +5,7 @@ import connectDB from './connect/connectDB';
 import rescheduleJobs, {
   cleanupJobsWeekly,
   resetTeachersMonthly,
+  fixStuckOngoingSessionsDaily,
 } from './utils/processSchedulerJobs';
 import { createServer } from 'node:http';
 import { setupSocket } from './connect/socket';
@@ -30,6 +31,7 @@ server.listen(PORT, async () => {
   rescheduleJobs();
   cleanupJobsWeekly();
   resetTeachersMonthly();
+  fixStuckOngoingSessionsDaily();
   routes(app);
 
   // Initialize WhatsApp client

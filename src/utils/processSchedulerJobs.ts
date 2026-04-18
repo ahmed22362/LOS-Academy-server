@@ -1,16 +1,20 @@
-import { scheduleJob, RecurrenceRule } from "node-schedule";
+import { scheduleJob, RecurrenceRule } from 'node-schedule';
 import {
   deleteFailedJobService,
   getAllJobsService,
-} from "../service/scheduleJob.service";
-import jobCallbacks from "./schedulerJobsCallbacks";
-import logger from "./logger";
+} from '../service/scheduleJob.service';
+import jobCallbacks from './schedulerJobsCallbacks';
+import logger from './logger';
 enum scheduledJobStatus {
-  QUEUED = "queued",
-  FAILED = "failed",
-  COMPLETE = "complete",
+  QUEUED = 'queued',
+  FAILED = 'failed',
+  COMPLETE = 'complete',
 }
-import { Op } from "sequelize";
+import { Op } from 'sequelize';
+import { SessionStatus } from '../db/models/session.model';
+import Session from '../db/models/session.model';
+import { handleSessionFinishedService } from '../service/session.service';
+import { literal } from 'sequelize';
 
 export default async function rescheduleJobs() {
   const jobs = await getAllJobsService({
@@ -36,7 +40,7 @@ export default async function rescheduleJobs() {
         callback({ ...job.data, jobId: job.id });
       });
     });
-    logger.info("jobs rescheduled successfully!");
+    logger.info('jobs rescheduled successfully!');
   }
 }
 export function cleanupJobsWeekly() {
@@ -44,9 +48,9 @@ export function cleanupJobsWeekly() {
   rule.dayOfWeek = 0; // runs on Sunday
   rule.hour = 0; // runs at midnight
   rule.minute = 0;
-  scheduleJob("clean-outdated-session-job", rule, async function () {
+  scheduleJob('clean-outdated-session-job', rule, async function () {
     await deleteFailedJobService();
-    console.log("Deleted all failed and outdated jobs");
+    console.log('Deleted all failed and outdated jobs');
   });
 }
 
@@ -55,16 +59,52 @@ export function resetTeachersMonthly() {
   rule.date = 1; // runs on the 1st day of the month
   rule.hour = 0; // runs at midnight
   rule.minute = 0;
-  scheduleJob("reset-teachers-monthly", rule, async function () {
+  scheduleJob('reset-teachers-monthly', rule, async function () {
     try {
-      const { resetAllTeachersService } = await import("../service/teacher.service");
+      const { resetAllTeachersService } =
+        await import('../service/teacher.service');
       await resetAllTeachersService();
-      logger.info("Successfully reset all teachers' balance and committed_mins for new month");
+      logger.info(
+        "Successfully reset all teachers' balance and committed_mins for new month",
+      );
     } catch (error: any) {
       logger.error(`Failed to reset teachers monthly: ${error.message}`);
     }
   });
 }
+export function fixStuckOngoingSessionsDaily() {
+  const rule = new RecurrenceRule();
+  rule.hour = 12;
+  rule.minute = 0;
+  rule.second = 0;
+  scheduleJob('fix-stuck-ongoing-sessions-daily', rule, async function () {
+    logger.info('Running daily fix for stuck ongoing sessions...');
+    try {
+      const stuckSessions = await Session.findAll({
+        where: {
+          status: SessionStatus.ONGOING,
+          [Op.and]: literal(
+            `"sessionDate" + (("sessionDuration" || ' minutes')::interval) < NOW()`,
+          ),
+        },
+      });
+      logger.info(`Found ${stuckSessions.length} stuck ongoing sessions`);
+      for (const session of stuckSessions) {
+        try {
+          await handleSessionFinishedService({ sessionId: session.id });
+          logger.info(`Fixed stuck ongoing session #${session.id}`);
+        } catch (err: any) {
+          logger.error(
+            `Failed to fix stuck ongoing session #${session.id}: ${err.message}`,
+          );
+        }
+      }
+    } catch (err: any) {
+      logger.error(`Error in fixStuckOngoingSessionsDaily: ${err.message}`);
+    }
+  });
+}
+
 export function getSessionReminderJobName(sessionId: number) {
   return `session #${sessionId} Reminder`;
 }

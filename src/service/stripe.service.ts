@@ -28,7 +28,7 @@ export async function createStripeCustomer({
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While creating stripe customer: ${error.message}`
+      `Error While creating stripe customer: ${error.message}`,
     );
   }
 }
@@ -140,7 +140,7 @@ export async function createStripeSession({
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While Creating subscriptions!: ${error.message}`
+      `Error While Creating subscriptions!: ${error.message}`,
     );
   }
 }
@@ -153,7 +153,7 @@ export async function createStripeBillingPortal(customerId: string) {
   } catch (error: any) {
     throw new AppError(
       400,
-      `Error While Creating subscriptions!: ${error.message}`
+      `Error While Creating subscriptions!: ${error.message}`,
     );
   }
 }
@@ -169,13 +169,13 @@ export const createWebhook = (rawBody: any, sig: string) => {
   const event = stripe.webhooks.constructEvent(
     rawBody,
     sig,
-    STRIPE_WEBHOOK_SECRET
+    STRIPE_WEBHOOK_SECRET,
   );
   return event;
 };
 export async function getStripeBalance() {
-  const balance = await stripe.balance.retrieve();
-  return balance;
+  // const balance = await stripe.balance.retrieve();
+  return 0;
 }
 export async function createStripeCouponOnce({
   percent_off,

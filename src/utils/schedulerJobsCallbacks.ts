@@ -1,31 +1,31 @@
-import Mail from "../connect/sendMail";
+import Mail from '../connect/sendMail';
 import {
   emitSessionFinishedForUser,
   emitSessionOngoingForUser,
-} from "../connect/socket";
-import { RescheduleRequestStatus } from "../db/models/rescheduleReq.model";
-import { RoleType } from "../db/models/teacher.model";
+} from '../connect/socket';
+import { RescheduleRequestStatus } from '../db/models/rescheduleReq.model';
+import { RoleType } from '../db/models/teacher.model';
 import {
   getOneRescheduleRequestService,
   updateRescheduleRequestService,
-} from "../service/rescheduleReq.service";
-import { deleteJobService } from "../service/scheduleJob.service";
+} from '../service/rescheduleReq.service';
+import { deleteJobService } from '../service/scheduleJob.service';
 import {
   getOneSessionDetailsService,
   handleSessionFinishedService,
   setSessionMeetingLinkAndOngoing,
-} from "../service/session.service";
-import logger from "./logger";
+} from '../service/session.service';
+import logger from './logger';
 
 interface JobCallback {
   (...args: any[]): Promise<void>;
 }
 export const callbacksNames = {
-  SESSION_REMINDER_MAIL: "Reminder Mail",
-  SESSION_STARTED_MAIL: "Session Started Mail",
-  UPDATE_SESSION_TO_ONGOING: "Session Is Ongoing",
-  UPDATE_SESSION_TO_FINISHED: "Session Is Finished",
-  UPDATE_SESSION_RESCHEDULE_STATUS: "Reschedule Request Updating",
+  SESSION_REMINDER_MAIL: 'Reminder Mail',
+  SESSION_STARTED_MAIL: 'Session Started Mail',
+  UPDATE_SESSION_TO_ONGOING: 'Session Is Ongoing',
+  UPDATE_SESSION_TO_FINISHED: 'Session Is Finished',
+  UPDATE_SESSION_RESCHEDULE_STATUS: 'Reschedule Request Updating',
 };
 
 const jobCallbacks = new Map<string, JobCallback>();
@@ -51,7 +51,7 @@ const sessionReminderEmail: JobCallback = async function ({
     ).sendSessionReminderMail({
       sessionDate: new Date(session.sessionDate).toUTCString(),
     });
-    logger.info("One time session reminder mail executed!");
+    logger.info('One time session reminder mail executed!');
     await deleteJobService({ id: jobId });
   } catch (error: any) {
     await deleteJobService({ id: jobId });
@@ -67,8 +67,15 @@ const sessionStartedEmail: JobCallback = async function ({
   sessionId: number;
   jobId: number;
 }) {
-  const session = await getOneSessionDetailsService({ sessionId });
   try {
+    const session = await getOneSessionDetailsService({ sessionId });
+    if (!session) {
+      logger.warn(
+        `sessionStartedEmail: session #${sessionId} not found, skipping.`,
+      );
+      await deleteJobService({ id: jobId });
+      return;
+    }
     const sessionDate = session.sessionDate;
     if (!session.studentAttended) {
       await new Mail(
@@ -82,7 +89,7 @@ const sessionStartedEmail: JobCallback = async function ({
       });
       await new Mail(
         process.env.ADMIN_EMAIL as string,
-        "Admin",
+        'Admin',
       ).sendSessionStartReminderForAdmin({
         userName: session.sessionInfo?.user!.name!,
         teacherName: session.sessionInfo?.teacher!.name!,
@@ -105,7 +112,7 @@ const sessionStartedEmail: JobCallback = async function ({
       });
       await new Mail(
         process.env.ADMIN_EMAIL as string,
-        "Admin",
+        'Admin',
       ).sendSessionStartReminderForAdmin({
         userName: session.sessionInfo?.user!.name!,
         teacherName: session.sessionInfo?.teacher!.name!,
@@ -116,10 +123,10 @@ const sessionStartedEmail: JobCallback = async function ({
             : new Date(sessionDate).toUTCString(),
       });
     }
-    logger.info("One time session started reminder mail executed!");
+    logger.info('One time session started reminder mail executed!');
     await deleteJobService({ id: jobId });
   } catch (error: any) {
-    await deleteJobService({ id: jobId });
+    await deleteJobService({ id: jobId }).catch(() => {});
     logger.error(
       `Can't send session started reminder mail: ${error} , sessionId: ${sessionId}`,
     );
@@ -187,21 +194,36 @@ const rescheduleRequestUpdate: JobCallback = async function ({
   rescheduleRequestId: number;
   jobId: number;
 }) {
-  const request = await getOneRescheduleRequestService({
-    id: rescheduleRequestId,
-  });
-  if (request.status === RescheduleRequestStatus.PENDING) {
-    await updateRescheduleRequestService({
-      requestId: rescheduleRequestId,
-      status: RescheduleRequestStatus.NO_RESPONSE,
+  try {
+    const request = await getOneRescheduleRequestService({
+      id: rescheduleRequestId,
     });
-    logger.info("One time reschedule Request updated to no response executed!");
+    if (!request) {
+      logger.warn(
+        `rescheduleRequestUpdate: request #${rescheduleRequestId} not found, skipping.`,
+      );
+      await deleteJobService({ id: jobId });
+      return;
+    }
+    if (request.status === RescheduleRequestStatus.PENDING) {
+      await updateRescheduleRequestService({
+        requestId: rescheduleRequestId,
+        status: RescheduleRequestStatus.NO_RESPONSE,
+      });
+      logger.info(
+        'One time reschedule Request updated to no response executed!',
+      );
+    }
+    await deleteJobService({ id: jobId });
+    logger.info(
+      'One time reschedule Request job executed already responded request!',
+    );
+  } catch (error: any) {
+    await deleteJobService({ id: jobId }).catch(() => {});
+    logger.error(
+      `Can't update reschedule request #${rescheduleRequestId} status: ${error}`,
+    );
   }
-
-  await deleteJobService({ id: jobId });
-  logger.info(
-    "One time reschedule Request job executed already responded request!",
-  );
 };
 jobCallbacks.set(callbacksNames.SESSION_REMINDER_MAIL, sessionReminderEmail);
 jobCallbacks.set(callbacksNames.SESSION_STARTED_MAIL, sessionStartedEmail);
