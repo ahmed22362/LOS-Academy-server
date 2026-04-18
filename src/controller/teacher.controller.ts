@@ -325,7 +325,7 @@ export const checkJWT = catchAsync(
 export const getAdminBalance = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const balance = await getStripeBalance();
-    res.status(200).json({ status: 'success', balance: balance.available });
+    res.status(200).json({ status: 'success', balance: balance });
   },
 );
 export const getUsersAndTeachersCount = catchAsync(
