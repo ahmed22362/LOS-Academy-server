@@ -40,7 +40,7 @@ jobs:
             # Install dependencies
             echo "📦 Installing dependencies..."
             export CI=true
-            npm ci
+            npm ci --no-audit --no-fund
 
             # Run tests (if applicable)
             # echo "🧪 Running tests..."
