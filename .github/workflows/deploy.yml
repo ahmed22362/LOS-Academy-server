@@ -29,9 +29,6 @@ jobs:
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-            # Ensure pnpm is available
-            npm install -g pnpm --silent 2>/dev/null || true
-
             # Navigate to project directory
             cd ~/LOS-Academy-server || exit 1
 
@@ -43,7 +40,7 @@ jobs:
             # Install dependencies
             echo "📦 Installing dependencies..."
             export CI=true
-            pnpm install
+            npm ci
 
             # Run tests (if applicable)
             # echo "🧪 Running tests..."
@@ -51,7 +48,7 @@ jobs:
 
             # Build the project
             echo "🔨 Building project..."
-            pnpm run build
+            npm run build
 
             # Restart PM2 application
             echo "♻️ Restarting application..."
