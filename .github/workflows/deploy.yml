@@ -25,13 +25,6 @@ jobs:
 
             echo "🚀 Starting deployment..."
 
-            # Load NVM
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-            # Ensure pnpm is available
-            npm install -g pnpm --silent 2>/dev/null || true
-
             # Navigate to project directory
             cd ~/LOS-Academy-server || exit 1
 
@@ -40,30 +33,27 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            # Install dependencies
-            echo "📦 Installing dependencies..."
-            export CI=true
-            pnpm install
+            # Build and restart Docker container
+            echo "🔨 Building Docker image..."
+            docker build -t los-academy-server:latest .
 
-            # Run tests (if applicable)
-            # echo "🧪 Running tests..."
-            # npm test
-
-            # Build the project
-            echo "🔨 Building project..."
-            pnpm run build
-
-            # Restart PM2 application
-            echo "♻️ Restarting application..."
-            pm2 restart backend --update-env
-
-            # Save PM2 process list
-            pm2 save
+            echo "♻️ Replacing application container..."
+            pm2 stop backend || true
+            pm2 delete backend || true
+            docker rm -f backend || true
+            docker run -d \
+              --name backend \
+              --restart unless-stopped \
+              --env-file .env \
+              -e NODE_ENV=production \
+              -p 8080:8080 \
+              los-academy-server:latest
 
             # Health check
             echo "🏥 Performing health check..."
             sleep 5
-            pm2 status backend
+            test "$(docker inspect -f '{{.State.Running}}' backend)" = "true"
+            docker logs --tail 80 backend
 
             echo "✅ Deployment completed successfully!"
 

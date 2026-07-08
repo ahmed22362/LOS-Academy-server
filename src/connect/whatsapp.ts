@@ -16,7 +16,6 @@ export const initializeWhatsApp = async () => {
       authStrategy: new LocalAuth({
         dataPath: './.wwebjs_auth' // Explicit path
       }),
-      restartOnAuthFail: true,
       webVersion: "2.2412.54",
       puppeteer: {
         headless: true,
