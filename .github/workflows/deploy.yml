@@ -42,6 +42,7 @@ jobs:
 
             # Install dependencies
             echo "📦 Installing dependencies..."
+            export CI=true
             pnpm install
 
             # Run tests (if applicable)
