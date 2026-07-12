@@ -273,25 +273,32 @@ export const listWhatsAppTemplates = async ({
     );
   }
 
-  const response = await axios.get(
-    `${graphBaseUrl}/${businessAccountId}/message_templates`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
+  try {
+    const response = await axios.get(
+      `${graphBaseUrl}/${businessAccountId}/message_templates`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params: {
+          fields:
+            'name,language,status,category,components,rejected_reason,quality_score',
+          limit,
+          after,
+          before,
+          name,
+          status,
+        },
       },
-      params: {
-        fields:
-          'name,language,status,category,components,rejected_reason,quality_score',
-        limit,
-        after,
-        before,
-        name,
-        status,
-      },
-    },
-  );
+    );
 
-  return response.data;
+    return response.data;
+  } catch (error: any) {
+    throw new AppError(
+      error.response?.status || 502,
+      `Failed to fetch WhatsApp templates: ${error.response?.data?.error?.message || error.message}`,
+    );
+  }
 };
 
 export const getWhatsAppTemplate = async ({
