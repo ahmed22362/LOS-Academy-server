@@ -24,8 +24,19 @@ import logger from '../utils/logger';
 import { updateTeacherBalance } from '../service/teacher.service';
 import { sequelize } from '../db/sequelize';
 import { emitReportAddedForUser } from '../connect/socket';
-import { sendWhatsAppPDF, getWhatsAppStatus } from '../connect/whatsapp';
+import {
+  getWhatsAppStatus,
+  sendSessionReportReadyTemplate,
+} from '../connect/whatsapp';
 import { generateReportPDF } from '../utils/generateReportPDF';
+
+const formatSessionReportDate = (date: Date): string =>
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: process.env.WHATSAPP_REPORT_TIME_ZONE || 'America/New_York',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(date));
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -129,13 +140,14 @@ export const createReport = catchAsync(
                 },
               });
 
-              // Send via WhatsApp
-              const success = await sendWhatsAppPDF(
-                user.phone,
+              const success = await sendSessionReportReadyTemplate({
+                phoneNumber: user.phone,
                 pdfBuffer,
-                `Session_Report_${report.id}.pdf`,
-                `📚 Your session report is ready!\n\nReport: ${title || 'Session Report'}\nGrade: ${grade.toUpperCase()}`,
-              );
+                fileName: `Session_Report_${report.id}.pdf`,
+                studentName: user.name || 'Student',
+                sessionName: title || 'Quran session',
+                sessionDate: formatSessionReportDate(session.sessionDate),
+              });
 
               if (success) {
                 logger.info(
