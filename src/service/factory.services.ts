@@ -4,6 +4,7 @@ import { Model } from "sequelize-typescript";
 
 export interface ModelClass {
   new (): Model;
+  getAttributes?(): Record<string, any>;
   create(data: any): Promise<Model>;
   update(data: any, options: any): Promise<[number, Model[]]>;
   findOne(options?: FindOptions): Promise<Model | null>;
@@ -167,6 +168,17 @@ async function updateModelService({
   updatedData: any;
   transaction?: Transaction;
 }): Promise<Model | null> {
+  const attributes = ModelClass.getAttributes?.() || {};
+  const invalidIntegerField = Object.entries(updatedData).find(
+    ([field, value]) =>
+      attributes[field]?.type.key === "INTEGER" &&
+      value != null &&
+      !Number.isInteger(Number(value)),
+  );
+  if (invalidIntegerField) {
+    throw new AppError(400, `${invalidIntegerField[0]} must be an integer`);
+  }
+
   try {
     const [affectedCount, affectedRows] = await ModelClass.update(updatedData, {
       where: { id },

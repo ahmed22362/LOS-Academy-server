@@ -50,7 +50,7 @@ export default class User extends Model<User> {
   name!: string;
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.FLOAT,
     allowNull: false,
   })
   age!: number;

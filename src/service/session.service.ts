@@ -1170,6 +1170,30 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         transaction,
       });
       break;
+    case SessionStatus.BOTH_ABSENT:
+      updatedSession = await updateSessionStatusService({
+        id: sessionId,
+        updatedData: { status },
+        transaction,
+      });
+      if (updatedSession.type === SessionType.PAID) {
+        const session = await getOneSessionDetailsService({ sessionId });
+        const amount = calculateTeacherSessionPayment(
+          session.sessionInfo?.teacher?.hour_cost || 0,
+          session.sessionDuration
+        );
+        await updateTeacherBalance({
+          teacherId,
+          amount: -amount,
+          transaction,
+        });
+        await updateUserRemainSessionService({
+          userId,
+          amountOfSessions: -1,
+          transaction,
+        });
+      }
+      break;
     default:
       console.error("Can't update session status with unknown status!");
       throw new AppError(

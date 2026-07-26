@@ -43,7 +43,7 @@ export default class Material extends Model<Material> {
   name!: string;
   @Column({ type: DataType.STRING, allowNull: false })
   course!: string;
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({ type: DataType.FLOAT, allowNull: false })
   age!: number;
   @Column({
     type: DataType.ENUM({ values: Object.values(MaterialStatus) }),

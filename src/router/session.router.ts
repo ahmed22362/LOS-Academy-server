@@ -38,6 +38,7 @@ import {
   requireEitherTeacherOrUser,
   updateSessionAttendanceByAdmin,
   updateSessionContinuityByAdmin,
+  updateSessionForAdminSchema,
   updateSessionStatusSchema,
   userContinueWithTeacherSchema,
   userWontContinueWithTeacherSchema,
@@ -156,6 +157,7 @@ sessionRouter
   .patch(
     protectTeacher,
     restrictTo(RoleType.ADMIN) as RequestHandler,
+    validate(updateSessionForAdminSchema),
     updateSessionForAdmin,
   )
   .delete(

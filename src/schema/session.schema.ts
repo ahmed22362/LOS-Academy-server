@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { SessionType } from "../db/models/session.model";
 const sessionId = z.number({
   message: "please provide sessionid in the body!",
 });
@@ -25,8 +24,9 @@ export const SessionStatusSchema = z.enum([
   "taken",
   "user_absent",
   "teacher_absent",
+  "both_absent",
 ]);
-const sessionType = z.enum([SessionType.FREE, SessionType.PAID]);
+const sessionType = z.enum(["free", "paid"]);
 export const sessionDates = z
   .array(z.string())
   .refine((data) => data.length > 0, {
@@ -123,5 +123,16 @@ export const updateSessionContinuityByAdmin = z.object({
   body: z.object({
     sessionInfoId,
     status: z.boolean().nullable(),
+  }),
+});
+export const updateSessionForAdminSchema = z.object({
+  body: z.object({
+    teacherAttended: z.boolean().optional(),
+    studentAttended: z.boolean().optional(),
+    sessionDate: z.string().optional(),
+    status: SessionStatusSchema.optional(),
+    reschedule_request_count: z.number().int().min(0).max(4).optional(),
+    hasReport: z.boolean().optional(),
+    meetingLink: z.string().nullable().optional(),
   }),
 });
