@@ -50,6 +50,21 @@ jobs:
             echo "🔨 Building project..."
             npm run build
 
+            # Install/update the daily database backup cron job
+            command -v pg_dump >/dev/null || { echo "pg_dump is required for backups"; exit 1; }
+            command -v crontab >/dev/null || { echo "crontab is required for backups"; exit 1; }
+            mkdir -p backups
+            PROJECT_DIR="$HOME/LOS-Academy-server"
+            NODE_BIN="$(command -v node)"
+            PG_BIN="$(dirname "$(command -v pg_dump)")"
+            BACKUP_CRON="0 2 * * * cd $PROJECT_DIR && PATH=$PG_BIN:/usr/bin:/bin $NODE_BIN scripts/database.mjs backup > backups/database-backup.log 2>&1 && find backups -type f -name 'database-*.dump' -mtime +30 -delete"
+            CURRENT_CRONTAB="$(crontab -l 2>/dev/null || true)"
+            {
+              printf '%s\n' "$CURRENT_CRONTAB" | grep -vF 'scripts/database.mjs backup' || true
+              printf '%s\n' "$BACKUP_CRON"
+            } | crontab -
+            echo "💾 Daily database backup scheduled for 02:00 server time"
+
             # Restart PM2 application
             echo "♻️ Restarting application..."
             pm2 restart backend --update-env
