@@ -9,8 +9,14 @@ const handleCastErrorDB = (err: any): AppError => {
   return new AppError(400, message);
 };
 
-const handleDuplicateFieldsDB = (err: any): AppError => {
-  const message = `Duplicate field Please use another value!`;
+export const handleDuplicateFieldsDB = (err: any): AppError => {
+  const fields = Object.keys(err.fields ?? {}).map((field) =>
+    field.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase(),
+  );
+  const duplicate = fields.length ? fields.join(' and ') : 'value';
+  const message = fields.length
+    ? `The ${duplicate} is already in use. Please use another ${duplicate}.`
+    : 'This value is already in use. Please use another value.';
   return new AppError(409, message);
 };
 
