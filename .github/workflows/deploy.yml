@@ -51,12 +51,8 @@ jobs:
             npm run build
 
             # Install/update the daily database backup cron job
-            if ! command -v pg_dump >/dev/null || ! command -v crontab >/dev/null; then
-              SUDO=""
-              [ "$(id -u)" -eq 0 ] || SUDO="sudo"
-              $SUDO apt-get update
-              $SUDO apt-get install -y postgresql-client cron
-            fi
+            command -v pg_dump >/dev/null || { echo "Install postgresql-client on the VPS"; exit 1; }
+            command -v crontab >/dev/null || { echo "Install cron on the VPS"; exit 1; }
             mkdir -p backups
             PROJECT_DIR="$HOME/LOS-Academy-server"
             NODE_BIN="$(command -v node)"
