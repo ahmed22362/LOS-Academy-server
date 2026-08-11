@@ -35,6 +35,7 @@ export const getTeacherAtt = [
   'id',
   'name',
   'phone',
+  'whatsAppGroupJid',
   'email',
   'role',
   'hour_cost',
@@ -51,6 +52,7 @@ export const createTeacher = catchAsync(
       email,
       password,
       phone,
+      whatsAppGroupJid,
       nationalId,
       role,
       hour_cost,
@@ -61,11 +63,15 @@ export const createTeacher = catchAsync(
       email,
       password,
       phone,
+      whatsAppGroupJid,
       nationalId,
       role,
       hour_cost,
       permanent_meeting_url,
     } as ITeacherInput;
+    if (whatsAppGroupJid !== undefined && !whatsAppGroupJid.endsWith('@g.us')) {
+      return next(new AppError(400, 'Invalid WhatsApp group JID'));
+    }
     const newTeacher = await createTeacherService(body);
     if (!newTeacher) {
       return next(new AppError(400, "Can't create new Teacher!"));
@@ -127,6 +133,7 @@ export const updateTeacher = catchAsync(
       hour_cost,
       email,
       phone,
+      whatsAppGroupJid,
       nationalId,
       role,
       password,
@@ -138,6 +145,7 @@ export const updateTeacher = catchAsync(
       name,
       email,
       phone,
+      whatsAppGroupJid,
       nationalId,
       role,
       hour_cost,
@@ -146,6 +154,9 @@ export const updateTeacher = catchAsync(
       committed_mins,
       permanent_meeting_url,
     } as ITeacherInput;
+    if (whatsAppGroupJid !== undefined && !whatsAppGroupJid.endsWith('@g.us')) {
+      return next(new AppError(400, 'Invalid WhatsApp group JID'));
+    }
     const teacher = await updateTeacherService({
       teacherId: id,
       updatedData: body,
@@ -168,11 +179,12 @@ export const updateTeacher = catchAsync(
 export const updateMeTeacher = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const { name, email, phone, password } = req.body;
+    const { name, email, phone, password, whatsAppGroupJid } = req.body;
     const body = {
       name,
       email,
       phone,
+      whatsAppGroupJid,
       password,
     } as ITeacherInput;
     const teacher = await updateTeacherService({

@@ -15,6 +15,7 @@ export interface ITeacherInput {
   email: string;
   password: string;
   phone: string;
+  whatsAppGroupJid?: string;
   customerId?: string;
   hour_cost: number;
   balance?: number;
@@ -58,6 +59,9 @@ export default class Teacher extends Model<Teacher> {
     allowNull: true,
   })
   phone?: string;
+
+  @Column({ type: DataType.STRING, allowNull: true })
+  whatsAppGroupJid?: string;
 
   @Column({
     type: DataType.STRING,

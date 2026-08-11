@@ -1,19 +1,69 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, RequestHandler, Response } from 'express';
 import {
-  getWhatsAppStatus,
-  getWhatsAppClient,
   listWhatsAppTemplates,
   getWhatsAppTemplate,
   getSessionReportTemplateConfig,
   sendSessionReportReadyTemplate,
   getWhatsAppConfigStatus,
 } from '../connect/whatsapp';
+import {
+  getBaileysWhatsAppStatus,
+  listBaileysGroups,
+  sendWhatsAppGroupPDF,
+} from '../connect/baileys';
+import { protectTeacher } from '../controller/teacher.controller';
+import { restrictTo } from '../controller/auth.controller';
+import { RoleType } from '../db/models/teacher.model';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/AppError';
 import { generateReportPDF } from '../utils/generateReportPDF';
 import { GradeOptions } from '../db/models/report.model';
+import { formatReportWhatsAppCaption } from '../utils/reportWhatsAppCaption';
 
 const router = Router();
+
+const sendBaileysGroupTest = catchAsync(
+  async (req: Request, res: Response, next) => {
+    const {
+      groupJid,
+      studentName = 'Ahmed',
+      sessionName = 'Quran session',
+    } = req.body;
+
+    if (!groupJid?.endsWith('@g.us')) {
+      return next(new AppError(400, 'groupJid must be a WhatsApp group JID'));
+    }
+    if (!getBaileysWhatsAppStatus()) {
+      return next(new AppError(503, 'Baileys WhatsApp is not connected'));
+    }
+
+    const pdfBuffer = await generateReportPDF({
+      id: Date.now(),
+      title: sessionName,
+      grade: GradeOptions.EXCELLENT,
+      comment: 'This is a test session report sent from LOS Academy server.',
+      reportCourses: [
+        {
+          courseName: 'Quran Recitation',
+          courseGrade: GradeOptions.EXCELLENT,
+          courseComment: 'Clear test report generated successfully.' as any,
+        },
+      ],
+      createdAt: new Date(),
+      user: { name: studentName, email: 'test@example.com' },
+      teacher: { name: 'LOS Academy' },
+    });
+    const success = await sendWhatsAppGroupPDF({
+      jid: groupJid,
+      pdfBuffer,
+      fileName: 'Session_Report_Test.pdf',
+      caption: formatReportWhatsAppCaption(`Session report test: ${sessionName}`),
+    });
+
+    if (!success) return next(new AppError(502, 'Failed to send WhatsApp group test'));
+    res.status(200).json({ status: 'success', data: { groupJid } });
+  },
+);
 
 const sendSessionReportReadyTest = catchAsync(
   async (req: Request, res: Response, next) => {
@@ -112,18 +162,33 @@ router.post('/webhook', (req: Request, res: Response) => {
 router.get(
   '/status',
   catchAsync(async (req: Request, res: Response) => {
-    const isReady = getWhatsAppStatus();
-    const client = getWhatsAppClient();
+    const isReady = getBaileysWhatsAppStatus();
 
     res.status(200).json({
       status: 'success',
       data: {
         connected: isReady,
-        clientInitialized: client !== null,
+        clientInitialized: isReady,
         timestamp: new Date().toISOString(),
       },
     });
   })
+);
+
+router.get(
+  '/groups',
+  protectTeacher,
+  restrictTo(RoleType.ADMIN) as RequestHandler,
+  catchAsync(async (req: Request, res: Response) => {
+    res.status(200).json({ status: 'success', data: await listBaileysGroups() });
+  }),
+);
+
+router.post(
+  '/groups/test',
+  protectTeacher,
+  restrictTo(RoleType.ADMIN) as RequestHandler,
+  sendBaileysGroupTest,
 );
 
 // GET WhatsApp Cloud API config status without exposing secrets

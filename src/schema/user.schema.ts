@@ -10,6 +10,7 @@ const payload = {
       phone: z.string({
         message: "phone is required",
       }),
+      whatsAppGroupJid: z.optional(z.string().endsWith("@g.us", "Invalid WhatsApp group JID")),
       age: z.number({
         message: "age is required",
       }),
@@ -94,6 +95,7 @@ export const updateMeSchema = z.object({
   body: z.object({
     name: z.optional(z.string()),
     phone: z.optional(z.string()),
+    whatsAppGroupJid: z.optional(z.string().endsWith("@g.us", "Invalid WhatsApp group JID")),
     email: z.optional(z.string().email("Not a valid mail")),
     gender: z.optional(z.enum(["male", "female"])),
     age: z.optional(z.number()),

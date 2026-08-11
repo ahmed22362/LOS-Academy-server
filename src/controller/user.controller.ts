@@ -64,6 +64,7 @@ export const getUserAttr = [
   'id',
   'name',
   'phone',
+  'whatsAppGroupJid',
   'email',
   'availableFreeSession',
   'remainSessions',
@@ -77,8 +78,8 @@ export const loginUser = login(User);
 export const protectUser = protect(User);
 export const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, age, email, password, phone, gender } = req.body;
-    const body = { name, age, email, password, phone, gender } as IUserInput;
+    const { name, age, email, password, phone, gender, whatsAppGroupJid } = req.body;
+    const body = { name, age, email, password, phone, gender, whatsAppGroupJid } as IUserInput;
 
     const newUser = await createUserService({ userData: body });
     if (!newUser) {
@@ -153,13 +154,20 @@ export const updateUser = catchAsync(
       verified,
       customerId,
       sessionPlaced,
+      whatsAppGroupJid,
     } = req.body;
 
     const body: any = {}; // Use Partial to make all properties optional
 
+    if (whatsAppGroupJid !== undefined && !whatsAppGroupJid.endsWith('@g.us')) {
+      return next(new AppError(400, 'Invalid WhatsApp group JID'));
+    }
+
     if (name) body.name = name;
     if (email) body.email = email;
     if (phone) body.phone = phone;
+    if (whatsAppGroupJid !== undefined)
+      body.whatsAppGroupJid = whatsAppGroupJid;
     if (age) body.age = age;
     if (gender) body.gender = gender;
     body.customerId = customerId;
