@@ -13,6 +13,7 @@ const payload = {
           message: "National id must be exactly 14 characters long.",
         }),
       phone: z.string({ message: "phone is required" }).min(1, { message: "phone is required" }),
+      whatsAppGroupJid: z.optional(z.string().endsWith("@g.us", "Invalid WhatsApp group JID")),
       hour_cost: z.number({
         message:
           "the teacher session cost is required to create a teacher!",
@@ -46,6 +47,7 @@ export const updateMeSchema = z.object({
     password: z.optional(
       z.string().min(6, "Password too short - should be 6 chars minimum"),
     ),
+    whatsAppGroupJid: z.optional(z.string().endsWith("@g.us", "Invalid WhatsApp group JID")),
   }),
 });
 export const createTeacherSchema = z.object({ ...payload });

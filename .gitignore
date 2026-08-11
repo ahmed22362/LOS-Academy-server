@@ -17,3 +17,4 @@ dist/
 *.dump
 .wwebjs_auth
 .wwebjs_cache
+.baileys_auth

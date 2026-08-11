@@ -17,6 +17,7 @@ export interface IUserInput {
   email: string;
   password?: string;
   phone: string;
+  whatsAppGroupJid?: string;
   age: number;
   remainSessions?: number;
   availableFreeSession?: number;
@@ -63,6 +64,9 @@ export default class User extends Model<User> {
     allowNull: true,
   })
   phone?: string;
+
+  @Column({ type: DataType.STRING, allowNull: true })
+  whatsAppGroupJid?: string;
 
   @Column({
     type: DataType.STRING,

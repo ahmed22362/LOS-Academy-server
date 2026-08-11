@@ -25,10 +25,11 @@ import { updateTeacherBalance } from '../service/teacher.service';
 import { sequelize } from '../db/sequelize';
 import { emitReportAddedForUser } from '../connect/socket';
 import {
-  getWhatsAppStatus,
-  sendSessionReportReadyTemplate,
-} from '../connect/whatsapp';
+  getBaileysWhatsAppStatus,
+  sendWhatsAppGroupPDF,
+} from '../connect/baileys';
 import { generateReportPDF } from '../utils/generateReportPDF';
+import { formatReportWhatsAppCaption } from '../utils/reportWhatsAppCaption';
 
 const formatSessionReportDate = (date: Date): string =>
   new Intl.DateTimeFormat('en-US', {
@@ -101,7 +102,7 @@ export const createReport = catchAsync(
       // Send report via WhatsApp (async, don't block response)
       (async () => {
         try {
-          if (getWhatsAppStatus()) {
+          if (getBaileysWhatsAppStatus()) {
             // Fetch full report with user and teacher details
             const fullReport = await getReportService({
               reportId: report.id,
@@ -122,7 +123,9 @@ export const createReport = catchAsync(
             });
 
             const user = fullReport.user;
-            if (user?.phone) {
+            const groupJid =
+              user?.whatsAppGroupJid || fullReport.teacher?.whatsAppGroupJid;
+            if (user && groupJid) {
               // Generate PDF
               const pdfBuffer = await generateReportPDF({
                 id: fullReport.id,
@@ -140,32 +143,30 @@ export const createReport = catchAsync(
                 },
               });
 
-              const success = await sendSessionReportReadyTemplate({
-                phoneNumber: user.phone,
+              const success = await sendWhatsAppGroupPDF({
+                jid: groupJid,
                 pdfBuffer,
                 fileName: `Session_Report_${report.id}.pdf`,
-                studentName: user.name || 'Student',
-                sessionName: title || 'Quran session',
-                sessionDate: formatSessionReportDate(session.sessionDate),
+                caption: formatReportWhatsAppCaption(
+                  `Session report: ${title || 'Quran session'} — ${formatSessionReportDate(session.sessionDate)}`,
+                ),
               });
 
               if (success) {
                 logger.info(
-                  `Report ${report.id} sent to user ${user.id} via WhatsApp`,
+                  `Report ${report.id} sent to WhatsApp group ${groupJid}`,
                 );
               } else {
                 logger.warn(
-                  `Failed to send report ${report.id} via WhatsApp to user ${user.id}`,
+                  `Failed to send report ${report.id} via WhatsApp group ${groupJid}`,
                 );
               }
             } else {
-              logger.warn(
-                `User ${session.sessionInfo?.userId} has no phone number for WhatsApp`,
-              );
+              logger.warn(`Report ${report.id} has no WhatsApp group JID`);
             }
           } else {
             logger.warn(
-              'WhatsApp client is not ready, skipping report sending',
+              'Baileys WhatsApp client is not ready, skipping report sending',
             );
           }
         } catch (error: any) {

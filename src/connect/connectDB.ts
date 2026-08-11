@@ -27,6 +27,15 @@ async function connectDB() {
           });
         }
       }
+      for (const table of ["user", "teacher"]) {
+        const columns = await queryInterface.describeTable(table);
+        if (!columns.whatsAppGroupJid) {
+          await queryInterface.addColumn(table, "whatsAppGroupJid", {
+            type: DataTypes.STRING,
+            allowNull: true,
+          });
+        }
+      }
       logger.info("database connected SUCCESSFULLY!");
     })
     .catch((err) => {
