@@ -1,6 +1,10 @@
 import PDFDocument from 'pdfkit';
-import Report, { GradeOptions, ReportsCourses } from '../db/models/report.model';
+import path from 'path';
+import { GradeOptions, ReportsCourses } from '../db/models/report.model';
 import logger from './logger';
+
+const ARABIC_TEXT = /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/;
+const FONT_DIR = path.join(__dirname, '../assets/fonts');
 
 interface ReportData {
   id: number;
@@ -18,6 +22,40 @@ interface ReportData {
   };
 }
 
+const prepareText = (
+  doc: PDFKit.PDFDocument,
+  text: string,
+  width: number,
+): { text: string; align: 'left' | 'right'; wordSpacing?: number } => {
+  if (!ARABIC_TEXT.test(text)) return { text, align: 'left' };
+
+  const wrapped = text.split('\n').map((paragraph) => {
+    const words = paragraph.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return '';
+
+    const lines: string[] = [];
+    let line = words[0];
+    for (const word of words.slice(1)) {
+      const candidate = `${line} ${word}`;
+      if (doc.widthOfString(candidate) + candidate.split(/\s+/).length - 1 <= width) {
+        line = candidate;
+      }
+      else {
+        lines.push(line);
+        line = word;
+      }
+    }
+    lines.push(line);
+
+    // PDFKit shapes Arabic words correctly but lays the words out left-to-right.
+    return lines
+      .map((value) => value.split(/\s+/).reverse().join(' '))
+      .join('\n');
+  });
+
+  return { text: wrapped.join('\n'), align: 'right', wordSpacing: 1 };
+};
+
 export const generateReportPDF = async (report: ReportData): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     try {
@@ -25,6 +63,11 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
         size: 'A4',
         margin: 50,
       });
+
+      doc
+        .registerFont('Report', path.join(FONT_DIR, 'DejaVuSans.ttf'))
+        .registerFont('Report-Bold', path.join(FONT_DIR, 'DejaVuSans-Bold.ttf'))
+        .font('Report');
 
       const chunks: Buffer[] = [];
 
@@ -54,10 +97,15 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
 
       // Title Section
       if (report.title) {
+        doc.font('Report').fontSize(18);
+        const title = prepareText(doc, report.title, doc.page.width - 100);
         doc
-          .fontSize(18)
           .fillColor(darkGray)
-          .text(report.title, { align: 'center' })
+          .text(title.text, 50, doc.y, {
+            width: doc.page.width - 100,
+            align: title.align === 'right' ? 'right' : 'center',
+            wordSpacing: title.wordSpacing,
+          })
           .moveDown(1.5);
       }
 
@@ -70,24 +118,39 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
         .roundedRect(50, cardY, doc.page.width - 100, cardHeight, 5)
         .fill(lightGray);
 
+      doc.font('Report').fontSize(10);
+      const studentName = prepareText(
+        doc,
+        `Name: ${report.user?.name || 'N/A'}`,
+        235,
+      );
       doc
         .fontSize(12)
         .fillColor(darkGray)
-        .font('Helvetica-Bold')
+        .font('Report-Bold')
         .text('Student Information', 70, cardY + 15)
-        .font('Helvetica')
+        .font('Report')
         .fontSize(10)
-        .text(`Name: ${report.user?.name || 'N/A'}`, 70, cardY + 35)
+        .text(studentName.text, 70, cardY + 35, {
+          width: 235,
+          align: studentName.align,
+          wordSpacing: studentName.wordSpacing,
+        })
         .text(`Email: ${report.user?.email || 'N/A'}`, 70, cardY + 50);
 
       if (report.teacher?.name) {
+        const teacherName = prepareText(doc, report.teacher.name, 180);
         doc
           .fontSize(12)
-          .font('Helvetica-Bold')
+          .font('Report-Bold')
           .text('Teacher', doc.page.width - 250, cardY + 15)
-          .font('Helvetica')
+          .font('Report')
           .fontSize(10)
-          .text(report.teacher.name, doc.page.width - 250, cardY + 35);
+          .text(teacherName.text, doc.page.width - 250, cardY + 35, {
+            width: 180,
+            align: teacherName.align,
+            wordSpacing: teacherName.wordSpacing,
+          });
       }
 
       doc.y = cardY + cardHeight + 20;
@@ -96,8 +159,11 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
       doc
         .fontSize(14)
         .fillColor(darkGray)
-        .font('Helvetica-Bold')
-        .text('Overall Grade', { align: 'center' })
+        .font('Report-Bold')
+        .text('Overall Grade', 50, doc.y, {
+          width: doc.page.width - 100,
+          align: 'center',
+        })
         .moveDown(0.5);
 
       const gradeColor = getGradeColor(report.grade);
@@ -111,7 +177,7 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
       doc
         .fontSize(18)
         .fillColor('#FFF')
-        .font('Helvetica-Bold')
+        .font('Report-Bold')
         .text(report.grade.toUpperCase(), doc.page.width / 2 - 60, gradeY + 15, {
           width: 120,
           align: 'center',
@@ -124,7 +190,7 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
         doc
           .fontSize(14)
           .fillColor(darkGray)
-          .font('Helvetica-Bold')
+          .font('Report-Bold')
           .text('Course Performance', 50)
           .moveDown(1);
 
@@ -133,25 +199,33 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
         const tableLeft = 50;
         const colWidths = {
           no: 30,
-          course: 250,
+          course: 190,
           grade: 100,
-          comment: 115,
+          comment: 175,
         };
-        const rowHeight = 35;
 
-        // Table header
-        doc
-          .rect(tableLeft, tableTop, doc.page.width - 100, 30)
-          .fill(darkGray);
+        const drawTableHeader = (y: number) => {
+          doc.rect(tableLeft, y, doc.page.width - 100, 30).fill(darkGray);
+          doc
+            .fontSize(10)
+            .fillColor('#FFF')
+            .font('Report-Bold')
+            .text('#', tableLeft + 5, y + 10, { width: colWidths.no - 10 })
+            .text('Course Name', tableLeft + colWidths.no + 5, y + 10, {
+              width: colWidths.course - 10,
+            })
+            .text('Grade', tableLeft + colWidths.no + colWidths.course + 5, y + 10, {
+              width: colWidths.grade - 10,
+            })
+            .text(
+              'Comment',
+              tableLeft + colWidths.no + colWidths.course + colWidths.grade + 5,
+              y + 10,
+              { width: colWidths.comment - 10 },
+            );
+        };
 
-        doc
-          .fontSize(10)
-          .fillColor('#FFF')
-          .font('Helvetica-Bold')
-          .text('#', tableLeft + 5, tableTop + 10, { width: colWidths.no })
-          .text('Course Name', tableLeft + colWidths.no + 5, tableTop + 10, { width: colWidths.course })
-          .text('Grade', tableLeft + colWidths.no + colWidths.course + 5, tableTop + 10, { width: colWidths.grade })
-          .text('Comment', tableLeft + colWidths.no + colWidths.course + colWidths.grade + 5, tableTop + 10, { width: colWidths.comment });
+        drawTableHeader(tableTop);
 
         // Table rows
         let currentY = tableTop + 30;
@@ -159,6 +233,36 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
         report.reportCourses.forEach((course, index) => {
           const isEven = index % 2 === 0;
           const courseGradeColor = getGradeColor(course.courseGrade);
+          const courseWidth = colWidths.course - 10;
+          const commentWidth = colWidths.comment - 10;
+
+          doc.font('Report').fontSize(8);
+          const courseName = prepareText(doc, course.courseName, courseWidth);
+          const courseComment = prepareText(
+            doc,
+            course.courseComment || '-',
+            commentWidth,
+          );
+          const rowHeight = Math.max(
+            35,
+            doc.heightOfString(courseName.text, {
+              width: courseWidth,
+              align: courseName.align,
+              wordSpacing: courseName.wordSpacing,
+            }) + 20,
+            doc.heightOfString(courseComment.text, {
+              width: commentWidth,
+              align: courseComment.align,
+              wordSpacing: courseComment.wordSpacing,
+            }) + 20,
+          );
+
+          // ponytail: one row must fit on a page; split it only if comments become essay-length.
+          if (currentY + rowHeight > doc.page.height - 120) {
+            doc.addPage();
+            drawTableHeader(50);
+            currentY = 80;
+          }
 
           // Row background (alternating)
           if (isEven) {
@@ -171,21 +275,26 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
           doc
             .fontSize(9)
             .fillColor(darkGray)
-            .font('Helvetica')
+            .font('Report')
             .text(`${index + 1}`, tableLeft + 5, currentY + 10, { width: colWidths.no })
-            .text(course.courseName, tableLeft + colWidths.no + 5, currentY + 10, { width: colWidths.course });
+            .text(courseName.text, tableLeft + colWidths.no + 5, currentY + 10, {
+              width: courseWidth,
+              align: courseName.align,
+              wordSpacing: courseName.wordSpacing,
+            });
 
           // Grade badge in table
           const gradeBadgeX = tableLeft + colWidths.no + colWidths.course + 15;
+          const gradeBadgeY = currentY + (rowHeight - 20) / 2;
           doc
-            .roundedRect(gradeBadgeX, currentY + 10, 70, 20, 10)
+            .roundedRect(gradeBadgeX, gradeBadgeY, 70, 20, 10)
             .fill(courseGradeColor);
 
           doc
             .fontSize(8)
             .fillColor('#FFF')
-            .font('Helvetica-Bold')
-            .text(course.courseGrade.toUpperCase(), gradeBadgeX, currentY + 11, {
+            .font('Report-Bold')
+            .text(course.courseGrade.toUpperCase(), gradeBadgeX, gradeBadgeY + 5, {
               width: 70,
               align: 'center',
             });
@@ -193,12 +302,16 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
           doc
             .fontSize(8)
             .fillColor(darkGray)
-            .font('Helvetica')
+            .font('Report')
             .text(
-              course.courseComment || '-',
+              courseComment.text,
               tableLeft + colWidths.no + colWidths.course + colWidths.grade + 5,
               currentY + 10,
-              { width: colWidths.comment, lineBreak: true }
+              {
+                width: commentWidth,
+                align: courseComment.align,
+                wordSpacing: courseComment.wordSpacing,
+              },
             );
 
           // Row border
@@ -218,26 +331,43 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
       // Comments Section
       if (report.comment) {
         doc.moveDown(1);
-        
+
+        const commentWidth = doc.page.width - 140;
+        doc.font('Report').fontSize(10);
+        const comment = prepareText(doc, report.comment, commentWidth);
+        const cardHeight = Math.max(
+          100,
+          doc.heightOfString(comment.text, {
+            width: commentWidth,
+            align: comment.align,
+            wordSpacing: comment.wordSpacing,
+            lineGap: 3,
+          }) + 55,
+        );
+        if (doc.y + cardHeight > doc.page.height - 110) {
+          doc.addPage();
+          doc.y = 50;
+        }
         const commentY = doc.y;
         doc
-          .roundedRect(50, commentY, doc.page.width - 100, 100, 5)
+          .roundedRect(50, commentY, doc.page.width - 100, cardHeight, 5)
           .fill(lightGray);
 
         doc
           .fontSize(12)
           .fillColor(darkGray)
-          .font('Helvetica-Bold')
+          .font('Report-Bold')
           .text('Teacher Comments', 70, commentY + 15)
-          .font('Helvetica')
+          .font('Report')
           .fontSize(10)
-          .text(report.comment, 70, commentY + 35, {
-            width: doc.page.width - 140,
-            align: 'justify',
+          .text(comment.text, 70, commentY + 35, {
+            width: commentWidth,
+            align: comment.align,
+            wordSpacing: comment.wordSpacing,
             lineGap: 3,
           });
 
-        doc.y = commentY + 120;
+        doc.y = commentY + cardHeight + 20;
       }
 
       // Footer
@@ -245,7 +375,7 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
       doc
         .fontSize(8)
         .fillColor('#999')
-        .font('Helvetica')
+        .font('Report')
         .text('LOS Academy - Session Report', 50, footerY, { align: 'center' })
         .text(`Generated on ${new Date().toLocaleString()}`, { align: 'center' });
 
