@@ -56,6 +56,15 @@ const prepareText = (
   return { text: wrapped.join('\n'), align: 'right', wordSpacing: 1 };
 };
 
+const hasComment = (comment?: string): boolean => {
+  const value = (comment || '').trim();
+  return value.length > 0 && value !== '-';
+};
+
+// A course left at the default AVERAGE grade with no comment carries no information.
+const isReportedCourse = (course: ReportsCourses): boolean =>
+  course.courseGrade !== GradeOptions.AVERAGE || hasComment(course.courseComment);
+
 export const generateReportPDF = async (report: ReportData): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     try {
@@ -186,7 +195,9 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
       doc.y = gradeY + 60;
 
       // Course Performance Table
-      if (report.reportCourses && report.reportCourses.length > 0) {
+      const reportedCourses = (report.reportCourses || []).filter(isReportedCourse);
+
+      if (reportedCourses.length > 0) {
         doc
           .fontSize(14)
           .fillColor(darkGray)
@@ -230,7 +241,7 @@ export const generateReportPDF = async (report: ReportData): Promise<Buffer> => 
         // Table rows
         let currentY = tableTop + 30;
 
-        report.reportCourses.forEach((course, index) => {
+        reportedCourses.forEach((course, index) => {
           const isEven = index % 2 === 0;
           const courseGradeColor = getGradeColor(course.courseGrade);
           const courseWidth = colWidths.course - 10;

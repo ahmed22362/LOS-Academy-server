@@ -187,7 +187,7 @@ export async function updateSessionService({
   transaction?: Transaction;
 }) {
   const cleanedData = Object.fromEntries(
-    Object.entries(updatedData).filter(([key, value]) => value !== undefined)
+    Object.entries(updatedData).filter(([key, value]) => value !== undefined),
   );
   const session = await updateModelService({
     ModelClass: Session,
@@ -693,7 +693,7 @@ export async function handleSessionFinishedService({
   // Use consistent calculation utility
   const teacherBalanceAmount = calculateTeacherSessionPayment(
     teacherHourCost,
-    session.sessionDuration
+    session.sessionDuration,
   );
   const transaction = await sequelize.transaction();
   let updatedSession;
@@ -898,7 +898,7 @@ function generateSessions({
       400,
       `Your request has dates that is not equal to your sessions per week plan 
       your session per week is:${sessionsPerWeek} 
-      you dates you provided length:${sessionDates.length}and are ${sessionDates}`
+      you dates you provided length:${sessionDates.length}and are ${sessionDates}`,
     );
   }
   for (let session = 0; session < sessionCount; session++) {
@@ -925,17 +925,17 @@ function generateSessions({
 export function isSessionWithinTimeRange(sessionDate: Date): boolean {
   const currentTime: Date = new Date();
   const timeRangeStart: Date = new Date(
-    sessionDate.getTime() - THREE_MINUTES_IN_MILLISECONDS
+    sessionDate.getTime() - THREE_MINUTES_IN_MILLISECONDS,
   );
   return timeRangeStart.getTime() <= currentTime.getTime();
 }
 export function isSessionAfterItsTimeRange(
   sessionDate: Date,
-  sessionDuration: number
+  sessionDuration: number,
 ): boolean {
   const currentTime: Date = new Date();
   const timeRangeStart: Date = new Date(
-    currentTime.getMinutes() + sessionDuration
+    currentTime.getMinutes() + sessionDuration,
   );
   return timeRangeStart.getTime() >= sessionDate.getTime();
 }
@@ -951,7 +951,7 @@ export async function isThereOngoingSessionForTheSameTeacher({
   if (sessions?.rows && sessions.count > 0) {
     throw new AppError(
       400,
-      "Can't update session to be ongoing while there is another ongoing one!"
+      "Can't update session to be ongoing while there is another ongoing one!",
     );
   }
   return false;
@@ -1048,22 +1048,22 @@ export async function isTeacherHasOverlappingSessions({
       const sessionEnd = sessionStart + session.sessionDuration * MS_IN_MINUTE;
       console.log(
         `Checking overlap: wanted (${new Date(
-          wantedStart
+          wantedStart,
         ).toISOString()} - ${new Date(wantedEnd).toISOString()}) ` +
           `vs existing (${new Date(sessionStart).toISOString()} -) ${new Date(
-            sessionEnd
-          ).toISOString()})`
+            sessionEnd,
+          ).toISOString()})`,
       );
       if (wantedStart < sessionEnd && sessionStart < wantedEnd) {
         throw new AppError(
           400,
           `Scheduling conflict: ` +
             `New session (${new Date(wantedStart).toISOString()} - ${new Date(
-              wantedEnd
+              wantedEnd,
             ).toISOString()}) ` +
             `overlaps with existing session (${new Date(
-              sessionStart
-            ).toISOString()} - ${new Date(sessionEnd).toISOString()})`
+              sessionStart,
+            ).toISOString()} - ${new Date(sessionEnd).toISOString()})`,
         );
       }
     }
@@ -1132,7 +1132,7 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         sessionWithTeacher.sessionInfo?.teacher?.hour_cost || 0;
       const teacherBalanceAmount = calculateTeacherSessionPayment(
         teacherHourCost,
-        sessionWithTeacher.sessionDuration
+        sessionWithTeacher.sessionDuration,
       );
       await updateTeacherBalance({
         teacherId: teacherId,
@@ -1161,7 +1161,7 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
       const teacherPerMinCost = session.sessionInfo?.teacher?.hour_cost || 0;
       const amount = calculateTeacherSessionPayment(
         teacherPerMinCost,
-        session.sessionDuration
+        session.sessionDuration,
       );
 
       await updateTeacherBalance({
@@ -1180,7 +1180,7 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
         const session = await getOneSessionDetailsService({ sessionId });
         const amount = calculateTeacherSessionPayment(
           session.sessionInfo?.teacher?.hour_cost || 0,
-          session.sessionDuration
+          session.sessionDuration,
         );
         await updateTeacherBalance({
           teacherId,
@@ -1198,7 +1198,7 @@ export async function updateSessionServiceWithUserAndTeacherBalance({
       console.error("Can't update session status with unknown status!");
       throw new AppError(
         400,
-        "Can't update session status with unknown status!"
+        "Can't update session status with unknown status!",
       );
   }
 }
