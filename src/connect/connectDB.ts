@@ -36,6 +36,32 @@ async function connectDB() {
           });
         }
       }
+      const reportColumns = await queryInterface.describeTable("report");
+      if (!reportColumns.sessionId) {
+        await queryInterface.addColumn("report", "sessionId", {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: { model: "session", key: "id" },
+          onDelete: "CASCADE",
+        });
+      }
+      await sequelize.query(`
+        UPDATE "report" AS report
+        SET "sessionId" = session.id
+        FROM "session" AS session
+        WHERE report."sessionId" IS NULL
+          AND report.title ~ '^Session [0-9]+ Report$'
+          AND session.id = substring(report.title FROM '^Session ([0-9]+) Report$')::INTEGER
+      `);
+      await sequelize.query(`
+        UPDATE "session" AS session
+        SET "hasReport" = TRUE
+        WHERE session."hasReport" = FALSE
+          AND EXISTS (
+            SELECT 1 FROM "report" AS report
+            WHERE report."sessionId" = session.id
+          )
+      `);
       logger.info("database connected SUCCESSFULLY!");
     })
     .catch((err) => {

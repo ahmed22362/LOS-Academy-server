@@ -979,7 +979,6 @@ export const updateSessionForAdmin = catchAsync(
       sessionDate,
       status,
       reschedule_request_count,
-      hasReport,
       meetingLink,
     } = req.body;
     let session = await getOneSessionWithSessionInfoOnlyService({
@@ -992,12 +991,12 @@ export const updateSessionForAdmin = catchAsync(
       sessionDate,
       status,
       reschedule_request_count,
-      hasReport,
       meetingLink,
     );
     try {
       if (
-        new Date(sessionDate).getTime() ===
+        sessionDate &&
+        new Date(sessionDate).getTime() !==
         new Date(session.sessionDate).getTime()
       ) {
         checkDateFormat(sessionDate);
@@ -1035,7 +1034,6 @@ export const updateSessionForAdmin = catchAsync(
         sessionId: session.id,
         updatedData: {
           reschedule_request_count,
-          hasReport,
           teacherAttended,
           studentAttended,
           meetingLink,

@@ -132,7 +132,6 @@ export const updateSessionForAdminSchema = z.object({
     sessionDate: z.string().optional(),
     status: SessionStatusSchema.optional(),
     reschedule_request_count: z.number().int().min(0).max(4).optional(),
-    hasReport: z.boolean().optional(),
     meetingLink: z.string().nullable().optional(),
   }),
 });

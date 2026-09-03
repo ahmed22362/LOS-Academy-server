@@ -15,7 +15,8 @@ import Teacher from '../db/models/teacher.model';
 import { getUserAttr } from '../controller/user.controller';
 import { getTeacherAtt } from '../controller/teacher.controller';
 interface IReportBody {
-  reportCourses: ReportsCourses;
+  sessionId: number;
+  reportCourses: ReportsCourses[];
   comment?: string;
   grade: GradeOptions;
   teacherId: string;
@@ -71,19 +72,23 @@ export async function updateReportService({
   });
   return report;
 }
-export async function deleteReportService({ reportId }: { reportId: number }) {
-  const report = await sessionReport.destroy({ where: { id: reportId } });
+export async function deleteReportService({
+  reportId,
+  transaction,
+}: {
+  reportId: number;
+  transaction?: Transaction;
+}) {
+  return sessionReport.destroy({ where: { id: reportId }, transaction });
 }
 export async function getSessionReportService({
   sessionId,
+  transaction,
 }: {
   sessionId: number;
+  transaction?: Transaction;
 }) {
-  const report = await sessionReport.findOne({ where: { sessionId } });
-  if (!report) {
-    throw new AppError(404, 'there is no report for this session!');
-  }
-  return report;
+  return sessionReport.findOne({ where: { sessionId }, transaction });
 }
 export async function getUserOrTeacherReportsService({
   userId,

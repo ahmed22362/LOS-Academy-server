@@ -1,6 +1,10 @@
+/// <reference path="../../types/express.d.ts" />
+
 import assert from "node:assert/strict";
 import { updateModelService } from "./factory.services";
 import { updateSessionForAdminSchema } from "../schema/session.schema";
+import User from "../db/models/user.model";
+import { updateUserRemainSessionService } from "./user.service";
 
 async function test() {
   let updateCalled = false;
@@ -40,6 +44,26 @@ async function test() {
     }).success,
     false,
   );
+
+  const originalFindByPk = User.findByPk;
+  const originalUpdate = User.update;
+  let creditUpdateCalled = false;
+  User.findByPk = (async () => ({ remainSessions: 0 })) as any;
+  User.update = (async () => {
+    creditUpdateCalled = true;
+    return [1];
+  }) as any;
+  try {
+    const result = await updateUserRemainSessionService({
+      userId: "test-user",
+      amountOfSessions: -1,
+    });
+    assert.equal(result, 0);
+    assert.equal(creditUpdateCalled, false);
+  } finally {
+    User.findByPk = originalFindByPk;
+    User.update = originalUpdate;
+  }
 }
 
 test();

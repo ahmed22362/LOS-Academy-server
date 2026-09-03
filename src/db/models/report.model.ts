@@ -11,6 +11,7 @@ import {
 } from "sequelize-typescript";
 import User from "./user.model";
 import Teacher from "./teacher.model";
+import Session from "./session.model";
 
 export enum GradeOptions {
   EXCELLENT = "excellent",
@@ -57,6 +58,13 @@ export default class Report extends Model {
 
   @Column({ type: DataType.STRING, allowNull: true })
   title?: string;
+
+  @ForeignKey(() => Session)
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  sessionId!: number;
+
+  @BelongsTo(() => Session, { foreignKey: "sessionId", onDelete: "CASCADE" })
+  session?: Session;
 
   @ForeignKey(() => User)
   @Column({

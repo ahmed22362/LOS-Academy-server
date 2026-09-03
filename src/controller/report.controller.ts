@@ -3,7 +3,6 @@ import { Op } from 'sequelize';
 import catchAsync from '../utils/catchAsync';
 import {
   getOneSessionWithSessionInfoOnlyService,
-  teacherOwnThisSession,
   updateSessionService,
 } from '../service/session.service';
 import AppError from '../utils/AppError';
@@ -12,13 +11,14 @@ import {
   deleteReportService,
   getAllReportsService,
   getReportService,
+  getSessionReportService,
   getUserOrTeacherReportsService,
   updateReportService,
 } from '../service/report.service';
 import { SessionStatus, SessionType } from '../db/models/session.model';
 import User from '../db/models/user.model';
 import { getPaginationParameter, getUserAttr } from './user.controller';
-import Teacher from '../db/models/teacher.model';
+import Teacher, { RoleType } from '../db/models/teacher.model';
 import { getTeacherAtt } from './teacher.controller';
 import logger from '../utils/logger';
 import { updateTeacherBalance } from '../service/teacher.service';
@@ -41,35 +41,34 @@ const formatSessionReportDate = (date: Date): string =>
 
 export const createReport = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { sessionId, reportCourses, comment, teacherId, grade, title } =
-      req.body;
-    const exist = await teacherOwnThisSession({ teacherId, sessionId });
-    if (!exist) {
-      next(
+    const { sessionId, reportCourses, comment, grade, title } = req.body;
+    const session = await getOneSessionWithSessionInfoOnlyService({
+      sessionId,
+    });
+    const teacherId = session.sessionInfo?.teacherId;
+    if (
+      !teacherId ||
+      (req.teacher?.role !== RoleType.ADMIN && req.teacher?.id !== teacherId)
+    ) {
+      return next(
         new AppError(
           401,
           'Teacher does not own this session to write report for it',
         ),
       );
     }
-    const session = await getOneSessionWithSessionInfoOnlyService({
-      sessionId,
-    });
-    // if (session.status !== SessionStatus.TAKEN) {
-    //   return next(new AppError(400, "can't add report to a non taken session"));
-    // }
-    // if (session.hasReport) {
-    //   return next(
-    //     new AppError(
-    //       400,
-    //       "Session already has report you can't add two reports for the same session!"
-    //     )
-    //   );
-    // }
+    if (session.status !== SessionStatus.TAKEN) {
+      return next(new AppError(400, "can't add report to a non taken session"));
+    }
+    // ponytail: application guard only; add a unique DB constraint after historical duplicates are cleaned.
+    if (session.hasReport || (await getSessionReportService({ sessionId }))) {
+      return next(new AppError(400, 'This session already has a report'));
+    }
     const transaction = await sequelize.transaction();
     try {
       const report = await createReportService({
         body: {
+          sessionId,
           reportCourses,
           comment,
           grade,
@@ -91,11 +90,14 @@ export const createReport = catchAsync(
           transaction,
         });
       }
-      await updateSessionService({
+      const updatedSession = await updateSessionService({
         sessionId,
         updatedData: { hasReport: true },
         transaction,
       });
+      if (!updatedSession.hasReport) {
+        throw new AppError(400, "Session wasn't marked as having a report");
+      }
       await transaction.commit();
       emitReportAddedForUser(session.sessionInfo?.userId!, report);
 
@@ -177,7 +179,7 @@ export const createReport = catchAsync(
       res.status(201).json({
         status: 'success',
         message: 'report created successfully',
-        data: report,
+        data: { report, session: updatedSession },
       });
     } catch (error: any) {
       await transaction.rollback();
@@ -227,11 +229,28 @@ export const deleteReport = catchAsync(
     const report = await getReportService({
       reportId: +reportId,
     });
-
-    await deleteReportService({ reportId: +reportId });
-    res
-      .status(200)
-      .json({ status: 'success', message: 'report deleted successfully' });
+    const transaction = await sequelize.transaction();
+    try {
+      await deleteReportService({ reportId: +reportId, transaction });
+      if (report.sessionId) {
+        const remainingReport = await getSessionReportService({
+          sessionId: report.sessionId,
+          transaction,
+        });
+        await updateSessionService({
+          sessionId: report.sessionId,
+          updatedData: { hasReport: Boolean(remainingReport) },
+          transaction,
+        });
+      }
+      await transaction.commit();
+      res
+        .status(200)
+        .json({ status: 'success', message: 'report deleted successfully' });
+    } catch (error: any) {
+      await transaction.rollback();
+      return next(new AppError(400, `Error deleting report: ${error.message}`));
+    }
   },
 );
 export const getAllReports = catchAsync(

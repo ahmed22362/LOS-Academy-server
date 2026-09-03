@@ -6,6 +6,7 @@ import { SubscriptionStatus } from '../db/models/subscription.model';
 import { updateModelService } from './factory.services';
 import { Op } from 'sequelize';
 import { userOwnThisSession } from './session.service';
+import logger from '../utils/logger';
 
 export interface UserResponse {
   id: string;
@@ -136,12 +137,18 @@ async function updateUserRemainSessionService({
   const currentSessions = user.remainSessions;
   const newSessionCount = currentSessions + amountOfSessions;
 
-  // Prevent negative session counts
+  // A stale credit balance must not prevent a session from finishing.
   if (newSessionCount < 0) {
-    throw new AppError(
-      400,
-      `Insufficient session credits. User has ${currentSessions} sessions but operation would result in ${newSessionCount} sessions.`
+    logger.error(
+      {
+        userId,
+        currentSessions,
+        amountOfSessions,
+        attemptedSessionCount: newSessionCount,
+      },
+      'Skipped session credit deduction because it would make the balance negative',
     );
+    return 0;
   }
 
   // Update using direct update to ensure atomic operation
